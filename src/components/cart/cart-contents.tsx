@@ -2,20 +2,30 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useCart } from './cart-provider';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleCheckout = () => {
         router.push('/checkout');
     };
+
+    const handleRemoveItem = (productId: string, productName: string) => {
+        removeFromCart(productId);
+        toast({
+            title: 'Item removed',
+            description: `${productName} has been removed from your cart.`,
+        });
+    }
 
     if (itemCount === 0) {
         return (
@@ -62,15 +72,17 @@ function CartDisplay() {
                                                 <p className="text-primary">${price.toFixed(2)}</p>
                                             )}
                                         </div>
-                                        <Button variant="ghost" size="sm" className="text-muted-foreground px-0 h-auto hover:bg-transparent hover:text-destructive" onClick={() => removeFromCart(item.product.id)}>
-                                            <X className="h-4 w-4 mr-1" />
-                                            Remove
-                                        </Button>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
+                                        {item.quantity > 1 ? (
+                                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, item.product.name)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                         <span className="w-10 text-center font-medium">{item.quantity}</span>
                                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
                                             <Plus className="h-4 w-4" />
