@@ -1,3 +1,4 @@
+
 {
     "discover_persona": "اكتشف شخصيتك",
     "explore_collection": "اكتشف مجموعتنا الحصرية من الأقنعة المصنوعة يدويًا. كل قطعة تروي قصة، في انتظار أن تمنحها صوتًا.",
@@ -76,5 +77,32 @@
     "signup_verification_sent_desc": "تم إنشاء حسابك. يرجى التحقق من بريدك الإلكتروني للتحقق من عنوانك قبل تسجيل الدخول.",
     "signup_failed_title": "فشل إنشاء الحساب",
     "signup_error_default": "حدث خطأ أثناء إنشاء الحساب.",
-    "signup_error_email_in_use": "هذا البريد الإلكتروني مرتبط بالفعل بحساب."
+    "signup_error_email_in_use": "هذا البريد الإلكتروني مرتبط بالفعل بحساب.",
+    "edit_address": "تعديل العنوان",
+    "add_new_address": "إضافة عنوان جديد",
+    "set_as_default_address": "تعيين كعنوان شحن افتراضي",
+    "cancel": "إلغاء",
+    "save_changes": "حفظ التغييرات",
+    "add_address": "إضافة عنوان",
+    "default_badge": "افتراضي",
+    "set_as_default": "تعيين كافتراضي",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "are_you_sure": "هل أنت متأكد؟",
+    "delete_address_confirmation": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف هذا العنوان بشكل دائم.",
+    "continue": "متابعة",
+    "no_saved_addresses_title": "لا توجد عناوين محفوظة",
+    "no_saved_addresses_desc": "أضف عنوان شحن لجعل عملية الدفع أسرع.",
+    "address_updated_title": "تم تحديث العنوان",
+    "address_updated_desc": "تم تحديث عنوانك بنجاح.",
+    "address_added_title": "تمت إضافة العنوان",
+    "address_added_desc": "تم حفظ عنوانك الجديد.",
+    "error_title": "خطأ",
+    "failed_to_save_address": "فشل حفظ العنوان.",
+    "address_deleted_title": "تم حذف العنوان",
+    "address_deleted_desc": "تمت إزالة العنوان.",
+    "failed_to_delete_address": "فشل حذف العنوان.",
+    "default_address_set_title": "تم تعيين العنوان الافتراضي",
+    "default_address_set_desc": "هذا العنوان هو الآن عنوانك الافتراضي للشحن.",
+    "failed_to_set_default": "فشل تعيين العنوان الافتراضي."
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Address } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from '@/components/language/language-provider';
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -32,6 +34,7 @@ interface AddressFormProps {
 }
 
 export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }: AddressFormProps) {
+  const { t } = useTranslation();
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: addressToEdit || {
@@ -60,7 +63,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{addressToEdit ? 'Edit Address' : 'Add New Address'}</CardTitle>
+        <CardTitle>{addressToEdit ? t('edit_address') : t('add_new_address')}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -70,7 +73,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>{t('full_name')}</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -84,7 +87,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     name="phone"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>{t('phone_number')}</FormLabel>
                         <FormControl>
                             <Input placeholder="+1 234 567 890" {...field} />
                         </FormControl>
@@ -97,7 +100,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     name="street"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Street Address</FormLabel>
+                        <FormLabel>{t('street_address')}</FormLabel>
                         <FormControl>
                             <Input placeholder="123 Mask Lane" {...field} />
                         </FormControl>
@@ -112,7 +115,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City</FormLabel>
+                    <FormLabel>{t('city')}</FormLabel>
                     <FormControl>
                       <Input placeholder="Venice" {...field} />
                     </FormControl>
@@ -125,7 +128,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="zipCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ZIP / Postal Code</FormLabel>
+                    <FormLabel>{t('postal_code')}</FormLabel>
                     <FormControl>
                       <Input placeholder="90210" {...field} />
                     </FormControl>
@@ -138,7 +141,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country</FormLabel>
+                    <FormLabel>{t('country')}</FormLabel>
                     <FormControl>
                       <Input placeholder="USA" {...field} />
                     </FormControl>
@@ -160,7 +163,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      Set as default shipping address
+                      {t('set_as_default_address')}
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -168,11 +171,11 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
             />
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-                    Cancel
+                    {t('cancel')}
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {addressToEdit ? 'Save Changes' : 'Add Address'}
+                    {addressToEdit ? t('save_changes') : t('add_address')}
                 </Button>
             </div>
           </form>

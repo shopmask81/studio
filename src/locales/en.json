@@ -1,3 +1,4 @@
+
 {
     "discover_persona": "Discover Your Persona",
     "explore_collection": "Explore our exclusive collection of handcrafted masks. Each piece tells a story, waiting for you to give it a voice.",
@@ -76,5 +77,32 @@
     "signup_verification_sent_desc": "Your account has been created. Please check your email to verify your address before logging in.",
     "signup_failed_title": "Sign Up Failed",
     "signup_error_default": "An error occurred during sign up.",
-    "signup_error_email_in_use": "This email is already associated with an account."
+    "signup_error_email_in_use": "This email is already associated with an account.",
+    "edit_address": "Edit Address",
+    "add_new_address": "Add New Address",
+    "set_as_default_address": "Set as default shipping address",
+    "cancel": "Cancel",
+    "save_changes": "Save Changes",
+    "add_address": "Add Address",
+    "default_badge": "Default",
+    "set_as_default": "Set as Default",
+    "edit": "Edit",
+    "delete": "Delete",
+    "are_you_sure": "Are you sure?",
+    "delete_address_confirmation": "This action cannot be undone. This will permanently delete this address.",
+    "continue": "Continue",
+    "no_saved_addresses_title": "No Saved Addresses",
+    "no_saved_addresses_desc": "Add a shipping address to make checkout faster.",
+    "address_updated_title": "Address Updated",
+    "address_updated_desc": "Your address has been successfully updated.",
+    "address_added_title": "Address Added",
+    "address_added_desc": "Your new address has been saved.",
+    "error_title": "Error",
+    "failed_to_save_address": "Failed to save address.",
+    "address_deleted_title": "Address Deleted",
+    "address_deleted_desc": "The address has been removed.",
+    "failed_to_delete_address": "Failed to delete address.",
+    "default_address_set_title": "Default Address Set",
+    "default_address_set_desc": "This address is now your default for shipping.",
+    "failed_to_set_default": "Failed to set default address."
 }

@@ -1,7 +1,10 @@
+
+'use client';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { AddressList } from '@/components/account/addresses/address-list';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/components/language/language-provider';
 
 function AddressListSkeleton() {
     return (
@@ -13,11 +16,12 @@ function AddressListSkeleton() {
 }
 
 export default function AddressesPage() {
+  const { t } = useTranslation();
   return (
     <ProtectedRoute>
         <div className="container mx-auto px-4 py-12">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-headline mb-8">My Addresses</h1>
+                <h1 className="text-4xl font-headline mb-8">{t('my_addresses')}</h1>
                  <Suspense fallback={<AddressListSkeleton />}>
                     <AddressList />
                 </Suspense>

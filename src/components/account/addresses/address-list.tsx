@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -10,11 +11,13 @@ import { AddressCard } from './address-card';
 import { AddressForm } from './address-form';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/components/language/language-provider';
 
 export function AddressList() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [addressToEdit, setAddressToEdit] = useState<Address | null>(null);
@@ -63,17 +66,17 @@ export function AddressList() {
             // Update existing address
             const addressRef = doc(firestore, `users/${user.uid}/addresses`, addressToEdit.id);
             await updateDoc(addressRef, values);
-            toast({ title: 'Address Updated', description: 'Your address has been successfully updated.' });
+            toast({ title: t('address_updated_title'), description: t('address_updated_desc') });
         } else {
             // Add new address
             await addDoc(addressesCollectionRef, { ...values, createdAt: serverTimestamp() });
-            toast({ title: 'Address Added', description: 'Your new address has been saved.' });
+            toast({ title: t('address_added_title'), description: t('address_added_desc') });
         }
         setIsFormOpen(false);
         setAddressToEdit(null);
     } catch (error) {
         console.error("Error saving address:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to save address.' });
+        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_save_address') });
     } finally {
         setIsProcessing(false);
     }
@@ -85,9 +88,9 @@ export function AddressList() {
     try {
         const addressRef = doc(firestore, `users/${user.uid}/addresses`, addressId);
         await deleteDoc(addressRef);
-        toast({ title: 'Address Deleted', description: 'The address has been removed.' });
+        toast({ title: t('address_deleted_title'), description: t('address_deleted_desc') });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete address.' });
+        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_delete_address') });
     } finally {
         setIsProcessing(false);
     }
@@ -108,9 +111,9 @@ export function AddressList() {
             }
         });
         await batch.commit();
-        toast({ title: 'Default Address Set', description: 'This address is now your default for shipping.' });
+        toast({ title: t('default_address_set_title'), description: t('default_address_set_desc') });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to set default address.' });
+        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_set_default') });
     } finally {
         setIsProcessing(false);
     }
@@ -152,11 +155,11 @@ export function AddressList() {
         
         {(!addresses || addresses.length === 0) && !isFormOpen && (
              <Card className="text-center border-2 border-dashed rounded-lg p-12">
-                <h2 className="text-2xl font-semibold mb-2">No Saved Addresses</h2>
-                <p className="text-muted-foreground mb-6">Add a shipping address to make checkout faster.</p>
+                <h2 className="text-2xl font-semibold mb-2">{t('no_saved_addresses_title')}</h2>
+                <p className="text-muted-foreground mb-6">{t('no_saved_addresses_desc')}</p>
                 <Button onClick={handleAddNew}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Address
+                    {t('add_new_address')}
                 </Button>
             </Card>
         )}
@@ -164,7 +167,7 @@ export function AddressList() {
         {addresses && addresses.length > 0 && (
              <Button onClick={handleAddNew} className="mt-6">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add New Address
+                {t('add_new_address')}
             </Button>
         )}
     </div>

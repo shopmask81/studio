@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Address } from '@/lib/types';
@@ -17,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useTranslation } from '@/components/language/language-provider';
 
 interface AddressCardProps {
   address: Address;
@@ -27,7 +29,7 @@ interface AddressCardProps {
 }
 
 export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcessing }: AddressCardProps) {
-
+  const { t } = useTranslation();
   return (
     <Card className={cn("transition-all", address.isDefault && "border-primary")}>
       <CardHeader className="flex flex-row justify-between items-start">
@@ -35,7 +37,7 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcess
             <Home className="h-5 w-5 text-muted-foreground" />
             {address.fullName}
         </CardTitle>
-        {address.isDefault && <Badge>Default</Badge>}
+        {address.isDefault && <Badge>{t('default_badge')}</Badge>}
       </CardHeader>
       <CardContent className="text-muted-foreground space-y-2">
         <p>{address.street}</p>
@@ -57,30 +59,30 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcess
             disabled={isProcessing}
             >
                 <Star className="mr-2 h-4 w-4" />
-            Set as Default
+            {t('set_as_default')}
           </Button>
         )}
         <Button variant="secondary" size="sm" onClick={() => onEdit(address)} disabled={isProcessing}>
             <Edit className="mr-2 h-4 w-4" />
-            Edit
+            {t('edit')}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm" disabled={isProcessing}>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                {t('delete')}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this address.
+                {t('delete_address_confirmation')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(address.id)}>Continue</AlertDialogAction>
+              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(address.id)}>{t('continue')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
