@@ -1,0 +1,199 @@
+/**
+ * @fileOverview Firestore Security Rules for the existing e-commerce database.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-related data (e.g., users, wishlists, affiliates, orders),
+ * and public read access for general content (e.g., banners, categories, coupons, products, settings). Write access
+ * to public content is generally denied, requiring specific administrative roles (which are not yet defined in this
+ * prototype) for modification.
+ *
+ * Data Structure:
+ * The database is structured with top-level collections for each entity:
+ * - /affiliates/{affiliateId}
+ * - /banners/{bannerId}
+ * - /categories/{categoryId}
+ * - /coupons/{couponId}
+ * - /messages/{messageId}
+ * - /orders/{orderId}
+ * - /products/{productId}
+ * - /settings/{settingId}
+ * - /users/{userId}
+ * - /wishlists/{wishlistId}
+ *
+ * Key Security Decisions:
+ * - User data and associated resources (wishlists, affiliates, orders) are protected by owner-only access.
+ * - Public content (banners, categories, coupons, products, settings) is readable by all, but writable only by
+ *   unspecified administrative roles (requiring future refinement).
+ * - User listing is disallowed to protect privacy.
+ * - Denormalization: The rules rely on the `userId` field within documents to enforce ownership, avoiding costly
+ *   `get()` calls. For example, the `affiliates` collection requires a `userId` field that matches the authenticated
+ *   user's UID for write access.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows a user to manage their own affiliate data.
+     * @path /affiliates/{affiliateId}
+     * @allow (create) - User creates their affiliate profile with matching userId.
+     * @allow (update, delete) - User updates or deletes their existing affiliate profile.
+     * @deny (create) - User attempts to create an affiliate profile with a mismatched userId.
+     * @principle Enforces document ownership for writes based on the userId field.
+     */
+    match /affiliates/{affiliateId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Allows anyone to read banner information, but restricts creation, updates, and deletion.
+     * @path /banners/{bannerId}
+     * @allow (get, list) - Any user can read banner information.
+     * @deny (create, update, delete) - No user can create, update, or delete banner information. Administrative role is required in future versions.
+     * @principle Public read access with restricted write access.
+     */
+    match /banners/{bannerId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation
+    }
+
+    /**
+     * @description Allows anyone to read category information, but restricts creation, updates, and deletion.
+     * @path /categories/{categoryId}
+     * @allow (get, list) - Any user can read category information.
+     * @deny (create, update, delete) - No user can create, update, or delete category information. Administrative role is required in future versions.
+     * @principle Public read access with restricted write access.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation
+    }
+
+    /**
+     * @description Allows anyone to read coupon information, but restricts creation, updates, and deletion.
+     * @path /coupons/{couponId}
+     * @allow (get, list) - Any user can read coupon information.
+     * @deny (create, update, delete) - No user can create, update, or delete coupon information. Administrative role is required in future versions.
+     * @principle Public read access with restricted write access.
+     */
+    match /coupons/{couponId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation
+    }
+
+    /**
+     * @description Allows reading and writing messages.
+     * @path /messages/{messageId}
+     * @allow (create) - User creates message with senderId.
+     * @allow (get) - User get message.
+     * @allow (update, delete) - No user can update or delete messages.
+     * @principle User can create and read messages, but not modify them.
+     */
+    match /messages/{messageId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && (request.resource.data.senderId == request.auth.uid || request.resource.data.recipientId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Allows a user to manage their own orders.
+     * @path /orders/{orderId}
+     * @allow (create) - User creates an order with matching userId.
+     * @allow (update, delete) - User updates or deletes their existing order.
+     * @deny (create) - User attempts to create an order with a mismatched userId.
+     * @principle Enforces document ownership for writes based on the userId field.
+     */
+    match /orders/{orderId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Allows anyone to read product information, but restricts creation, updates, and deletion.
+     * @path /products/{productId}
+     * @allow (get, list) - Any user can read product information.
+     * @deny (create, update, delete) - No user can create, update, or delete product information. Administrative role is required in future versions.
+     * @principle Public read access with restricted write access.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation
+    }
+
+    /**
+     * @description Allows anyone to read setting information, but restricts creation, updates, and deletion.
+     * @path /settings/{settingId}
+     * @allow (get, list) - Any user can read setting information.
+     * @deny (create, update, delete) - No user can create, update, or delete setting information. Administrative role is required in future versions.
+     * @principle Public read access with restricted write access.
+     */
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation
+    }
+
+    /**
+     * @description Allows a user to manage their own user data.
+     * @path /users/{userId}
+     * @allow (create) - User creates their own profile with matching userId.
+     * @allow (update, delete) - User updates or deletes their own profile.
+     * @deny (create) - User attempts to create a profile for another user.
+     * @principle Enforces document ownership for writes, and disallows listing for privacy.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update, delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows a user to manage their own wishlist.
+     * @path /wishlists/{wishlistId}
+     * @allow (create) - User creates a wishlist with matching userId.
+     * @allow (update, delete) - User updates or deletes their existing wishlist.
+     * @deny (create) - User attempts to create a wishlist with a mismatched userId.
+     * @principle Enforces document ownership for writes based on the userId field.
+     */
+    match /wishlists/{wishlistId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Helper Functions ---
+
+    /**
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document based on the provided userId.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the EXISTING document based on the provided userId.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+  }
+}

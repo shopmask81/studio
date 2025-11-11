@@ -1,0 +1,593 @@
+{
+  "entities": {
+    "Affiliate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Affiliate",
+      "type": "object",
+      "description": "Represents an affiliate user in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the affiliate."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Affiliate)"
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "Unique referral code assigned to the affiliate."
+        },
+        "commissionRate": {
+          "type": "number",
+          "description": "Commission rate for the affiliate."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "referralCode",
+        "commissionRate"
+      ]
+    },
+    "Banner": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Banner",
+      "type": "object",
+      "description": "Represents a banner advertisement.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the banner."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the banner image."
+        },
+        "targetUrl": {
+          "type": "string",
+          "description": "URL to redirect to when the banner is clicked."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Date when the banner becomes active.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Date when the banner expires.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl",
+        "targetUrl",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a product category.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the category image."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "imageUrl"
+      ]
+    },
+    "Coupon": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Coupon",
+      "type": "object",
+      "description": "Represents a discount coupon.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the coupon."
+        },
+        "code": {
+          "type": "string",
+          "description": "Coupon code."
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount amount or percentage."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Date when the coupon becomes valid.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Date when the coupon expires.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "discount",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a message sent by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User. ID of the user who sent the message."
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Reference to User. ID of the user who received the message."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "senderId",
+        "recipientId",
+        "content",
+        "timestamp"
+      ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents a customer order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. ID of the user who placed the order."
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "Date when the order was placed.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount of the order."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the order (e.g., pending, processing, shipped, completed)."
+        },
+        "orderItems": {
+          "type": "array",
+          "description": "Array of order items. (Relationship: Order 1:N OrderItem)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "orderDate",
+        "totalAmount",
+        "status",
+        "orderItems"
+      ]
+    },
+    "OrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OrderItem",
+      "type": "object",
+      "description": "Represents an item within an order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order item."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to Order. ID of the order this item belongs to."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. ID of the product being ordered."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product ordered."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product at the time of order."
+        }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "productId",
+        "quantity",
+        "price"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. ID of the category the product belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product image."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "stockQuantity": {
+          "type": "number",
+          "description": "Number of units currently in stock."
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tags. (Relationship: Tag N:N Product)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "name",
+        "description",
+        "imageUrl",
+        "price",
+        "stockQuantity"
+      ]
+    },
+    "Setting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Setting",
+      "type": "object",
+      "description": "Represents a system setting.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the setting."
+        },
+        "settingKey": {
+          "type": "string",
+          "description": "Key of the setting."
+        },
+        "settingValue": {
+          "type": "string",
+          "description": "Value of the setting."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the setting."
+        }
+      },
+      "required": [
+        "id",
+        "settingKey",
+        "settingValue",
+        "description"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the user."
+        },
+        "address": {
+          "type": "string",
+          "description": "address of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Wishlist": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wishlist",
+      "type": "object",
+      "description": "Represents a user's wishlist.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the wishlist."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. ID of the user who owns the wishlist."
+        },
+        "productIds": {
+          "type": "array",
+          "description": "References to Products. IDs of the products in the wishlist. (Relationship: Wishlist 1:N Product)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "productIds"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Represents a tag for products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the tag."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the tag."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/affiliates/{affiliateId}",
+        "definition": {
+          "entityName": "Affiliate",
+          "schema": {
+            "$ref": "#/backend/entities/Affiliate"
+          },
+          "description": "Stores affiliate user data. Each document is uniquely identified by affiliateId. Includes userId to link to the associated user.",
+          "params": [
+            {
+              "name": "affiliateId",
+              "description": "Unique identifier for the affiliate."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/banners/{bannerId}",
+        "definition": {
+          "entityName": "Banner",
+          "schema": {
+            "$ref": "#/backend/entities/Banner"
+          },
+          "description": "Stores banner advertisement data. Each banner is uniquely identified by bannerId.",
+          "params": [
+            {
+              "name": "bannerId",
+              "description": "Unique identifier for the banner."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores product category data. Each category is uniquely identified by categoryId.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "Unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/coupons/{couponId}",
+        "definition": {
+          "entityName": "Coupon",
+          "schema": {
+            "$ref": "#/backend/entities/Coupon"
+          },
+          "description": "Stores coupon data. Each coupon is uniquely identified by couponId.",
+          "params": [
+            {
+              "name": "couponId",
+              "description": "Unique identifier for the coupon."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stores message data between users. Each message is uniquely identified by messageId. Includes senderId and recipientId to identify involved users.",
+          "params": [
+            {
+              "name": "messageId",
+              "description": "Unique identifier for the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order data. Each order is uniquely identified by orderId. Includes userId to link to the associated user.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product data. Each product is uniquely identified by productId. Includes categoryId to link to the associated category.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "Setting",
+          "schema": {
+            "$ref": "#/backend/entities/Setting"
+          },
+          "description": "Stores system settings. Each setting is uniquely identified by settingId.",
+          "params": [
+            {
+              "name": "settingId",
+              "description": "Unique identifier for the setting."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data. Each user is uniquely identified by userId.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/wishlists/{wishlistId}",
+        "definition": {
+          "entityName": "Wishlist",
+          "schema": {
+            "$ref": "#/backend/entities/Wishlist"
+          },
+          "description": "Stores wishlist data. Each wishlist is uniquely identified by wishlistId. Includes userId to link to the associated user.",
+          "params": [
+            {
+              "name": "wishlistId",
+              "description": "Unique identifier for the wishlist."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the existing Firestore database structure with collections like `affiliates`, `banners`, `categories`, `coupons`, `messages`, `orders`, `products`, `settings`, `users`, and `wishlists`, the design will focus on maintaining this structure while emphasizing authorization independence and clear data ownership, especially where relationships between entities exist. The structure is already segregated, as each collection serves a distinct purpose. To enhance security and scalability, we will focus on denormalizing authorization data where needed, particularly for relationships like User-Affiliate, User-Orders, and User-Wishlists. This eliminates the need for `get()` calls in security rules, enabling atomic operations. The design uses standard naming conventions and relies on path-based ownership for private user data. This approach supports secure `list` operations, as rules can be based on collection-level access and document-level ownership without complex filtering. The structure also supports the integrity of ownership and timestamps. The affiliate program utilizes the 'affiliates' collection, and the `userId` field links to the `users` collection, establishing the relationship between the User and the Affiliate entity."
+  }
+}
