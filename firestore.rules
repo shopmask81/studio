@@ -123,8 +123,8 @@ service cloud.firestore {
      * @principle Public read access with restricted write access.
      */
     match /products/{productId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add admin validation
+      allow read: if true;
+      allow write: if false; // TODO: Add admin validation
     }
 
     /**
@@ -148,10 +148,18 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes, and disallows listing for privacy.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
       allow update, delete: if isExistingOwner(userId);
+
+      /**
+       * @description Allows a user to manage their own wishlist subcollection.
+       * @path /users/{userId}/wishlists/{productId}
+       */
+      match /wishlists/{productId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     /**
