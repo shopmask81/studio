@@ -7,6 +7,7 @@ import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
 import { useWishlist } from '../wishlist/wishlist-provider';
 import { LanguageSwitcher } from '../language/language-switcher';
+import { ClientOnly } from './client-only';
 
 export function Header() {
   const { wishlistItemCount } = useWishlist();
@@ -23,22 +24,24 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end gap-1">
-           <UserNav />
-           <ThemeToggle />
-           <LanguageSwitcher />
-           <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
-              <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-              {wishlistItemCount > 0 && (
-                  <span
-                      className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
-                      aria-label={`${wishlistItemCount} items in wishlist`}
-                  >
-                      {wishlistItemCount}
-                  </span>
-              )}
-              <span className="sr-only">Wishlist</span>
-          </Link>
-          <CartIcon />
+          <ClientOnly>
+            <UserNav />
+            <ThemeToggle />
+            <LanguageSwitcher />
+            <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
+                <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
+                {wishlistItemCount > 0 && (
+                    <span
+                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                        aria-label={`${wishlistItemCount} items in wishlist`}
+                    >
+                        {wishlistItemCount}
+                    </span>
+                )}
+                <span className="sr-only">Wishlist</span>
+            </Link>
+            <CartIcon />
+          </ClientOnly>
         </div>
       </div>
     </header>
