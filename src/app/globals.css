@@ -24,7 +24,14 @@
     --input: 45 14% 88%;
     --ring: 154 30% 35%;
     --radius: 1rem; /* 16px */
+
+    --font-body: 'Lato';
   }
+
+  :root:lang(ar) {
+    --font-body: 'Cairo';
+  }
+
   .dark {
     --background: 147 14% 9%; /* #161816 */
     --foreground: 45 14% 91%; /* #E8E8E3 */

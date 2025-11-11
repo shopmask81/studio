@@ -21,6 +21,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { useWishlist } from '../wishlist/wishlist-provider';
+import { useTranslation } from '../language/language-provider';
 
 interface ProductDetailsProps {
   productId: string;
@@ -32,6 +33,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useTranslation();
   
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -112,10 +114,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-3xl font-headline mb-2">Product Not Found</h1>
-        <p className="text-muted-foreground mb-6">Sorry, we couldn't find the product you're looking for.</p>
+        <h1 className="text-3xl font-headline mb-2">{t('product_not_found')}</h1>
+        <p className="text-muted-foreground mb-6">{t('product_not_found_desc')}</p>
         <Button asChild>
-          <Link href="/">Return to Shop</Link>
+          <Link href="/">{t('return_to_shop')}</Link>
         </Button>
       </div>
     );
@@ -128,12 +130,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         {/* Breadcrumbs */}
         <div className="flex items-center text-sm text-muted-foreground mb-8">
             <Link href="/" className="hover:text-primary transition-colors flex items-center">
-                <Home className="h-4 w-4 mr-1.5" />
-                Home
+                <Home className="h-4 w-4 me-1.5" />
+                {t('home')}
             </Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <Link href="/" className="hover:text-primary transition-colors">
-                Products
+                {t('products')}
             </Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <span className="font-medium text-foreground truncate">{product.name}</span>
@@ -213,7 +215,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     "font-bold mb-6 transition-colors duration-200",
                     product.stock <= 5 ? "text-red-500" : "text-amber-500"
                 )}>
-                    Only {product.stock} left in stock!
+                    {t('only_left_in_stock', { count: product.stock })}
                 </p>
             )}
 
@@ -224,12 +226,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     disabled={product.stock === 0}
                     className="flex-grow"
                 >
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    <ShoppingCart className="me-2 h-5 w-5" />
+                    {product.stock === 0 ? t('out_of_stock') : t('add_to_cart')}
                 </Button>
                 <Button size="lg" variant="outline" onClick={handleWishlistClick} className="flex-shrink-0">
-                    <Heart className={cn("mr-2 h-5 w-5", productIsWishlisted && "fill-destructive text-destructive")} />
-                    {productIsWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    <Heart className={cn("me-2 h-5 w-5", productIsWishlisted && "fill-destructive text-destructive")} />
+                    {productIsWishlisted ? t('remove_from_wishlist') : t('add_to_wishlist')}
                 </Button>
             </div>
         </div>

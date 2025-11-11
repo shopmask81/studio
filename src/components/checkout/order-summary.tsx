@@ -4,16 +4,18 @@ import Image from 'next/image';
 import { useCart } from '../cart/cart-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
+import { useTranslation } from '../language/language-provider';
 
 export function OrderSummary() {
   const { cartItems, cartTotal } = useCart();
+  const { t } = useTranslation();
   const shippingCost = 5.00;
   const total = cartTotal + shippingCost;
 
   return (
     <Card className="sticky top-20">
       <CardHeader>
-        <CardTitle>Order Summary</CardTitle>
+        <CardTitle>{t('order_summary')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -43,11 +45,11 @@ export function OrderSummary() {
 
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-muted-foreground">
-            <span>Subtotal</span>
+            <span>{t('subtotal')}</span>
             <span>${cartTotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>Shipping</span>
+            <span>{t('shipping')}</span>
             <span>${shippingCost.toFixed(2)}</span>
           </div>
         </div>
@@ -55,7 +57,7 @@ export function OrderSummary() {
         <Separator className="my-4" />
 
         <div className="flex justify-between font-bold text-lg">
-          <span>Total</span>
+          <span>{t('total')}</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </CardContent>

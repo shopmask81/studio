@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
+import { useTranslation } from '../language/language-provider';
 
 
 export function UserNav() {
@@ -28,6 +29,7 @@ export function UserNav() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -71,7 +73,7 @@ export function UserNav() {
         >
             <Link href="/login">
                 <User className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-                <span className="sr-only">Login</span>
+                <span className="sr-only">{t('login')}</span>
             </Link>
         </Button>
     );
@@ -105,26 +107,26 @@ export function UserNav() {
             <DropdownMenuItem asChild>
               <Link href="/account">
                 <User className="mr-2 h-4 w-4" />
-                <span>Account</span>
+                <span>{t('account')}</span>
               </Link>
             </DropdownMenuItem>
              <DropdownMenuItem asChild>
               <Link href="/account/addresses">
                 <MapPin className="mr-2 h-4 w-4" />
-                <span>My Addresses</span>
+                <span>{t('my_addresses')}</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/wishlist">
                 <Heart className="mr-2 h-4 w-4" />
-                <span>Wishlist</span>
+                <span>{t('wishlist')}</span>
               </Link>
             </DropdownMenuItem>
             {isAffiliate && (
               <DropdownMenuItem asChild>
                 <Link href="/affiliate">
                   <LinkIcon className="mr-2 h-4 w-4" />
-                  <span>Affiliate</span>
+                  <span>{t('affiliate')}</span>
                 </Link>
               </DropdownMenuItem>
             )}
@@ -132,7 +134,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{t('log_out')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -12,6 +12,7 @@ import { useCart } from '@/components/cart/cart-provider';
 import { useWishlist } from '../wishlist/wishlist-provider';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
+import { useTranslation } from '../language/language-provider';
 
 interface ProductCardProps {
   product: Product;
@@ -23,6 +24,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const productIsWishlisted = isWishlisted(product.id);
 
@@ -102,8 +104,8 @@ export function ProductCard({ product }: ProductCardProps) {
                     )}
                 </div>
                  <Button onClick={handleAddToCart} variant="secondary" className="bg-primary text-primary-foreground font-semibold hover:bg-ring hover:shadow-accent-glow transition-all duration-200 ease-in-out">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
+                    <ShoppingCart className="h-4 w-4 me-2" />
+                    {t('add_to_cart')}
                 </Button>
             </CardFooter>
         </Card>

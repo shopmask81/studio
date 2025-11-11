@@ -12,12 +12,14 @@ import { useWishlist } from "@/components/wishlist/wishlist-provider";
 import { useDoc, useFirestore } from "@/firebase";
 import { useMemo } from "react";
 import { doc } from "firebase/firestore";
+import { useTranslation } from "@/components/language/language-provider";
 
 function WishlistItemCard({ item }: { item: WishlistItem }) {
     const { addToCart } = useCart();
     const { removeFromWishlist } = useWishlist();
     const { toast } = useToast();
     const firestore = useFirestore();
+    const { t } = useTranslation();
 
     const productRef = useMemo(() => {
         if (!firestore) return null;
@@ -68,8 +70,8 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
             </CardContent>
             <CardFooter className="p-4 flex gap-2">
                 <Button onClick={handleAddToCart} className="w-full" disabled={isProductLoading || !product}>
-                    {isProductLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <ShoppingCart className="h-4 w-4 mr-2" />}
-                    Add to Cart
+                    {isProductLoading ? <Loader2 className="h-4 w-4 me-2 animate-spin"/> : <ShoppingCart className="h-4 w-4 me-2" />}
+                    {t('add_to_cart')}
                 </Button>
                 <Button variant="outline" size="icon" onClick={handleRemove}>
                     <Trash2 className="h-4 w-4" />
@@ -81,12 +83,13 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
 
 export default function WishlistPage() {
     const { wishlistItems, isWishlistLoading, error } = useWishlist();
+    const { t } = useTranslation();
     const hasItems = wishlistItems && wishlistItems.length > 0;
 
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-12">
-                <h1 className="text-4xl font-headline mb-8">Your Wishlist</h1>
+                <h1 className="text-4xl font-headline mb-8">{t('your_wishlist')}</h1>
                 {isWishlistLoading ? (
                      <div className="flex justify-center items-center h-64">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -105,10 +108,10 @@ export default function WishlistPage() {
                 ) : (
                     <Card className="text-center border-2 border-dashed rounded-lg p-12">
                         <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                        <h2 className="text-2xl font-semibold mb-2">Your Wishlist is Empty</h2>
-                        <p className="text-muted-foreground mb-6">Start exploring our handmade products to find something you love!</p>
+                        <h2 className="text-2xl font-semibold mb-2">{t('wishlist_is_empty')}</h2>
+                        <p className="text-muted-foreground mb-6">{t('wishlist_is_empty_desc')}</p>
                         <Button asChild>
-                            <Link href="/">Start Exploring</Link>
+                            <Link href="/">{t('start_exploring')}</Link>
                         </Button>
                     </Card>
                 )}

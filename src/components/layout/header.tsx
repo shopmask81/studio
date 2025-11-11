@@ -5,11 +5,10 @@ import { Heart, Theater } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
-import { useUser } from '@/firebase';
 import { useWishlist } from '../wishlist/wishlist-provider';
+import { LanguageSwitcher } from '../language/language-switcher';
 
 export function Header() {
-  const { user } = useUser();
   const { wishlistItemCount } = useWishlist();
 
   return (
@@ -26,6 +25,7 @@ export function Header() {
         <div className="flex flex-1 items-center justify-end space-x-2">
            <UserNav />
            <ThemeToggle />
+           <LanguageSwitcher />
            <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
               <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
               {wishlistItemCount > 0 && (

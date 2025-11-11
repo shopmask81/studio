@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
+import { useTranslation } from "../language/language-provider";
 
 
 export function Footer() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const { t } = useTranslation();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -30,17 +32,17 @@ export function Footer() {
           </div>
 
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">About</Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">Contact</Link>
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('about')}</Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('contact')}</Link>
             {isAffiliate && (
-                <Link href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">Affiliate</Link>
+                <Link href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('affiliate')}</Link>
             )}
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">Terms of Use</Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">Privacy Policy</Link>
+            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('terms_of_use')}</Link>
+            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('privacy_policy')}</Link>
           </nav>
 
           <div className="text-sm text-muted-foreground mt-4">
-            © {new Date().getFullYear()} MaskShop. All Rights Reserved.
+            {t('copyright', { year: new Date().getFullYear() })}
           </div>
         </div>
       </div>

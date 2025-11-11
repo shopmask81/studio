@@ -9,11 +9,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '../language/language-provider';
 
 function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
     const router = useRouter();
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     const handleCheckout = () => {
         router.push('/checkout');
@@ -31,10 +33,10 @@ function CartDisplay() {
         return (
             <Card className="text-center border-2 border-dashed rounded-lg p-12">
                 <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">Your Cart is Empty</h2>
-                <p className="text-muted-foreground mb-6">Add some handmade crafts to your cart to see them here.</p>
+                <h2 className="text-2xl font-semibold mb-2">{t('cart_is_empty')}</h2>
+                <p className="text-muted-foreground mb-6">{t('cart_is_empty_desc')}</p>
                 <Button asChild>
-                    <Link href="/">Continue Shopping</Link>
+                    <Link href="/">{t('continue_shopping')}</Link>
                 </Button>
             </Card>
         );
@@ -45,10 +47,10 @@ function CartDisplay() {
             <div className="lg:col-span-2">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Your Items</CardTitle>
+                        <CardTitle>{t('your_items')}</CardTitle>
                          <Button variant="outline" size="sm" onClick={clearCart}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Clear Cart
+                            <Trash2 className="me-2 h-4 w-4" />
+                            {t('clear_cart')}
                         </Button>
                     </CardHeader>
                     <CardContent className="divide-y">
@@ -98,24 +100,24 @@ function CartDisplay() {
             <div>
                 <Card className="sticky top-20">
                     <CardHeader>
-                        <CardTitle>Order Summary</CardTitle>
+                        <CardTitle>{t('order_summary')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex justify-between text-muted-foreground">
-                            <span>Subtotal</span>
+                            <span>{t('subtotal')}</span>
                             <span>${cartTotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                            <span>Shipping</span>
+                            <span>{t('shipping')}</span>
                             <span>$5.00</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg pt-4 border-t">
-                            <span>Total</span>
+                            <span>{t('total')}</span>
                             <span>${(cartTotal + 5).toFixed(2)}</span>
                         </div>
                     </CardContent>
                     <CardFooter>
-                         <Button className="w-full" onClick={handleCheckout}>Proceed to Checkout</Button>
+                         <Button className="w-full" onClick={handleCheckout}>{t('proceed_to_checkout')}</Button>
                     </CardFooter>
                 </Card>
             </div>

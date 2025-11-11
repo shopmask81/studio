@@ -1,15 +1,18 @@
+'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense } from 'react';
+import { useTranslation } from '@/components/language/language-provider';
 
 export default function Home() {
+  const { t } = useTranslation();
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">
       <header className="text-center mb-12">
         <h1 className="font-headline text-4xl md:text-6xl font-bold mb-4">
-          Discover Your Persona
+          {t('discover_persona')}
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-          Explore our exclusive collection of handcrafted masks. Each piece tells a story, waiting for you to give it a voice.
+          {t('explore_collection')}
         </p>
       </header>
       
