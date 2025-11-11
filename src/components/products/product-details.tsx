@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useDoc, useFirestore, useUser } from '@/firebase';
@@ -38,6 +38,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [currentSlide, setCurrentSlide] = useState(0)
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
   const productRef = useMemo(() => {
     if (!firestore || !productId) return null;
@@ -56,15 +57,30 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   useEffect(() => {
     if (!carouselApi) {
-      return
+      return;
     }
  
-    setCurrentSlide(carouselApi.selectedScrollSnap())
- 
-    carouselApi.on("select", () => {
-      setCurrentSlide(carouselApi.selectedScrollSnap())
-    })
-  }, [carouselApi])
+    const handleSelect = () => {
+      const selectedSlide = carouselApi.selectedScrollSnap();
+      setCurrentSlide(selectedSlide);
+
+      if (thumbnailContainerRef.current) {
+        const thumbnail = thumbnailContainerRef.current.children[selectedSlide] as HTMLElement;
+        if (thumbnail) {
+          const container = thumbnailContainerRef.current;
+          const scrollLeft = thumbnail.offsetLeft - (container.offsetWidth / 2) + (thumbnail.offsetWidth / 2);
+          container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        }
+      }
+    };
+    
+    handleSelect(); // Set initial position
+    carouselApi.on("select", handleSelect);
+
+    return () => {
+        carouselApi.off("select", handleSelect);
+    }
+  }, [carouselApi]);
   
   const handleThumbnailClick = (index: number) => {
     carouselApi?.scrollTo(index);
@@ -173,7 +189,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             {imageGallery.length > 1 && (
                  <div className="w-full max-w-md mx-auto">
-                    <div className="flex justify-start gap-2 overflow-x-auto pb-2 max-w-[16.5rem] mx-auto">
+                    <div ref={thumbnailContainerRef} className="flex justify-start gap-2 overflow-x-auto pb-2 max-w-[16.5rem] mx-auto">
                         {imageGallery.map((img, index) => (
                             <button
                                 key={index}
