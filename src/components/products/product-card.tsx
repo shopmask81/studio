@@ -11,9 +11,9 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, deleteDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { useCart } from '@/components/cart/cart-provider';
-
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface ProductCardProps {
   product: Product;
@@ -46,7 +46,7 @@ export function ProductCard({ product }: ProductCardProps) {
     addToCart(product);
   };
 
-  const handleWishlistClick = async (e: React.MouseEvent) => {
+  const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -62,33 +62,24 @@ export function ProductCard({ product }: ProductCardProps) {
     
     const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, product.id);
 
-    try {
-        if (isWishlisted) {
-            await deleteDoc(wishlistItemRef);
-            toast({
-              title: 'Removed from Wishlist',
-              description: `${product.name} has been removed from your wishlist.`,
-            });
-        } else {
-            const wishlistItem: WishlistItem = {
-                productId: product.id,
-                productName: product.name,
-                productImage: product.mainImage,
-                price: product.discountPrice ?? product.price,
-                addedAt: serverTimestamp()
-            };
-            await setDoc(wishlistItemRef, wishlistItem);
-            toast({
-              title: 'Added to Wishlist',
-              description: `${product.name} has been added to your wishlist.`,
-            });
-        }
-        setIsWishlisted(!isWishlisted);
-    } catch (error: any) {
+    if (isWishlisted) {
+        deleteDocumentNonBlocking(wishlistItemRef);
         toast({
-            variant: "destructive",
-            title: "Something went wrong",
-            description: error.message || "Could not update your wishlist.",
+          title: 'Removed from Wishlist',
+          description: `${product.name} has been removed from your wishlist.`,
+        });
+    } else {
+        const wishlistItem: WishlistItem = {
+            productId: product.id,
+            productName: product.name,
+            productImage: product.mainImage,
+            price: product.discountPrice ?? product.price,
+            addedAt: serverTimestamp()
+        };
+        setDocumentNonBlocking(wishlistItemRef, wishlistItem, {});
+        toast({
+          title: 'Added to Wishlist',
+          description: `${product.name} has been added to your wishlist.`,
         });
     }
   };

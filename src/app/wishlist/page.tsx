@@ -10,6 +10,7 @@ import { Product, WishlistItem } from "@/lib/types";
 import Image from "next/image";
 import { useCart } from "@/components/cart/cart-provider";
 import { useToast } from "@/hooks/use-toast";
+import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 function WishlistItemCard({ item }: { item: WishlistItem }) {
     const { addToCart } = useCart();
@@ -32,27 +33,19 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Could not add product to cart. Please try again."
+                description: "Could not add product to cart. Product details not found."
             })
         }
     }
 
-    const handleRemove = async () => {
+    const handleRemove = () => {
         if (!user || !firestore) return;
         const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, item.productId);
-        try {
-            await deleteDoc(wishlistItemRef);
-            toast({
-                title: "Removed from Wishlist",
-                description: `${item.productName} has been removed.`,
-            });
-        } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: error.message || "Failed to remove item."
-            });
-        }
+        deleteDocumentNonBlocking(wishlistItemRef);
+        toast({
+            title: "Removed from Wishlist",
+            description: `${item.productName} has been removed.`,
+        });
     }
 
     return (
@@ -73,8 +66,8 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
                 <p className="font-bold text-accent">${item.price.toFixed(2)}</p>
             </CardContent>
             <CardFooter className="p-4 flex gap-2">
-                <Button onClick={handleAddToCart} className="w-full">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
+                <Button onClick={handleAddToCart} className="w-full" disabled={!product}>
+                    {!product ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <ShoppingCart className="h-4 w-4 mr-2" />}
                     Add to Cart
                 </Button>
                 <Button variant="outline" size="icon" onClick={handleRemove}>
@@ -94,7 +87,7 @@ export default function WishlistPage() {
         return collection(firestore, `users/${user.uid}/wishlists`);
     }, [firestore, user]);
 
-    const { data: wishlistItems, isLoading } = useCollection<WishlistItem>(wishlistQuery);
+    const { data: wishlistItems, isLoading, error } = useCollection<WishlistItem>(wishlistQuery);
     
     const hasItems = wishlistItems && wishlistItems.length > 0;
 
@@ -106,6 +99,11 @@ export default function WishlistPage() {
                      <div className="flex justify-center items-center h-64">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     </div>
+                ) : error ? (
+                     <Card className="text-center border-2 border-dashed border-destructive/50 rounded-lg p-12">
+                        <h2 className="text-2xl font-semibold mb-2 text-destructive">Error Loading Wishlist</h2>
+                        <p className="text-muted-foreground mb-6">We couldn’t load your wishlist right now. Please try again later.</p>
+                    </Card>
                 ) : hasItems ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {wishlistItems.map(item => (
