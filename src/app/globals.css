@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 45 3% 90%; /* #E5E5E5 */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --background: 48 33% 96%; /* #F3F1EB */
+    --foreground: 0 0% 12%; /* #1E1E1E */
+    --card: 40 25% 98%; /* #F9F8F4 */
+    --card-foreground: 0 0% 12%;
+    --popover: 40 25% 98%;
+    --popover-foreground: 0 0% 12%;
     --primary: 154 30% 35%; /* #3E7660 */
-    --primary-foreground: 45 35% 95%; /* Lighter version of #E6E1D3 */
+    --primary-foreground: 45 35% 95%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 69%; /* #B0B0B0 */
+    --muted-foreground: 0 0% 36%; /* #5C5C5C */
     --accent: 154 30% 52%; /* #5FAF8E */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
+    --border: 45 14% 88%; /* #E0DED5 */
+    --input: 45 14% 88%;
     --ring: 154 30% 35%;
     --radius: 0.75rem; /* 12px */
   }
@@ -55,9 +55,28 @@
   body {
     @apply bg-background text-foreground;
   }
-  .gradient-bg {
+  
+  .dark body {
     background: linear-gradient(135deg, #1A1C1A, #202320, #232623);
     background-size: 400% 400%;
     animation: gradientShift 20s ease infinite;
   }
+
+  body {
+    background: linear-gradient(135deg, #F3F1EB, #E8E5DC, #F5F2E8);
+    background-size: 400% 400%;
+    animation: gradientLight 25s ease infinite;
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradientLight {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

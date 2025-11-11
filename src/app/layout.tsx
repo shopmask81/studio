@@ -24,7 +24,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={cn("font-body antialiased gradient-bg")}>
+      <body className={cn("font-body antialiased")}>
         <FirebaseClientProvider>
           <Providers>
             <div className="flex flex-col min-h-screen">
