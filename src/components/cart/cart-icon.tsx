@@ -9,8 +9,8 @@ export function CartIcon() {
   const { itemCount } = useCart();
 
   return (
-    <Link href="/cart" legacyBehavior passHref>
-      <Button variant="ghost" size="icon" className="relative" aria-label="Open cart">
+    <Button asChild variant="ghost" size="icon" className="relative" aria-label="Open cart">
+      <Link href="/cart">
         <ShoppingCart className="h-5 w-5" />
         {itemCount > 0 && (
           <span
@@ -19,7 +19,8 @@ export function CartIcon() {
             {itemCount}
           </span>
         )}
-      </Button>
-    </Link>
+        <span className="sr-only">Cart</span>
+      </Link>
+    </Button>
   );
 }
