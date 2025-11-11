@@ -148,7 +148,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 <CarouselContent>
                     {imageGallery.map((img, index) => (
                         <CarouselItem key={index}>
-                             <div className="relative h-[450px] md:h-[600px] w-full overflow-hidden rounded-lg shadow-lg flex justify-center items-center">
+                             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-lg flex justify-center items-center">
                                 <Image
                                     src={img}
                                     alt={`${product.name} image ${index + 1}`}
@@ -170,7 +170,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             {imageGallery.length > 1 && (
                 <div className="w-full flex justify-center">
-                    <div className="flex gap-2 overflow-x-auto pb-2 -mt-2 justify-center max-w-full">
+                    <div className="flex gap-2 overflow-x-auto pb-2 justify-center max-w-full">
                         {imageGallery.map((img, index) => (
                             <button
                                 key={index}
