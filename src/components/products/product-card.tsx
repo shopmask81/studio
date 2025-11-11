@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc, deleteDoc, collection } from 'firebase/firestore';
+import { useCart } from '@/components/cart/cart-provider';
 
 
 interface ProductCardProps {
@@ -21,6 +22,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
+  const { addToCart } = useCart();
   const firestore = useFirestore();
   const router = useRouter();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -37,6 +39,12 @@ export function ProductCard({ product }: ProductCardProps) {
       setIsWishlisted(wishlistItems.some(item => item.id === product.id));
     }
   }, [wishlistItems, product.id]);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product);
+  };
 
   const handleWishlistClick = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation when clicking the heart
@@ -93,7 +101,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     data-ai-hint={product.imageHint}
                 />
-                <Button variant="ghost" size="icon" onClick={handleWishlistClick} aria-label="Add to wishlist" className="absolute top-2 right-2 bg-background/50 hover:bg-background/80 rounded-full">
+                <Button variant="ghost" size="icon" onClick={handleWishlistClick} aria-label="Add to wishlist" className="absolute top-2 right-2 bg-background/50 hover:bg-background/80 rounded-full z-10">
                     <Heart className={cn("h-5 w-5 text-primary", isWishlisted && "fill-destructive text-destructive")} />
                 </Button>
                 </div>
@@ -114,8 +122,9 @@ export function ProductCard({ product }: ProductCardProps) {
                         <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    View Product
+                 <Button variant="outline" onClick={handleAddToCart} className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Add to Cart
                 </Button>
             </CardFooter>
         </Card>
