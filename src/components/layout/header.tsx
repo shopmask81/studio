@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mask } from 'lucide-react';
+import { Theater } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
@@ -12,7 +12,7 @@ export function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Mask className="h-6 w-6 text-primary" />
+            <Theater className="h-6 w-6 text-primary" />
             <span className="font-bold sm:inline-block font-headline">
               MaskShopv2
             </span>
