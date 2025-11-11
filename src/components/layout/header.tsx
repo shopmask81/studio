@@ -22,15 +22,15 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <ThemeToggle />
-          <UserNav />
           {user && (
-             <Link href="/wishlist" className="group transition-all duration-300 ease-in-out">
+             <Link href="/wishlist" className="group transition-all duration-300 ease-in-out p-2">
                 <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
                 <span className="sr-only">Wishlist</span>
             </Link>
           )}
           <CartIcon />
+          <UserNav />
+          <ThemeToggle />
         </div>
       </div>
     </header>
