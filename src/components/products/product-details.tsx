@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { Product, WishlistItem } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -170,7 +170,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             {imageGallery.length > 1 && (
                 <div className="w-full flex justify-center">
-                    <div className="overflow-hidden w-full max-w-md">
+                    <div className="w-full max-w-md mx-auto">
                         <div className="flex gap-2 overflow-x-auto pb-2 justify-start md:justify-center">
                             {imageGallery.map((img, index) => (
                                 <button
@@ -199,7 +199,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         {/* Product Info */}
         <div>
             <p className="text-primary font-semibold mb-2">{product.category}</p>
-            <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">{product.name}</h1>
+            <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words">{product.name}</h1>
 
             <div className="flex items-baseline gap-3 mb-6">
                 {hasDiscount ? (
@@ -212,7 +212,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-8 break-words">{product.description}</p>
+            <p className="text-muted-foreground leading-relaxed mb-8 break-words text-justify">{product.description}</p>
             
             {product.stock <= 10 && product.stock > 0 && (
                 <p className={cn(
