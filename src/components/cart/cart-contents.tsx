@@ -7,8 +7,9 @@ import { useCart } from './cart-provider';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-export function CartContents() {
+function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
     const router = useRouter();
 
@@ -107,4 +108,20 @@ export function CartContents() {
             </div>
         </div>
     );
+}
+
+
+export function CartContents() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        // You can return a loading skeleton here
+        return null;
+    }
+
+    return <CartDisplay />;
 }
