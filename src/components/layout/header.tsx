@@ -11,11 +11,13 @@ import { LanguageSwitcher } from '../language/language-switcher';
 import { ClientOnly } from './client-only';
 
 export function Header() {
+  // This hook will only run on the client, so we must use ClientOnly
   const { wishlistItemCount } = useWishlist();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
+        {/* Left side - Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <Theater className="h-6 w-6 text-primary" />
           <span className="font-bold sm:inline-block font-headline">
@@ -23,12 +25,13 @@ export function Header() {
           </span>
         </Link>
         
+        {/* Right side - Icons. This entire block is client-side only. */}
         <ClientOnly>
           <div className="flex items-center gap-1">
             <UserNav />
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
+            <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2" aria-label="Wishlist">
                 <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
                 {wishlistItemCount > 0 && (
                     <span
