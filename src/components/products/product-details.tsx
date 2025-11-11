@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Heart, ShoppingCart, Loader2, AlertCircle, ChevronRight, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 interface ProductDetailsProps {
   productId: string;
@@ -32,7 +33,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
 
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const wishlistCollectionRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -46,12 +46,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       setIsWishlisted(wishlistItems.some(item => item.id === productId));
     }
   }, [wishlistItems, productId]);
-
-  useEffect(() => {
-    if (product) {
-      setSelectedImage(product.mainImage);
-    }
-  }, [product]);
 
   const handleWishlistClick = async () => {
     if (!user || !firestore) {
@@ -134,32 +128,29 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
         {/* Image Gallery */}
         <div className="flex flex-col gap-4">
-            <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
-                <Image
-                    src={selectedImage || product.mainImage}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition-opacity duration-300"
-                    key={selectedImage}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                />
-            </div>
+          <Carousel className="w-full max-w-full">
+            <CarouselContent>
+              {imageGallery.map((img, index) => (
+                <CarouselItem key={index}>
+                  <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
+                    <Image
+                      src={img}
+                      alt={`${product.name} image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
             {imageGallery.length > 1 && (
-                <div className="grid grid-cols-5 gap-2">
-                    {imageGallery.map((img, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setSelectedImage(img)}
-                            className={cn(
-                                "relative aspect-square w-full rounded-md overflow-hidden ring-2 ring-transparent transition-all",
-                                selectedImage === img ? "ring-primary" : "hover:ring-primary/50 opacity-70 hover:opacity-100"
-                            )}
-                        >
-                            <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
-                        </button>
-                    ))}
-                </div>
+              <>
+                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/50 hover:bg-background/80 text-foreground" />
+                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/50 hover:bg-background/80 text-foreground" />
+              </>
             )}
+          </Carousel>
         </div>
         
         {/* Product Info */}
