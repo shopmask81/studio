@@ -5,21 +5,12 @@ import { Heart, Theater } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import { WishlistItem } from '@/lib/types';
+import { useUser } from '@/firebase';
+import { useWishlist } from '../wishlist/wishlist-provider';
 
 export function Header() {
   const { user } = useUser();
-  const firestore = useFirestore();
-
-  const wishlistQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/wishlists`);
-  }, [firestore, user]);
-
-  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistQuery);
-  const wishlistItemCount = wishlistItems?.length ?? 0;
+  const { wishlistItemCount } = useWishlist();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,22 +24,20 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <UserNav />
-          <ThemeToggle />
-          {user && (
-             <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
-                <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-                {wishlistItemCount > 0 && (
-                    <span
-                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
-                        aria-label={`${wishlistItemCount} items in wishlist`}
-                    >
-                        {wishlistItemCount}
-                    </span>
-                )}
-                <span className="sr-only">Wishlist</span>
-            </Link>
-          )}
+           <UserNav />
+           <ThemeToggle />
+           <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2">
+              <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
+              {wishlistItemCount > 0 && (
+                  <span
+                      className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                      aria-label={`${wishlistItemCount} items in wishlist`}
+                  >
+                      {wishlistItemCount}
+                  </span>
+              )}
+              <span className="sr-only">Wishlist</span>
+          </Link>
           <CartIcon />
         </div>
       </div>

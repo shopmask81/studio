@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useDoc, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import type { Product, WishlistItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
@@ -20,7 +20,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel"
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useWishlist } from '../wishlist/wishlist-provider';
 
 interface ProductDetailsProps {
   productId: string;
@@ -36,32 +36,20 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [currentSlide, setCurrentSlide] = useState(0)
 
-  const productRef = useMemoFirebase(() => {
+  const productRef = useMemo(() => {
     if (!firestore || !productId) return null;
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
+  const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
 
-  const [isWishlisted, setIsWishlisted] = useState(false);
-
-  const wishlistCollectionRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, `users/${user.uid}/wishlists`);
-  }, [user, firestore]);
-
-  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistCollectionRef);
+  const productIsWishlisted = product ? isWishlisted(product.id) : false;
   
   const imageGallery = useMemo(() => {
       if (!product) return [];
       return [product.mainImage, ...(product.images || [])];
   }, [product]);
-
-  useEffect(() => {
-    if (wishlistItems) {
-      setIsWishlisted(wishlistItems.some(item => item.productId === productId));
-    }
-  }, [wishlistItems, productId]);
 
   useEffect(() => {
     if (!carouselApi) {
@@ -81,38 +69,34 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   }
 
   const handleWishlistClick = () => {
-    if (!user || !firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Please log in',
-        description: 'You need to be logged in to add items to your wishlist.',
-        action: <Button onClick={() => router.push('/login')}>Login</Button>
-      });
-      return;
+    if (!product) return;
+
+    if (!user) {
+        toast({
+            variant: "default",
+            title: "Want to save this for later?",
+            description: "Log in or create an account to save your wishlist across devices.",
+            action: <Button onClick={() => router.push('/login')}>Login</Button>
+        });
     }
 
-    if (!product) return;
-    const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, product.id);
-
-    if (isWishlisted) {
-        deleteDocumentNonBlocking(wishlistItemRef);
-        toast({
-          title: 'Removed from Wishlist',
-          description: `${product.name} has been removed from your wishlist.`,
-        });
+    if (productIsWishlisted) {
+      removeFromWishlist(product.id);
+      toast({
+        title: 'Removed from Wishlist',
+        description: `${product.name} has been removed from your wishlist.`,
+      });
     } else {
-        const wishlistItem: WishlistItem = {
-            productId: product.id,
-            productName: product.name,
-            productImage: product.mainImage,
-            price: product.discountPrice ?? product.price,
-            addedAt: serverTimestamp() as any
-        };
-        setDocumentNonBlocking(wishlistItemRef, wishlistItem, {});
-        toast({
-          title: 'Added to Wishlist',
-          description: `${product.name} has been added to your wishlist.`,
-        });
+      addToWishlist({
+        productId: product.id,
+        productName: product.name,
+        productImage: product.mainImage,
+        price: product.discountPrice ?? product.price,
+      });
+      toast({
+        title: 'Added to Wishlist',
+        description: `${product.name} has been added to your wishlist.`,
+      });
     }
   };
 
@@ -244,8 +228,8 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
                 <Button size="lg" variant="outline" onClick={handleWishlistClick} className="flex-shrink-0">
-                    <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-destructive text-destructive")} />
-                    {isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    <Heart className={cn("mr-2 h-5 w-5", productIsWishlisted && "fill-destructive text-destructive")} />
+                    {productIsWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 </Button>
             </div>
         </div>

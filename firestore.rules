@@ -140,7 +140,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows a user to manage their own user data.
+     * @description Allows a user to manage their own user data and subcollections.
      * @path /users/{userId}
      * @allow (create) - User creates their own profile with matching userId.
      * @allow (update, delete) - User updates or deletes their own profile.
@@ -160,15 +160,20 @@ service cloud.firestore {
       match /wishlists/{productId} {
         allow read, write: if isOwner(userId);
       }
+      
+      /**
+       * @description Allows a user to manage their own cart subcollection.
+       * @path /users/{userId}/cart/{productId}
+       */
+      match /cart/{productId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     /**
-     * @description Allows a user to manage their own wishlist.
+     * @description Allows a user to manage their own wishlist. This rule is for a top-level wishlists collection.
+     * The primary wishlist logic uses a subcollection under /users.
      * @path /wishlists/{wishlistId}
-     * @allow (create) - User creates a wishlist with matching userId.
-     * @allow (update, delete) - User updates or deletes their existing wishlist.
-     * @deny (create) - User attempts to create a wishlist with a mismatched userId.
-     * @principle Enforces document ownership for writes based on the userId field.
      */
     match /wishlists/{wishlistId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
@@ -206,4 +211,3 @@ service cloud.firestore {
     }
   }
 }
-    

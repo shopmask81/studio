@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User, Heart, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { LogOut, User, Heart, Link as LinkIcon } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { useUser, useAuth } from '@/firebase';
@@ -34,6 +34,7 @@ export function UserNav() {
         description: "You have been successfully signed out.",
       });
       router.push('/');
+      // The useAuthSync hook will handle saving the cart/wishlist to localStorage
     } catch (error) {
       toast({
         variant: "destructive",

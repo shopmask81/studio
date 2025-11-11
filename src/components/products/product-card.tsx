@@ -7,13 +7,11 @@ import type { Product, WishlistItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { useRouter } from 'next/navigation';
-import { doc, serverTimestamp, collection } from 'firebase/firestore';
 import { useCart } from '@/components/cart/cart-provider';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useWishlist } from '../wishlist/wishlist-provider';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 interface ProductCardProps {
   product: Product;
@@ -23,22 +21,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const { addToCart } = useCart();
-  const firestore = useFirestore();
+  const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
   const router = useRouter();
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
-  const wishlistCollectionRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, `users/${user.uid}/wishlists`);
-  }, [user, firestore]);
-
-  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistCollectionRef);
-
-  useEffect(() => {
-    if (wishlistItems) {
-      setIsWishlisted(wishlistItems.some(item => item.productId === product.id));
-    }
-  }, [wishlistItems, product.id]);
+  const productIsWishlisted = isWishlisted(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,37 +36,34 @@ export function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user || !firestore) {
+    if (!user) {
+        // For guest users, wishlist is handled by the provider via localStorage
+        // but we can still prompt them to log in for a better experience.
         toast({
-            variant: "destructive",
-            title: "Please log in",
-            description: "You need to be logged in to add items to your wishlist.",
+            variant: "default",
+            title: "Want to save this for later?",
+            description: "Log in or create an account to save your wishlist across devices.",
             action: <Button onClick={() => router.push('/login')}>Login</Button>
         });
-        return;
     }
     
-    const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, product.id);
-
-    if (isWishlisted) {
-        deleteDocumentNonBlocking(wishlistItemRef);
-        toast({
-          title: 'Removed from Wishlist',
-          description: `${product.name} has been removed from your wishlist.`,
-        });
+    if (productIsWishlisted) {
+      removeFromWishlist(product.id);
+      toast({
+        title: 'Removed from Wishlist',
+        description: `${product.name} has been removed from your wishlist.`,
+      });
     } else {
-        const wishlistItem: WishlistItem = {
-            productId: product.id,
-            productName: product.name,
-            productImage: product.mainImage,
-            price: product.discountPrice ?? product.price,
-            addedAt: serverTimestamp() as any
-        };
-        setDocumentNonBlocking(wishlistItemRef, wishlistItem, {});
-        toast({
-          title: 'Added to Wishlist',
-          description: `${product.name} has been added to your wishlist.`,
-        });
+      addToWishlist({
+        productId: product.id,
+        productName: product.name,
+        productImage: product.mainImage,
+        price: product.discountPrice ?? product.price,
+      });
+      toast({
+        title: 'Added to Wishlist',
+        description: `${product.name} has been added to your wishlist.`,
+      });
     }
   };
 
@@ -100,7 +83,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     data-ai-hint={product.imageHint}
                 />
                 <Button variant="ghost" size="icon" onClick={handleWishlistClick} aria-label="Add to wishlist" className="absolute top-2 right-2 bg-background/50 hover:bg-background/80 rounded-full z-10">
-                    <Heart className={cn("h-5 w-5 text-primary", isWishlisted && "fill-destructive text-destructive")} />
+                    <Heart className={cn("h-5 w-5 text-primary", productIsWishlisted && "fill-destructive text-destructive")} />
                 </Button>
                 </div>
             </CardHeader>
