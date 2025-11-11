@@ -23,12 +23,6 @@ const ThemeInitializer = () => (
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           const mode = theme === 'light' || theme === 'dark' ? theme : (prefersDark ? 'dark' : 'light');
           document.documentElement.classList.add(mode);
-
-          const langStorageKey = 'maskshop-language';
-          const lang = localStorage.getItem(langStorageKey);
-          if (lang === 'ar') {
-            document.documentElement.dir = 'rtl';
-          }
         })();
       `,
     }}

@@ -29,7 +29,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.lang = language;
-    root.dir = language === 'ar' ? 'rtl' : 'ltr';
     localStorage.setItem(STORAGE_KEY, language);
   }, [language]);
   
