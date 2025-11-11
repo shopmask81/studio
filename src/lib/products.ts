@@ -1,12 +1,7 @@
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase-placeholder';
 import type { Product } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
-// This is a placeholder and will be replaced by the actual db instance
-const firestore = db;
-
-const sampleProducts: Product[] = [
+export const sampleProducts: Product[] = [
   {
     id: PlaceHolderImages[0].id,
     name: 'Venetian Gold',
@@ -56,42 +51,3 @@ const sampleProducts: Product[] = [
     imageHint: PlaceHolderImages[5].imageHint,
   },
 ];
-
-
-export async function getProducts(): Promise<Product[]> {
-  try {
-    const productsCollection = collection(firestore, 'products');
-    const snapshot = await getDocs(productsCollection);
-    
-    if (snapshot.empty) {
-        console.warn("No products found in Firestore. Returning sample data.");
-        // Optional: You could seed the database here if it's empty
-        return sampleProducts;
-    }
-    
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-    return products;
-  } catch (error) {
-    console.error("Error fetching products from Firestore: ", error);
-    // Fallback to sample data if Firestore fetch fails
-    return sampleProducts;
-  }
-}
-
-export async function getProductById(id: string): Promise<Product | undefined> {
-    try {
-        const productDoc = doc(firestore, 'products', id);
-        const snapshot = await getDoc(productDoc);
-
-        if (snapshot.exists()) {
-            return { id: snapshot.id, ...snapshot.data() } as Product;
-        } else {
-            console.warn(`Product with id ${id} not found in Firestore.`);
-            return undefined;
-        }
-    } catch (error) {
-        console.error(`Error fetching product with id ${id} from Firestore: `, error);
-        // Fallback to sample data
-        return sampleProducts.find(p => p.id === id);
-    }
-}

@@ -2,47 +2,44 @@
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, doc, query, where } from "firebase/firestore";
 import { Heart, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { ProductCard } from "@/components/products/product-card";
 import { Product } from "@/lib/types";
 
-// This component fetches product details for the wishlist
-function WishlistProducts({ productIds }: { productIds: string[] }) {
+function WishlistedProduct({ productId }: { productId: string }) {
     const firestore = useFirestore();
-    const productsQuery = useMemoFirebase(() => {
-        if (!firestore || productIds.length === 0) return null;
-        const productRefs = productIds.map(id => collection(firestore, 'products'));
-        // Firestore doesn't have a great way to query a list of documents by ID from different collections or a top-level query.
-        // A real-world scenario would likely involve a more complex data model or multiple individual `useDoc` calls.
-        // For this prototype, we'll fetch all products and filter client-side, which is NOT efficient for production.
-        return collection(firestore, 'products');
-    }, [firestore, productIds]);
+    const productRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'products', productId);
+    }, [firestore, productId]);
 
-    const { data: products, isLoading } = useCollection<Product>(productsQuery);
-
-    const wishlistedProducts = products?.filter(p => productIds.includes(p.id));
+    const { data: product, isLoading } = useDoc<Product>(productRef);
 
     if (isLoading) {
-        return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
-                <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
-                <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
-            </div>
-        )
+        return <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>;
     }
 
-    if (!wishlistedProducts || wishlistedProducts.length === 0) {
+    if (!product) {
         return null;
     }
 
+    return <ProductCard product={product} />;
+}
+
+
+// This component fetches product details for the wishlist
+function WishlistProducts({ productIds }: { productIds: string[] }) {
+    if (productIds.length === 0) {
+        return null;
+    }
+    
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {wishlistedProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+            {productIds.map(productId => (
+                <WishlistedProduct key={productId} productId={productId} />
             ))}
         </div>
     )
@@ -55,6 +52,7 @@ export default function WishlistPage() {
 
     const wishlistQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
+        // The wishlist documents are stored with the product ID as the document ID
         return collection(firestore, `users/${user.uid}/wishlists`);
     }, [firestore, user]);
 
