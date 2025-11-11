@@ -78,6 +78,13 @@ export default {
         md: 'calc(var(--radius) - 4px)',
         sm: 'calc(var(--radius) - 8px)',
       },
+      boxShadow: {
+        ambient: '0 4px 12px rgba(0, 0, 0, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.05)',
+        glow: '0 6px 18px rgba(45, 212, 191, 0.25)',
+      },
+      textShadow: {
+        glow: '0 0 4px rgba(45, 212, 191, 0.4)',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -108,5 +115,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require('tailwindcss-animate'), require('tailwindcss-textshadow')],
 } satisfies Config;
