@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User, Heart, Link as LinkIcon, MapPin } from 'lucide-react';
+import { LogOut, User, Heart, Link as LinkIcon, MapPin, Loader2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,12 +18,23 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   const handleSignOut = async () => {
     try {
@@ -34,7 +44,7 @@ export function UserNav() {
         description: "You have been successfully signed out.",
       });
       router.push('/');
-      // The useAuthSync hook will handle saving the cart/wishlist to localStorage
+      // The AuthSync hook will handle saving the cart/wishlist to localStorage
     } catch (error) {
       toast({
         variant: "destructive",
@@ -44,7 +54,9 @@ export function UserNav() {
     }
   };
 
-  if (isUserLoading) {
+  const isLoading = isUserLoading || (user && isProfileLoading);
+
+  if (isLoading) {
     return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
@@ -64,6 +76,8 @@ export function UserNav() {
         </Button>
     );
   }
+
+  const isAffiliate = userProfile?.role === 'affiliate';
 
   return (
     <DropdownMenu>
@@ -106,12 +120,14 @@ export function UserNav() {
                 <span>Wishlist</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/affiliate">
-                <LinkIcon className="mr-2 h-4 w-4" />
-                <span>Affiliate</span>
-              </Link>
-            </DropdownMenuItem>
+            {isAffiliate && (
+              <DropdownMenuItem asChild>
+                <Link href="/affiliate">
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  <span>Affiliate</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>

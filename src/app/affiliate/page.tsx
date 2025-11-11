@@ -1,9 +1,9 @@
-import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AffiliateRoute } from "@/components/auth/affiliate-route";
 import { AffiliateTool } from "@/components/affiliate/affiliate-tool";
 
 export default function AffiliatePage() {
     return (
-        <ProtectedRoute>
+        <AffiliateRoute>
             <div className="container mx-auto px-4 py-12">
                 <div className="max-w-2xl mx-auto">
                     <div className="text-center mb-8">
@@ -13,6 +13,6 @@ export default function AffiliatePage() {
                     <AffiliateTool />
                 </div>
             </div>
-        </ProtectedRoute>
+        </AffiliateRoute>
     );
 }

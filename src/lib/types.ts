@@ -43,3 +43,12 @@ export type Address = {
   isDefault: boolean;
   createdAt?: Timestamp;
 };
+
+export type UserProfile = {
+    uid: string;
+    name: string;
+    email: string;
+    role: 'customer' | 'affiliate' | 'admin';
+    createdAt: Timestamp;
+    emailVerified: boolean;
+};
