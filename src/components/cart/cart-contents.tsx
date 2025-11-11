@@ -52,16 +52,20 @@ function CartDisplay() {
                                     </div>
                                     <div className="flex-grow">
                                         <h3 className="font-semibold">{item.product.name}</h3>
-                                        <div className="flex items-baseline gap-2 text-sm">
+                                        <div className="text-sm">
                                             {hasDiscount ? (
-                                                <>
+                                                <div className="flex items-baseline gap-2">
                                                     <p className="text-primary font-semibold">${price.toFixed(2)}</p>
                                                     <p className="text-muted-foreground line-through">${item.product.price.toFixed(2)}</p>
-                                                </>
+                                                </div>
                                             ) : (
                                                 <p className="text-primary">${price.toFixed(2)}</p>
                                             )}
                                         </div>
+                                        <Button variant="ghost" size="sm" className="text-muted-foreground px-0 h-auto hover:bg-transparent hover:text-destructive" onClick={() => removeFromCart(item.product.id)}>
+                                            <X className="h-4 w-4 mr-1" />
+                                            Remove
+                                        </Button>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
@@ -73,9 +77,6 @@ function CartDisplay() {
                                         </Button>
                                     </div>
                                     <p className="font-semibold w-20 text-right text-base">${(price * item.quantity).toFixed(2)}</p>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => removeFromCart(item.product.id)}>
-                                        <X className="h-5 w-5" />
-                                    </Button>
                                 </div>
                             )
                         })}
