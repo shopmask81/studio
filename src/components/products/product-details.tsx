@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -144,34 +145,36 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
         {/* Image Gallery */}
         <div className="flex flex-col gap-4">
-             <Carousel setApi={setCarouselApi} className="w-full">
-                <CarouselContent>
-                    {imageGallery.map((img, index) => (
-                        <CarouselItem key={index}>
-                             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-lg flex justify-center items-center">
-                                <Image
-                                    src={img}
-                                    alt={`${product.name} image ${index + 1}`}
-                                    fill
-                                    className="object-contain"
-                                    sizes="(max-width: 768px) 100vw, 50vw"
-                                />
-                            </div>
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-                {imageGallery.length > 1 && (
-                    <>
-                        <CarouselPrevious className="left-2" />
-                        <CarouselNext className="right-2" />
-                    </>
-                )}
-            </Carousel>
+             <div className="flex justify-center">
+                <Carousel setApi={setCarouselApi} className="w-full max-w-[90vw] sm:max-w-md">
+                    <CarouselContent>
+                        {imageGallery.map((img, index) => (
+                            <CarouselItem key={index}>
+                                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg shadow-lg flex justify-center items-center">
+                                    <Image
+                                        src={img}
+                                        alt={`${product.name} image ${index + 1}`}
+                                        fill
+                                        className="object-contain"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                    />
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    {imageGallery.length > 1 && (
+                        <>
+                            <CarouselPrevious className="left-2" />
+                            <CarouselNext className="right-2" />
+                        </>
+                    )}
+                </Carousel>
+            </div>
 
             {imageGallery.length > 1 && (
-                <div className="w-full flex justify-center">
+                 <div className="w-full flex justify-center">
                     <div className="w-full max-w-md mx-auto">
-                        <div className="flex gap-2 overflow-x-auto pb-2 justify-start md:justify-center">
+                        <div className="flex justify-center gap-2 overflow-x-auto pb-2">
                             {imageGallery.map((img, index) => (
                                 <button
                                     key={index}
