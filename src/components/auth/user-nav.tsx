@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { LogOut, User, Heart, Link as LinkIcon } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
-import { useAuth } from '@/components/auth/auth-provider';
-import { auth } from '@/lib/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export function UserNav() {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 

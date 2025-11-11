@@ -1,15 +1,14 @@
 'use client';
 
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/components/auth/auth-provider';
 import { CartProvider } from '@/components/cart/cart-provider';
-import { useAuth } from './auth/auth-provider';
+import { useUser } from '@/firebase';
 import { Skeleton } from './ui/skeleton';
 
 function AppBootstrapper({ children }: { children: React.ReactNode }) {
-    const { loading } = useAuth();
+    const { isUserLoading } = useUser();
 
-    if (loading) {
+    if (isUserLoading) {
         return (
             <div className="flex flex-col min-h-screen">
                 <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,11 +37,9 @@ function AppBootstrapper({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="maskshop-theme">
-        <AuthProvider>
-            <CartProvider>
-                <AppBootstrapper>{children}</AppBootstrapper>
-            </CartProvider>
-        </AuthProvider>
+        <CartProvider>
+            <AppBootstrapper>{children}</AppBootstrapper>
+        </CartProvider>
     </ThemeProvider>
   );
 }

@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCart } from '@/components/cart/cart-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { doc, setDoc, deleteDoc, collection } from 'firebase/firestore';
+
 
 interface ProductCardProps {
   product: Product;
@@ -19,12 +21,26 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
-  const [isWishlisted, setIsWishlisted] = useState(false); // Placeholder state
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
-  const handleWishlistClick = () => {
-    if (!user) {
+  const wishlistCollectionRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, `users/${user.uid}/wishlists`);
+  }, [user, firestore]);
+
+  const { data: wishlistItems } = useCollection(wishlistCollectionRef);
+
+  useEffect(() => {
+    if (wishlistItems) {
+      setIsWishlisted(wishlistItems.some(item => item.id === product.id));
+    }
+  }, [wishlistItems, product.id]);
+
+  const handleWishlistClick = async () => {
+    if (!user || !firestore) {
         toast({
             variant: "destructive",
             title: "Please log in",
@@ -33,12 +49,31 @@ export function ProductCard({ product }: ProductCardProps) {
         });
         return;
     }
-    // In a real app, you'd update this in Firestore
-    setIsWishlisted(!isWishlisted);
-    toast({
-      title: isWishlisted ? 'Removed from Wishlist' : 'Added to Wishlist',
-      description: `${product.name} has been ${isWishlisted ? 'removed from' : 'added to'} your wishlist.`,
-    });
+    
+    const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, product.id);
+
+    try {
+        if (isWishlisted) {
+            await deleteDoc(wishlistItemRef);
+            toast({
+              title: 'Removed from Wishlist',
+              description: `${product.name} has been removed from your wishlist.`,
+            });
+        } else {
+            await setDoc(wishlistItemRef, { productId: product.id });
+            toast({
+              title: 'Added to Wishlist',
+              description: `${product.name} has been added to your wishlist.`,
+            });
+        }
+        setIsWishlisted(!isWishlisted);
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Something went wrong",
+            description: error.message || "Could not update your wishlist.",
+        });
+    }
   };
 
   return (

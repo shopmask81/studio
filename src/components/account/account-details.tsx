@@ -1,28 +1,61 @@
 'use client';
 
-import { useAuth } from "@/components/auth/auth-provider";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateProfile } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 
 export function AccountDetails() {
-    const { user } = useAuth();
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
     const { toast } = useToast();
-    const [displayName, setDisplayName] = useState(user?.displayName || '');
+
+    const userDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
+
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [displayName, setDisplayName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (userProfile) {
+            setFirstName(userProfile.firstName || '');
+            setLastName(userProfile.lastName || '');
+            setDisplayName(`${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim());
+        } else if (user) {
+            // Fallback to auth display name if profile doc doesn't exist
+            const nameParts = user.displayName?.split(' ') || [];
+            setFirstName(nameParts[0] || '');
+            setLastName(nameParts.slice(1).join(' ') || '');
+            setDisplayName(user.displayName || '');
+        }
+    }, [userProfile, user]);
+
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        if (!user || !userDocRef) return;
         setIsLoading(true);
         try {
-            await updateProfile(user, { displayName });
+            const newDisplayName = `${firstName} ${lastName}`.trim();
+            // Update auth profile
+            await updateProfile(user, { displayName: newDisplayName });
+
+            // Update firestore document
+            await setDoc(userDocRef, { firstName, lastName }, { merge: true });
+            
+            setDisplayName(newDisplayName);
             toast({
                 title: 'Profile Updated',
                 description: 'Your details have been successfully updated.',
@@ -36,6 +69,42 @@ export function AccountDetails() {
         } finally {
             setIsLoading(false);
         }
+    }
+
+    const loading = isUserLoading || isProfileLoading;
+
+    if (loading) {
+        return (
+             <div className="container mx-auto px-4 py-12">
+                <h1 className="text-4xl font-headline mb-8">Your Account</h1>
+                <Card className="max-w-2xl">
+                    <CardHeader>
+                        <CardTitle>Profile Details</CardTitle>
+                        <CardDescription>Manage your account information.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                             <Label htmlFor="email">Email</Label>
+                             <Input id="email" type="email" value={user?.email || ''} disabled />
+                        </div>
+                        <div className="space-y-2">
+                             <Label htmlFor="firstName">First Name</Label>
+                             <Input id="firstName" disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input id="lastName" disabled />
+                        </div>
+                    </CardContent>
+                     <CardFooter>
+                        <Button disabled>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        )
     }
 
     if (!user) return null;
@@ -54,9 +123,13 @@ export function AccountDetails() {
                             <Label htmlFor="email">Email</Label>
                             <Input id="email" type="email" value={user.email || ''} disabled />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                        </div>
                         <div className="space-y-2">
-                            <Label htmlFor="displayName">Display Name</Label>
-                            <Input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                         </div>
                     </CardContent>
                     <CardFooter>
