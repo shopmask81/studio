@@ -44,9 +44,18 @@ export function UserNav() {
 
   if (!user) {
     return (
-      <Link href="/login">
-        <Button variant="outline">Login</Button>
-      </Link>
+        <Button 
+            asChild 
+            variant="ghost" 
+            size="icon" 
+            className="group transition-all duration-300 ease-in-out"
+            aria-label="Login"
+        >
+            <Link href="/login">
+                <User className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
+                <span className="sr-only">Login</span>
+            </Link>
+        </Button>
     );
   }
 
