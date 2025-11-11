@@ -29,7 +29,7 @@ export function CartContents() {
             <Card className="text-center border-2 border-dashed rounded-lg p-12">
                 <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">Your Cart is Empty</h2>
-                <p className="text-muted-foreground mb-6">Add some masks to your cart to see them here.</p>
+                <p className="text-muted-foreground mb-6">Add some handmade crafts to your cart to see them here.</p>
                 <Button asChild>
                     <Link href="/">Continue Shopping</Link>
                 </Button>
@@ -50,7 +50,8 @@ export function CartContents() {
                     </CardHeader>
                     <CardContent className="divide-y">
                         {cartItems.map(item => {
-                            const price = item.product.discountPrice ?? item.product.price;
+                            const hasDiscount = item.product.discountPrice && item.product.discountPrice < item.product.price;
+                            const price = hasDiscount ? item.product.discountPrice! : item.product.price;
                             return (
                                 <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
                                     <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
@@ -58,7 +59,16 @@ export function CartContents() {
                                     </div>
                                     <div className="flex-grow">
                                         <h3 className="font-semibold">{item.product.name}</h3>
-                                        <p className="text-sm text-muted-foreground">${price.toFixed(2)}</p>
+                                        <div className="flex items-baseline gap-2 text-sm">
+                                            {hasDiscount ? (
+                                                <>
+                                                    <p className="text-primary font-semibold">${price.toFixed(2)}</p>
+                                                    <p className="text-muted-foreground line-through">${item.product.price.toFixed(2)}</p>
+                                                </>
+                                            ) : (
+                                                <p className="text-primary">${price.toFixed(2)}</p>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
@@ -69,7 +79,7 @@ export function CartContents() {
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>
-                                    <p className="font-semibold w-20 text-right">${(price * item.quantity).toFixed(2)}</p>
+                                    <p className="font-semibold w-20 text-right text-base">${(price * item.quantity).toFixed(2)}</p>
                                     <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => removeFromCart(item.product.id)}>
                                         <X className="h-5 w-5" />
                                     </Button>

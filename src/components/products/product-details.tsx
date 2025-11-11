@@ -215,7 +215,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <div className="flex items-baseline gap-3 mb-6">
                 {hasDiscount ? (
                     <>
-                        <p className="text-4xl font-bold text-destructive">${product.discountPrice?.toFixed(2)}</p>
+                        <p className="text-4xl font-bold text-primary">${product.discountPrice?.toFixed(2)}</p>
                         <p className="text-2xl font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
                     </>
                 ) : (
