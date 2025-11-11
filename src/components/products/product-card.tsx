@@ -115,14 +115,14 @@ export function ProductCard({ product }: ProductCardProps) {
                 <div className="flex items-baseline gap-2">
                     {hasDiscount ? (
                         <>
-                            <p className="text-xl font-bold text-primary dark:text-shadow-glow">${product.discountPrice?.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-accent dark:text-shadow-glow">${product.discountPrice?.toFixed(2)}</p>
                             <p className="text-sm font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
                         </>
                     ) : (
-                        <p className="text-xl font-bold text-primary dark:text-shadow-glow">${product.price.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-accent dark:text-shadow-glow">${product.price.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button onClick={handleAddToCart} variant="default" className="dark:text-background font-semibold">
+                 <Button onClick={handleAddToCart} variant="secondary" className="dark:bg-accent dark:text-background font-semibold hover:dark:bg-[#25bfae] hover:dark:shadow-accent-glow">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Add to Cart
                 </Button>
