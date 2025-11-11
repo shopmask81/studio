@@ -208,7 +208,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-8">{product.description}</p>
+            <p className="text-muted-foreground leading-relaxed mb-8 break-words">{product.description}</p>
             
             {product.stock <= 10 && product.stock > 0 && (
                 <p className={cn(
