@@ -23,8 +23,8 @@ export function Header() {
             </span>
           </Link>
         </div>
-        <div className="ml-auto flex items-center gap-1">
-          <ClientOnly>
+        <ClientOnly>
+          <div className="ml-auto flex items-center gap-1">
             <UserNav />
             <ThemeToggle />
             <LanguageSwitcher />
@@ -41,8 +41,8 @@ export function Header() {
                 <span className="sr-only">Wishlist</span>
             </Link>
             <CartIcon />
-          </ClientOnly>
-        </div>
+          </div>
+        </ClientOnly>
       </div>
     </header>
   );
