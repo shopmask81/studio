@@ -19,9 +19,9 @@ export function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <CartIcon />
           <ThemeToggle />
           <UserNav />
+          <CartIcon />
         </div>
       </div>
     </header>
