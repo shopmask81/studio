@@ -23,7 +23,7 @@ export function Header() {
             </span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end gap-1">
+        <div className="ml-auto flex items-center gap-1">
           <ClientOnly>
             <UserNav />
             <ThemeToggle />
