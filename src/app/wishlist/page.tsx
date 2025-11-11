@@ -47,6 +47,8 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
             description: `${item.productName} has been removed.`,
         });
     }
+    
+    const price = item.price || 0;
 
     return (
         <Card className="overflow-hidden group">
@@ -63,7 +65,7 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
             </Link>
             <CardContent className="p-4">
                 <h3 className="font-headline text-xl mb-2 group-hover:text-primary transition-colors">{item.productName}</h3>
-                <p className="font-bold text-accent">${item.price.toFixed(2)}</p>
+                <p className="font-bold text-accent">${price.toFixed(2)}</p>
             </CardContent>
             <CardFooter className="p-4 flex gap-2">
                 <Button onClick={handleAddToCart} className="w-full" disabled={!product}>

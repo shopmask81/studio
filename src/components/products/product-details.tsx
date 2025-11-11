@@ -20,6 +20,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel"
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface ProductDetailsProps {
   productId: string;
@@ -79,7 +80,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     setCurrentSlide(index);
   }
 
-  const handleWishlistClick = async () => {
+  const handleWishlistClick = () => {
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
@@ -93,34 +94,25 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     if (!product) return;
     const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, product.id);
 
-    try {
-      if (isWishlisted) {
-        await deleteDoc(wishlistItemRef);
+    if (isWishlisted) {
+        deleteDocumentNonBlocking(wishlistItemRef);
         toast({
           title: 'Removed from Wishlist',
           description: `${product.name} has been removed from your wishlist.`,
         });
-      } else {
+    } else {
         const wishlistItem: WishlistItem = {
             productId: product.id,
             productName: product.name,
             productImage: product.mainImage,
             price: product.discountPrice ?? product.price,
-            addedAt: serverTimestamp()
+            addedAt: serverTimestamp() as any
         };
-        await setDoc(wishlistItemRef, wishlistItem);
+        setDocumentNonBlocking(wishlistItemRef, wishlistItem, {});
         toast({
           title: 'Added to Wishlist',
           description: `${product.name} has been added to your wishlist.`,
         });
-      }
-      setIsWishlisted(!isWishlisted);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Something went wrong',
-        description: error.message || 'Could not update your wishlist.',
-      });
     }
   };
 

@@ -74,7 +74,7 @@ export function ProductCard({ product }: ProductCardProps) {
             productName: product.name,
             productImage: product.mainImage,
             price: product.discountPrice ?? product.price,
-            addedAt: serverTimestamp()
+            addedAt: serverTimestamp() as any
         };
         setDocumentNonBlocking(wishlistItemRef, wishlistItem, {});
         toast({
