@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/firebase';
+import { useTranslation } from '../language/language-provider';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { t } = useTranslation();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,26 +31,26 @@ export function LoginForm() {
       if (!userCredential.user.emailVerified) {
         toast({
           variant: 'destructive',
-          title: 'Email Not Verified',
-          description: 'Please check your inbox and verify your email address before logging in.',
+          title: t('email_not_verified_title'),
+          description: t('email_not_verified_desc'),
         });
         setIsLoading(false);
         return;
       }
 
       toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
+        title: t('login_successful_title'),
+        description: t('login_successful_desc'),
       });
       router.push('/account');
     } catch (error: any) {
-      let errorMessage = 'An error occurred during login.';
+      let errorMessage = t('login_error_default');
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        errorMessage = 'Invalid email or password.';
+        errorMessage = t('login_error_invalid_credentials');
       }
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: t('login_failed_title'),
         description: errorMessage,
       });
     } finally {
@@ -59,29 +61,29 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Login</CardTitle>
-        <CardDescription>Enter your email below to login to your account.</CardDescription>
+        <CardTitle className="text-2xl font-headline">{t('login')}</CardTitle>
+        <CardDescription>{t('login_desc')}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSignIn}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('email_address')}</Label>
             <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('password')}</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+            {t('sign_in')}
           </Button>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
+            {t('dont_have_account')}{' '}
             <Link href="/signup" className="underline text-primary hover:text-accent">
-              Sign up
+              {t('sign_up')}
             </Link>
           </div>
         </CardFooter>

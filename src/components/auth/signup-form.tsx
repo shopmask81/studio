@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
+import { useTranslation } from '../language/language-provider';
 
 export function SignupForm() {
   const [email, setEmail] = useState('');
@@ -22,6 +23,7 @@ export function SignupForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+  const { t } = useTranslation();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,18 +51,18 @@ export function SignupForm() {
       });
 
       toast({
-        title: 'Verification Email Sent',
-        description: 'Your account has been created. Please check your email to verify your address before logging in.',
+        title: t('signup_verification_sent_title'),
+        description: t('signup_verification_sent_desc'),
       });
       router.push('/login');
     } catch (error: any) {
-      let description = 'An error occurred during sign up.';
+      let description = t('signup_error_default');
       if (error.code === 'auth/email-already-in-use') {
-        description = 'This email is already associated with an account.';
+        description = t('signup_error_email_in_use');
       }
       toast({
         variant: 'destructive',
-        title: 'Sign Up Failed',
+        title: t('signup_failed_title'),
         description: description,
       });
     } finally {
@@ -71,33 +73,33 @@ export function SignupForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
-        <CardDescription>Create an account to get started.</CardDescription>
+        <CardTitle className="text-2xl font-headline">{t('sign_up')}</CardTitle>
+        <CardDescription>{t('signup_desc')}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSignUp}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="full-name">Full Name</Label>
+            <Label htmlFor="full-name">{t('full_name')}</Label>
             <Input id="full-name" placeholder="John Doe" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('email_address')}</Label>
             <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('password')}</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Account
+            {t('create_account')}
           </Button>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
+            {t('already_have_account')}{' '}
             <Link href="/login" className="underline text-primary hover:text-accent">
-              Login
+              {t('login')}
             </Link>
           </div>
         </CardFooter>
