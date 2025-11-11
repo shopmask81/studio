@@ -79,12 +79,11 @@ export default {
         sm: 'calc(var(--radius) - 8px)',
       },
       boxShadow: {
-        ambient: '0 6px 16px rgba(0, 0, 0, 0.35), inset 0 0 6px rgba(255, 255, 255, 0.05)',
-        glow: '0 8px 20px rgba(45, 212, 191, 0.25)',
-        'accent-glow': '0 0 10px rgba(45, 212, 191, 0.45)',
+        glow: '0 8px 20px rgba(112, 184, 158, 0.4)',
+        'accent-glow': '0 0 10px rgba(112, 184, 158, 0.4)',
       },
       textShadow: {
-        glow: '0 0 4px rgba(45, 212, 191, 0.4)',
+        glow: '0 0 6px rgba(112, 184, 158, 0.3)',
       },
       keyframes: {
         'accordion-down': {

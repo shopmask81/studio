@@ -122,7 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         <p className="text-xl font-bold text-accent dark:text-shadow-glow">${product.price.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button onClick={handleAddToCart} variant="secondary" className="dark:bg-accent dark:text-background font-semibold hover:dark:bg-[#25bfae] hover:dark:shadow-accent-glow">
+                 <Button onClick={handleAddToCart} variant="secondary" className="bg-primary text-primary-foreground font-semibold hover:bg-ring hover:shadow-accent-glow transition-all duration-200 ease-in-out">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Add to Cart
                 </Button>
