@@ -22,7 +22,7 @@ export function Header() {
             </span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2 gap-1">
+        <div className="flex flex-1 items-center justify-end gap-1">
            <UserNav />
            <ThemeToggle />
            <LanguageSwitcher />
