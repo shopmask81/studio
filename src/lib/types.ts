@@ -35,7 +35,7 @@ export type WishlistItem = {
 export type Address = {
   id: string;
   fullName: string;
-  phone?: string;
+  phone: string;
   street: string;
   city: string;
   country: string;

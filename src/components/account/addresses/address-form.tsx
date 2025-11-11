@@ -14,7 +14,7 @@ import { useEffect } from 'react';
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
-  phone: z.string().optional(),
+  phone: z.string().min(1, 'Phone number is required.'),
   street: z.string().min(3, 'Street address is required.'),
   city: z.string().min(2, 'City is required.'),
   zipCode: z.string().min(4, 'Postal/ZIP code is required.'),
@@ -84,7 +84,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     name="phone"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Phone Number <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                        <FormLabel>Phone Number</FormLabel>
                         <FormControl>
                             <Input placeholder="+1 234 567 890" {...field} />
                         </FormControl>
