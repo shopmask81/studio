@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Firestore Security Rules for the existing e-commerce database.
  *
@@ -147,7 +148,7 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes, and disallows listing for privacy.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && request.auth.uid == userId;
       allow list: if false;
       allow create: if isOwner(userId);
       allow update, delete: if isExistingOwner(userId);
@@ -197,3 +198,4 @@ service cloud.firestore {
     }
   }
 }
+    
