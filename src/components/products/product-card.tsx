@@ -122,7 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button variant="outline" onClick={handleAddToCart} className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                 <Button onClick={handleAddToCart}>
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Add to Cart
                 </Button>
