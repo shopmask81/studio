@@ -172,28 +172,26 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             </div>
 
             {imageGallery.length > 1 && (
-                 <div className="w-full flex justify-center">
-                    <div className="w-full max-w-md mx-auto">
-                        <div className="flex justify-center gap-2 overflow-x-auto pb-2">
-                            {imageGallery.map((img, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => handleThumbnailClick(index)}
-                                    className={cn(
-                                        "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all",
-                                        currentSlide === index ? "border-primary scale-105" : "border-transparent opacity-75 hover:opacity-100"
-                                    )}
-                                >
-                                    <Image
-                                        src={img}
-                                        alt={`${product.name} thumbnail ${index + 1}`}
-                                        fill
-                                        className="object-cover"
-                                        sizes="80px"
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                 <div className="w-full max-w-md mx-auto">
+                    <div className="flex justify-center gap-2 overflow-x-auto pb-2">
+                        {imageGallery.map((img, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handleThumbnailClick(index)}
+                                className={cn(
+                                    "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all",
+                                    currentSlide === index ? "border-primary scale-105" : "border-transparent opacity-75 hover:opacity-100"
+                                )}
+                            >
+                                <Image
+                                    src={img}
+                                    alt={`${product.name} thumbnail ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="80px"
+                                />
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
