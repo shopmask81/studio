@@ -1,9 +1,9 @@
 export const firebaseConfig = {
   "projectId": "maskshop01",
-  "appId": "1:989649947313:web:bc9bb13c478ef81ac73090",
-  "apiKey": "AIzaSyDJyF0PxzVFrypqaF_OFyi4sq6s6phagA8",
+  "appId": "1:70169332990:web:d4183ead65aa6348af69af",
+  "apiKey": "AIzaSyBPmhFL0EwW0waG5C9gCCAX4ZYfcqWK6bI",
   "authDomain": "maskshop01.firebaseapp.com",
-  "measurementId": "G-5G3725T4M9",
-  "messagingSenderId": "989649947313",
+  "measurementId": "",
+  "messagingSenderId": "70169332990",
   "storageBucket": "maskshop01.appspot.com"
 };
