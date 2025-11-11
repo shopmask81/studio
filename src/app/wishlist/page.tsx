@@ -1,50 +1,89 @@
 'use client';
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, doc, query, where } from "firebase/firestore";
-import { Heart, Loader2 } from "lucide-react";
+import { collection, deleteDoc, doc } from "firebase/firestore";
+import { Heart, Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { ProductCard } from "@/components/products/product-card";
-import { Product } from "@/lib/types";
+import { Product, WishlistItem } from "@/lib/types";
+import Image from "next/image";
+import { useCart } from "@/components/cart/cart-provider";
+import { useToast } from "@/hooks/use-toast";
 
-function WishlistedProduct({ productId }: { productId: string }) {
+function WishlistItemCard({ item }: { item: WishlistItem }) {
+    const { addToCart } = useCart();
+    const { user } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
+
+    // We need to fetch the full product to add to cart
     const productRef = useMemoFirebase(() => {
         if (!firestore) return null;
-        return doc(firestore, 'products', productId);
-    }, [firestore, productId]);
+        return doc(firestore, 'products', item.productId);
+    }, [firestore, item.productId]);
 
-    const { data: product, isLoading } = useDoc<Product>(productRef);
+    const { data: product } = useDoc<Product>(productRef);
 
-    if (isLoading) {
-        return <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>;
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart(product);
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not add product to cart. Please try again."
+            })
+        }
     }
 
-    if (!product) {
-        return null;
+    const handleRemove = async () => {
+        if (!user || !firestore) return;
+        const wishlistItemRef = doc(firestore, `users/${user.uid}/wishlists`, item.productId);
+        try {
+            await deleteDoc(wishlistItemRef);
+            toast({
+                title: "Removed from Wishlist",
+                description: `${item.productName} has been removed.`,
+            });
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.message || "Failed to remove item."
+            });
+        }
     }
 
-    return <ProductCard product={product} />;
-}
-
-
-// This component fetches product details for the wishlist
-function WishlistProducts({ productIds }: { productIds: string[] }) {
-    if (productIds.length === 0) {
-        return null;
-    }
-    
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {productIds.map(productId => (
-                <WishlistedProduct key={productId} productId={productId} />
-            ))}
-        </div>
+        <Card className="overflow-hidden group">
+            <Link href={`/products/${item.productId}`}>
+                <div className="relative aspect-[3/4] w-full overflow-hidden">
+                    <Image
+                        src={item.productImage}
+                        alt={item.productName}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                </div>
+            </Link>
+            <CardContent className="p-4">
+                <h3 className="font-headline text-xl mb-2 group-hover:text-primary transition-colors">{item.productName}</h3>
+                <p className="font-bold text-accent">${item.price.toFixed(2)}</p>
+            </CardContent>
+            <CardFooter className="p-4 flex gap-2">
+                <Button onClick={handleAddToCart} className="w-full">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Add to Cart
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleRemove}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </CardFooter>
+        </Card>
     )
 }
-
 
 export default function WishlistPage() {
     const { user } = useUser();
@@ -52,14 +91,12 @@ export default function WishlistPage() {
 
     const wishlistQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        // The wishlist documents are stored with the product ID as the document ID
         return collection(firestore, `users/${user.uid}/wishlists`);
     }, [firestore, user]);
 
-    const { data: wishlistItems, isLoading } = useCollection(wishlistQuery);
+    const { data: wishlistItems, isLoading } = useCollection<WishlistItem>(wishlistQuery);
     
-    const productIds = wishlistItems?.map(item => item.id) ?? [];
-    const hasItems = productIds.length > 0;
+    const hasItems = wishlistItems && wishlistItems.length > 0;
 
     return (
         <ProtectedRoute>
@@ -70,12 +107,16 @@ export default function WishlistPage() {
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     </div>
                 ) : hasItems ? (
-                    <WishlistProducts productIds={productIds} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {wishlistItems.map(item => (
+                            <WishlistItemCard key={item.productId} item={item} />
+                        ))}
+                    </div>
                 ) : (
                     <Card className="text-center border-2 border-dashed rounded-lg p-12">
                         <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                         <h2 className="text-2xl font-semibold mb-2">Your Wishlist is Empty</h2>
-                        <p className="text-muted-foreground mb-6">Looks like you haven't added any masks to your wishlist yet.</p>
+                        <p className="text-muted-foreground mb-6">Start exploring our handmade products to find something you love!</p>
                         <Button asChild>
                             <Link href="/">Start Exploring</Link>
                         </Button>

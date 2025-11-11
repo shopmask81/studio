@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useDoc, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, setDoc, deleteDoc } from 'firebase/firestore';
-import type { Product } from '@/lib/types';
+import { doc, collection, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import type { Product, WishlistItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     return collection(firestore, `users/${user.uid}/wishlists`);
   }, [user, firestore]);
 
-  const { data: wishlistItems } = useCollection(wishlistCollectionRef);
+  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistCollectionRef);
   
   const imageGallery = useMemo(() => {
       if (!product) return [];
@@ -58,7 +58,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   useEffect(() => {
     if (wishlistItems) {
-      setIsWishlisted(wishlistItems.some(item => item.id === productId));
+      setIsWishlisted(wishlistItems.some(item => item.productId === productId));
     }
   }, [wishlistItems, productId]);
 
@@ -101,7 +101,14 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
           description: `${product.name} has been removed from your wishlist.`,
         });
       } else {
-        await setDoc(wishlistItemRef, { productId: product.id });
+        const wishlistItem: WishlistItem = {
+            productId: product.id,
+            productName: product.name,
+            productImage: product.mainImage,
+            price: product.discountPrice ?? product.price,
+            addedAt: serverTimestamp()
+        };
+        await setDoc(wishlistItemRef, wishlistItem);
         toast({
           title: 'Added to Wishlist',
           description: `${product.name} has been added to your wishlist.`,
@@ -125,7 +132,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />

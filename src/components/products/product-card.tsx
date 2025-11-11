@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ShoppingCart } from 'lucide-react';
-import type { Product } from '@/lib/types';
+import type { Product, WishlistItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useCart } from '@/components/cart/cart-provider';
 
 
@@ -32,11 +32,11 @@ export function ProductCard({ product }: ProductCardProps) {
     return collection(firestore, `users/${user.uid}/wishlists`);
   }, [user, firestore]);
 
-  const { data: wishlistItems } = useCollection(wishlistCollectionRef);
+  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistCollectionRef);
 
   useEffect(() => {
     if (wishlistItems) {
-      setIsWishlisted(wishlistItems.some(item => item.id === product.id));
+      setIsWishlisted(wishlistItems.some(item => item.productId === product.id));
     }
   }, [wishlistItems, product.id]);
 
@@ -47,8 +47,8 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const handleWishlistClick = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation when clicking the heart
-    e.stopPropagation(); // Stop event bubbling
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!user || !firestore) {
         toast({
@@ -70,7 +70,14 @@ export function ProductCard({ product }: ProductCardProps) {
               description: `${product.name} has been removed from your wishlist.`,
             });
         } else {
-            await setDoc(wishlistItemRef, { productId: product.id });
+            const wishlistItem: WishlistItem = {
+                productId: product.id,
+                productName: product.name,
+                productImage: product.mainImage,
+                price: product.discountPrice ?? product.price,
+                addedAt: serverTimestamp()
+            };
+            await setDoc(wishlistItemRef, wishlistItem);
             toast({
               title: 'Added to Wishlist',
               description: `${product.name} has been added to your wishlist.`,
