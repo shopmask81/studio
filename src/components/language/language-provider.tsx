@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
@@ -19,22 +20,26 @@ const LanguageContext = createContext<TranslationContextType | undefined>(undefi
 const STORAGE_KEY = 'maskshop-language';
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-     if (typeof window !== 'undefined') {
-      return (localStorage.getItem(STORAGE_KEY) as Language) || 'en';
-    }
-    return 'en';
-  });
+  const [language, setLanguageState] = useState<Language>('en'); // Default to 'en' on server and initial client render
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.lang = language;
-    localStorage.setItem(STORAGE_KEY, language);
-  }, [language]);
-  
+    // This effect runs only on the client, after hydration
+    const storedLanguage = (localStorage.getItem(STORAGE_KEY) as Language) || 'en';
+    if (storedLanguage !== language) {
+        setLanguageState(storedLanguage);
+    }
+  }, []);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
+    localStorage.setItem(STORAGE_KEY, lang);
+    document.documentElement.lang = lang;
   };
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+  
 
   const t = useCallback((key: keyof typeof en, replacements?: Record<string, string | number>) => {
     let translation = translations[language][key] || translations['en'][key];
