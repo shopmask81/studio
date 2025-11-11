@@ -1,46 +1,53 @@
 
+'use client';
+
 import { ClientOnly } from "@/components/layout/client-only";
+import { useTranslation } from "@/components/language/language-provider";
 import Link from "next/link";
 
 export default function PrivacyPolicyPage() {
+  const { t } = useTranslation();
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-8 text-center">Privacy Policy</h1>
+        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-8 text-center" {...t('privacy_policy_title')}>{t('privacy_policy_title').text}</h1>
         <div className="prose prose-lg dark:prose-invert mx-auto text-muted-foreground space-y-6">
-          <p>Last Updated: <ClientOnly>{new Date().toLocaleDateString()}</ClientOnly></p>
-
-          <h2 className="text-foreground">Introduction</h2>
-          <p>
-            Welcome to MaskShop. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
+          <p {...t('last_updated')}>
+            {t('last_updated').text}: <ClientOnly>{new Date().toLocaleDateString()}</ClientOnly>
           </p>
 
-          <h2 className="text-foreground">Information We Collect</h2>
-          <p>
-            We may collect personal information such as your name, email address, shipping address, and payment information when you place an order. We also collect non-personal information, such as browser type and pages visited, to improve our services.
+          <h2 className="text-foreground" {...t('privacy_h2_intro')}>{t('privacy_h2_intro').text}</h2>
+          <p {...t('privacy_p_intro')}>
+            {t('privacy_p_intro').text}
           </p>
 
-          <h2 className="text-foreground">How We Use Your Information</h2>
-          <p>
-            We use the information we collect to process your orders, communicate with you about your purchases, improve our website and services, and for marketing purposes, provided we have your consent.
+          <h2 className="text-foreground" {...t('privacy_h2_info')}>{t('privacy_h2_info').text}</h2>
+          <p {...t('privacy_p_info')}>
+            {t('privacy_p_info').text}
           </p>
 
-          <h2 className="text-foreground">Data Protection and Security</h2>
-          <p>
-            We implement a variety of security measures to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems.
+          <h2 className="text-foreground" {...t('privacy_h2_use')}>{t('privacy_h2_use').text}</h2>
+          <p {...t('privacy_p_use')}>
+            {t('privacy_p_use').text}
           </p>
 
-          <h2 className="text-foreground">Cookies and Tracking</h2>
-          <p>
-            Our website uses cookies to enhance your experience. Cookies are small files that a site or its service provider transfers to your computer's hard drive through your Web browser that enables the site's or service provider's systems to recognize your browser and capture and remember certain information.
+          <h2 className="text-foreground" {...t('privacy_h2_security')}>{t('privacy_h2_security').text}</h2>
+          <p {...t('privacy_p_security')}>
+            {t('privacy_p_security').text}
           </p>
 
-          <h2 className="text-foreground">Contact for Privacy Concerns</h2>
-          <p>
-            If you have any questions or concerns about our privacy policy or data handling practices, please visit our{" "}
+          <h2 className="text-foreground" {...t('privacy_h2_cookies')}>{t('privacy_h2_cookies').text}</h2>
+          <p {...t('privacy_p_cookies')}>
+            {t('privacy_p_cookies').text}
+          </p>
+
+          <h2 className="text-foreground" {...t('privacy_h2_concerns')}>{t('privacy_h2_concerns').text}</h2>
+          <p {...t('privacy_p_concerns')}>
+            {t('privacy_p_concerns_1').text}{" "}
             <Link href="/contact" className="text-primary hover:underline">
-              contact page
-            </Link>.
+              {t('privacy_p_concerns_link').text}
+            </Link>
+            .
           </p>
         </div>
       </div>
