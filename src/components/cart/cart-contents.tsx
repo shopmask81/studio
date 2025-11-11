@@ -6,22 +6,14 @@ import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 import { useCart } from './cart-provider';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export function CartContents() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
-    const { toast } = useToast();
     const router = useRouter();
 
     const handleCheckout = () => {
-        // In a real app, this would redirect to a payment gateway
-        toast({
-            title: 'Checkout Successful!',
-            description: 'Your order has been placed. Thank you for shopping with us!',
-        });
-        clearCart();
-        router.push('/');
+        router.push('/checkout');
     };
 
     if (itemCount === 0) {
