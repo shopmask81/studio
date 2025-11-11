@@ -346,13 +346,9 @@
           "description": "Email address of the user.",
           "format": "email"
         },
-        "firstName": {
+        "name": {
           "type": "string",
-          "description": "First name of the user."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the user."
+          "description": "Full name of the user."
         },
         "phoneNumber": {
           "type": "string",
@@ -366,8 +362,7 @@
       "required": [
         "id",
         "email",
-        "firstName",
-        "lastName"
+        "name"
       ]
     },
     "Wishlist": {

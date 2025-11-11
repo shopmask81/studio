@@ -16,8 +16,7 @@ import { useAuth, useFirestore } from '@/firebase';
 export function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -30,10 +29,9 @@ export function SignupForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      const displayName = `${firstName} ${lastName}`.trim();
       
       // Update Firebase Auth profile
-      await updateProfile(user, { displayName });
+      await updateProfile(user, { displayName: fullName });
 
       // Send verification email
       await sendEmailVerification(user);
@@ -41,9 +39,7 @@ export function SignupForm() {
       // Create user document in Firestore
       await setDoc(doc(firestore, 'users', user.uid), {
         uid: user.uid,
-        name: displayName,
-        firstName: firstName,
-        lastName: lastName,
+        name: fullName,
         email: user.email,
         role: "customer",
         affiliateCode: user.uid.slice(0, 8), // simple unique code
@@ -80,15 +76,9 @@ export function SignupForm() {
       </CardHeader>
       <form onSubmit={handleSignUp}>
         <CardContent className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="first-name">First Name</Label>
-              <Input id="first-name" placeholder="John" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="last-name">Last Name</Label>
-              <Input id="last-name" placeholder="Doe" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="full-name">Full Name</Label>
+            <Input id="full-name" placeholder="John Doe" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>

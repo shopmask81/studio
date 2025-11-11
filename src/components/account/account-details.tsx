@@ -23,22 +23,14 @@ export function AccountDetails() {
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [displayName, setDisplayName] = useState('');
+    const [fullName, setFullName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (userProfile) {
-            setFirstName(userProfile.firstName || '');
-            setLastName(userProfile.lastName || '');
-            setDisplayName(`${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim());
+            setFullName(userProfile.name || '');
         } else if (user) {
-            // Fallback to auth display name if profile doc doesn't exist
-            const nameParts = user.displayName?.split(' ') || [];
-            setFirstName(nameParts[0] || '');
-            setLastName(nameParts.slice(1).join(' ') || '');
-            setDisplayName(user.displayName || '');
+            setFullName(user.displayName || '');
         }
     }, [userProfile, user]);
 
@@ -48,14 +40,12 @@ export function AccountDetails() {
         if (!user || !userDocRef) return;
         setIsLoading(true);
         try {
-            const newDisplayName = `${firstName} ${lastName}`.trim();
             // Update auth profile
-            await updateProfile(user, { displayName: newDisplayName });
+            await updateProfile(user, { displayName: fullName });
 
             // Update firestore document
-            await setDoc(userDocRef, { firstName, lastName }, { merge: true });
+            await setDoc(userDocRef, { name: fullName }, { merge: true });
             
-            setDisplayName(newDisplayName);
             toast({
                 title: 'Profile Updated',
                 description: 'Your details have been successfully updated.',
@@ -88,12 +78,8 @@ export function AccountDetails() {
                              <Input id="email" type="email" value={user?.email || ''} disabled />
                         </div>
                         <div className="space-y-2">
-                             <Label htmlFor="firstName">First Name</Label>
-                             <Input id="firstName" disabled />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input id="lastName" disabled />
+                             <Label htmlFor="fullName">Full Name</Label>
+                             <Input id="fullName" disabled />
                         </div>
                     </CardContent>
                      <CardFooter>
@@ -124,12 +110,8 @@ export function AccountDetails() {
                             <Input id="email" type="email" value={user.email || ''} disabled />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                         </div>
                     </CardContent>
                     <CardFooter>
