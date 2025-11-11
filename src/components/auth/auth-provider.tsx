@@ -73,4 +73,7 @@ export function AffiliateTool() {
                         </div>
                     </div>
                 )}
-            </
+            </CardContent>
+        </Card>
+    );
+}
