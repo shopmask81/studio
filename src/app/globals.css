@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 45 3% 90%; /* #E5E5E5 */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
@@ -15,7 +15,7 @@
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted-foreground: 0 0% 69%; /* #B0B0B0 */
     --accent: 154 30% 52%; /* #5FAF8E */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
@@ -26,24 +26,24 @@
     --radius: 0.75rem; /* 12px */
   }
   .dark {
-    --background: 0 0% 6%; /* #0F0F0F */
-    --foreground: 45 35% 87%; /* #E6E1D3 */
-    --card: 0 0% 12%; /* #1F1F1F */
-    --card-foreground: 45 35% 87%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 45 35% 87%;
+    --background: 120 2% 12%; /* #1E1E1E */
+    --foreground: 45 3% 90%; /* #E5E5E5 */
+    --card: 120 2% 14%; /* #232623 */
+    --card-foreground: 45 3% 90%;
+    --popover: 120 2% 10%;
+    --popover-foreground: 45 3% 90%;
     --primary: 154 30% 35%; /* #3E7660 */
     --primary-foreground: 45 35% 95%;
     --secondary: 154 15% 20%;
-    --secondary-foreground: 45 35% 87%;
+    --secondary-foreground: 45 3% 90%;
     --muted: 154 10% 15%;
-    --muted-foreground: 45 20% 67%;
+    --muted-foreground: 0 0% 69%; /* #B0B0B0 */
     --accent: 154 30% 52%; /* #5FAF8E */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 154 20% 20%;
-    --input: 154 20% 20%;
+    --border: 120 2% 20%;
+    --input: 120 2% 20%;
     --ring: 154 30% 52%;
   }
 }
@@ -54,5 +54,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .gradient-bg {
+    background: linear-gradient(135deg, #1A1C1A, #202320, #232623);
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
   }
 }
