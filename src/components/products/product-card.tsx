@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, collection } from 'firebase/firestore';
 import { useCart } from '@/components/cart/cart-provider';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
