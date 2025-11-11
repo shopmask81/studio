@@ -90,7 +90,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
-        <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out">
+        <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out dark:bg-gradient-to-br dark:from-[#232a26] dark:to-[#1b201d] dark:shadow-[0_4px_14px_rgba(0,0,0,0.4)] group-hover:dark:shadow-[0_8px_20px_rgba(0,0,0,0.5)] group-hover:dark:-translate-y-1 group-hover:dark:from-[#272e2a] group-hover:dark:to-[#1f2522] group-hover:dark:border-primary/30">
             <CardHeader className="p-0">
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
                 <Image
@@ -107,9 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                <p className="text-sm text-muted-foreground mb-1">{product.category}</p>
                 <CardTitle className="font-headline text-2xl mb-2 group-hover:text-primary transition-colors">{product.name}</CardTitle>
-                <p className="text-muted-foreground text-sm line-clamp-2">{product.description}</p>
             </CardContent>
             <CardFooter className="p-4 flex justify-between items-center mt-auto">
                 <div className="flex items-baseline gap-2">
