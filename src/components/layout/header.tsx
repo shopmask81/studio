@@ -11,7 +11,6 @@ import { LanguageSwitcher } from '../language/language-switcher';
 import { ClientOnly } from './client-only';
 
 export function Header() {
-  // This hook will only run on the client, so we must use ClientOnly
   const { wishlistItemCount } = useWishlist();
 
   return (
@@ -25,7 +24,7 @@ export function Header() {
           </span>
         </Link>
         
-        {/* Right side - Icons. This entire block is client-side only. */}
+        {/* Right side - Icons */}
         <ClientOnly>
           <div className="flex items-center gap-1">
             <UserNav />
