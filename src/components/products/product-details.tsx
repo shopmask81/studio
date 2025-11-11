@@ -173,7 +173,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             {imageGallery.length > 1 && (
                  <div className="w-full max-w-md mx-auto">
-                    <div className="flex justify-center gap-2 overflow-x-auto pb-2">
+                    <div className="flex justify-start gap-2 overflow-x-auto pb-2 max-w-[16.5rem] mx-auto">
                         {imageGallery.map((img, index) => (
                             <button
                                 key={index}
