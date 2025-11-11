@@ -24,8 +24,8 @@ function CartDisplay() {
     const handleRemoveItem = (productId: string, productName: string) => {
         removeFromCart(productId);
         toast({
-            title: 'Item removed',
-            description: `${productName} has been removed from your cart.`,
+            title: t('item_removed_title').text,
+            description: t('item_removed_desc', { productName }).text,
         });
     }
 

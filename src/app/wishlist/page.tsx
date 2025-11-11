@@ -34,8 +34,8 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
         } else {
             toast({
                 variant: "destructive",
-                title: "Error",
-                description: "Could not add product to cart. Product details not yet loaded."
+                title: t('error_title').text,
+                description: t('add_to_cart_error_desc').text,
             })
         }
     }
@@ -43,8 +43,8 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
     const handleRemove = () => {
         removeFromWishlist(item.productId);
         toast({
-            title: "Removed from Wishlist",
-            description: `${item.productName} has been removed.`,
+            title: t('removed_from_wishlist_title').text,
+            description: t('removed_from_wishlist_desc', { productName: item.productName }).text,
         });
     }
     
@@ -96,8 +96,8 @@ export default function WishlistPage() {
                     </div>
                 ) : error ? (
                      <Card className="text-center border-2 border-dashed border-destructive/50 rounded-lg p-12">
-                        <h2 className="text-2xl font-semibold mb-2 text-destructive">Error Loading Wishlist</h2>
-                        <p className="text-muted-foreground mb-6">We couldn’t load your wishlist right now. Please try again later.</p>
+                        <h2 className="text-2xl font-semibold mb-2 text-destructive" {...t('load_wishlist_error_title')}>{t('load_wishlist_error_title').text}</h2>
+                        <p className="text-muted-foreground mb-6" {...t('load_wishlist_error_desc')}>{t('load_wishlist_error_desc').text}</p>
                     </Card>
                 ) : hasItems ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">

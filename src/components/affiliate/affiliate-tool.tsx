@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Copy, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "../language/language-provider";
 
 export function AffiliateTool() {
     const { user } = useUser();
     const [productUrl, setProductUrl] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     const generateLink = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,8 +28,8 @@ export function AffiliateTool() {
         } catch (error) {
             toast({
                 variant: 'destructive',
-                title: 'Invalid URL',
-                description: 'Please enter a valid product URL.',
+                title: t('invalid_url_title').text,
+                description: t('invalid_url_desc').text,
             });
         }
     };
@@ -36,7 +38,7 @@ export function AffiliateTool() {
         if (!affiliateLink) return;
         navigator.clipboard.writeText(affiliateLink);
         toast({
-            title: 'Copied to clipboard!',
+            title: t('copied_to_clipboard').text,
         });
     };
 

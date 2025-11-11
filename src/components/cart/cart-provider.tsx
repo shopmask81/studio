@@ -5,6 +5,7 @@ import type { CartItem, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
+import { useTranslation } from '../language/language-provider';
 
 const LOCAL_STORAGE_CART_KEY = 'maskshop-guest-cart';
 
@@ -30,6 +31,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+  const { t } = useTranslation();
   
   // Load local cart on mount if no user
   useEffect(() => {
@@ -86,10 +88,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
 
     toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
+      title: t('added_to_cart_title').text,
+      description: t('added_to_cart_desc', { productName: product.name }).text,
     });
-  }, [user, firestore, toast]);
+  }, [user, firestore, toast, t]);
 
   const removeFromCart = useCallback((productId: string) => {
     const isUserLoggedIn = !!user;
@@ -181,13 +183,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.error("Failed to load cart from Firestore", error);
         toast({
             variant: "destructive",
-            title: "Could not load cart",
-            description: "There was an issue fetching your saved cart."
+            title: t('load_cart_failed_title').text,
+            description: t('load_cart_failed_desc').text,
         })
     } finally {
         setIsCartLoading(false);
     }
-  }, [getCartCollectionRef, toast]);
+  }, [getCartCollectionRef, toast, t]);
   
   const saveCartToLocalStorage = useCallback(async () => {
     if (cartItems.length > 0) {

@@ -43,16 +43,16 @@ export function UserNav() {
     try {
       await signOut(auth);
       toast({
-        title: 'Signed Out',
-        description: "You have been successfully signed out.",
+        title: t('signed_out_title').text,
+        description: t('signed_out_desc').text,
       });
       router.push('/');
       // The AuthSync hook will handle saving the cart/wishlist to localStorage
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Sign Out Error",
-        description: "There was a problem signing you out.",
+        title: t('sign_out_error_title').text,
+        description: t('sign_out_error_desc').text,
       });
     }
   };

@@ -93,17 +93,17 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     if (!user) {
         toast({
             variant: "default",
-            title: "Want to save this for later?",
-            description: "Log in or create an account to save your wishlist across devices.",
-            action: <Button onClick={() => router.push('/login')}>Login</Button>
+            title: t('save_for_later_title').text,
+            description: t('save_for_later_desc').text,
+            action: <Button onClick={() => router.push('/login')}>{t('login').text}</Button>
         });
     }
 
     if (productIsWishlisted) {
       removeFromWishlist(product.id);
       toast({
-        title: 'Removed from Wishlist',
-        description: `${product.name} has been removed from your wishlist.`,
+        title: t('removed_from_wishlist_title').text,
+        description: t('removed_from_wishlist_desc', { productName: product.name }).text,
       });
     } else {
       addToWishlist({
@@ -113,8 +113,8 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         price: product.discountPrice ?? product.price,
       });
       toast({
-        title: 'Added to Wishlist',
-        description: `${product.name} has been added to your wishlist.`,
+        title: t('added_to_wishlist_title').text,
+        description: t('added_to_wishlist_desc', { productName: product.name }).text,
       });
     }
   };

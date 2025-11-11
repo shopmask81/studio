@@ -5,6 +5,7 @@ import { useUser } from '@/firebase';
 import { useCart } from '@/components/cart/cart-provider';
 import { useWishlist } from '@/components/wishlist/wishlist-provider';
 import { useToast } from './use-toast';
+import { useTranslation } from '@/components/language/language-provider';
 
 /**
  * An invisible component-hook that handles syncing local cart/wishlist
@@ -15,6 +16,7 @@ export function AuthSync() {
   const { syncAndClearLocalCart, loadCartFromFirestore, saveCartToLocalStorage } = useCart();
   const { syncAndClearLocalWishlist, loadWishlistFromFirestore, saveWishlistToLocalStorage } = useWishlist();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const hasSyncedOnLogin = useRef(false);
   const hasSyncedOnLogout = useRef(false);
@@ -37,15 +39,15 @@ export function AuthSync() {
           await loadWishlistFromFirestore(user.uid);
 
           toast({
-            title: 'Welcome Back!',
-            description: 'Your saved items have been synced to your account.',
+            title: t('welcome_back_title').text,
+            description: t('synced_items_desc').text,
           });
         } catch (error) {
           console.error("Error syncing local data to Firestore:", error);
            toast({
             variant: "destructive",
-            title: 'Sync Failed',
-            description: 'Could not sync your locally saved items.',
+            title: t('sync_failed_title').text,
+            description: t('sync_failed_desc').text,
           });
         }
       };
@@ -65,7 +67,7 @@ export function AuthSync() {
       hasSyncedOnLogin.current = false;
     }
 
-  }, [user, isUserLoading, syncAndClearLocalCart, syncAndClearLocalWishlist, loadCartFromFirestore, loadWishlistFromFirestore, saveCartToLocalStorage, saveWishlistToLocalStorage, toast]);
+  }, [user, isUserLoading, syncAndClearLocalCart, syncAndClearLocalWishlist, loadCartFromFirestore, loadWishlistFromFirestore, saveCartToLocalStorage, saveWishlistToLocalStorage, toast, t]);
 
   // This component does not render anything
   return null;

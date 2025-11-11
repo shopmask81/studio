@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
 import type { WishlistItem } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, getDocs, onSnapshot, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 

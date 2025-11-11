@@ -154,8 +154,8 @@ export function CheckoutForm() {
             });
 
             toast({
-                title: 'Order Placed!',
-                description: 'Thank you for your purchase.',
+                title: t('order_placed_title').text,
+                description: t('order_placed_desc').text,
             });
 
             clearCart();
@@ -164,8 +164,8 @@ export function CheckoutForm() {
         } catch (error: any) {
             toast({
                 variant: 'destructive',
-                title: 'Order Failed',
-                description: error.message || 'There was an issue placing your order.',
+                title: t('order_failed_title').text,
+                description: error.message || t('order_failed_desc').text,
             });
         }
     }
