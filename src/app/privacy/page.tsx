@@ -42,7 +42,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 className="text-foreground" {...t('privacy_h2_concerns')}>{t('privacy_h2_concerns').text}</h2>
-          <p {...t('privacy_p_concerns')}>
+          <p {...t('privacy_p_concerns_1')}>
             {t('privacy_p_concerns_1').text}{" "}
             <Link href="/contact" className="text-primary hover:underline">
               {t('privacy_p_concerns_link').text}
