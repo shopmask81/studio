@@ -49,30 +49,33 @@ export function CartContents() {
                         </Button>
                     </CardHeader>
                     <CardContent className="divide-y">
-                        {cartItems.map(item => (
-                            <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
-                                <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
-                                     <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" />
-                                </div>
-                                <div className="flex-grow">
-                                    <h3 className="font-semibold">{item.product.name}</h3>
-                                    <p className="text-sm text-muted-foreground">${item.product.price.toFixed(2)}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
-                                        <Minus className="h-4 w-4" />
+                        {cartItems.map(item => {
+                            const price = item.product.discountPrice ?? item.product.price;
+                            return (
+                                <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
+                                    <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
+                                         <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
+                                    </div>
+                                    <div className="flex-grow">
+                                        <h3 className="font-semibold">{item.product.name}</h3>
+                                        <p className="text-sm text-muted-foreground">${price.toFixed(2)}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-10 text-center font-medium">{item.quantity}</span>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <p className="font-semibold w-20 text-right">${(price * item.quantity).toFixed(2)}</p>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => removeFromCart(item.product.id)}>
+                                        <X className="h-5 w-5" />
                                     </Button>
-                                    <span className="w-10 text-center font-medium">{item.quantity}</span>
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
                                 </div>
-                                <p className="font-semibold w-20 text-right">${(item.product.price * item.quantity).toFixed(2)}</p>
-                                <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => removeFromCart(item.product.id)}>
-                                    <X className="h-5 w-5" />
-                                </Button>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </CardContent>
                 </Card>
             </div>

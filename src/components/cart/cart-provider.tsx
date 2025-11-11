@@ -22,9 +22,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     // Hydrate cart from localStorage on mount
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+      }
+    } catch (error) {
+      console.error("Failed to parse cart from localStorage", error);
+      // If parsing fails, clear the corrupted cart data
+      localStorage.removeItem('cart');
     }
   }, []);
 
@@ -68,7 +74,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const cartTotal = useMemo(() => {
-    return cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
+    return cartItems.reduce((total, item) => {
+        const price = item.product.discountPrice ?? item.product.price;
+        return total + price * item.quantity;
+    }, 0);
   }, [cartItems]);
 
   const itemCount = useMemo(() => {

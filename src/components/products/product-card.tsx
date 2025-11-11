@@ -76,12 +76,14 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+
   return (
     <Card className="overflow-hidden flex flex-col shadow-md hover:shadow-primary/20 transition-shadow duration-300 group">
       <CardHeader className="p-0">
         <div className="relative aspect-[3/4] w-full overflow-hidden">
           <Image
-            src={product.imageUrl}
+            src={product.mainImage}
             alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -94,14 +96,26 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
+        <p className="text-sm text-muted-foreground mb-1">{product.category}</p>
         <CardTitle className="font-headline text-2xl mb-2">{product.name}</CardTitle>
         <p className="text-muted-foreground text-sm line-clamp-2">{product.description}</p>
       </CardContent>
       <CardFooter className="p-4 flex justify-between items-center">
-        <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
-        <Button onClick={() => addToCart(product)} aria-label="Add to cart">
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
+        <div className="flex items-baseline gap-2">
+            {hasDiscount ? (
+                <>
+                    <p className="text-xl font-bold text-destructive">${product.discountPrice?.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
+                </>
+            ) : (
+                 <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
+            )}
+        </div>
+        <Button onClick={() => addToCart(product)} aria-label="Add to cart" disabled={product.stock === 0}>
+          {product.stock === 0 ? 'Out of Stock' : <>
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Add to Cart
+          </>}
         </Button>
       </CardFooter>
     </Card>
