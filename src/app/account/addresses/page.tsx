@@ -21,7 +21,7 @@ export default function AddressesPage() {
     <ProtectedRoute>
         <div className="container mx-auto px-4 py-12">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-headline mb-8">{t('my_addresses')}</h1>
+                <h1 className="text-4xl font-headline mb-8" {...t('my_addresses')}>{t('my_addresses').text}</h1>
                  <Suspense fallback={<AddressListSkeleton />}>
                     <AddressList />
                 </Suspense>

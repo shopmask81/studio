@@ -1,3 +1,4 @@
+
 'use client';
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { useTranslation } from "@/components/language/language-provider";

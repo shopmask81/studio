@@ -1,3 +1,4 @@
+
 'use client';
 import { CartContents } from "@/components/cart/cart-contents";
 import { useTranslation } from "@/components/language/language-provider";
