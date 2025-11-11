@@ -12,6 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Heart, ShoppingCart, Loader2, AlertCircle, ChevronRight, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
 
 interface ProductDetailsProps {
   productId: string;
@@ -23,6 +31,9 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
+  
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   const productRef = useMemoFirebase(() => {
     if (!firestore || !productId) return null;
@@ -32,7 +43,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
 
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const wishlistCollectionRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -41,10 +51,9 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   const { data: wishlistItems } = useCollection(wishlistCollectionRef);
   
-  useEffect(() => {
-      if (product) {
-          setSelectedImage(product.mainImage);
-      }
+  const imageGallery = useMemo(() => {
+      if (!product) return [];
+      return [product.mainImage, ...(product.images || [])];
   }, [product]);
 
   useEffect(() => {
@@ -52,6 +61,23 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       setIsWishlisted(wishlistItems.some(item => item.id === productId));
     }
   }, [wishlistItems, productId]);
+
+  useEffect(() => {
+    if (!carouselApi) {
+      return
+    }
+ 
+    setCurrentSlide(carouselApi.selectedScrollSnap())
+ 
+    carouselApi.on("select", () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap())
+    })
+  }, [carouselApi])
+  
+  const handleThumbnailClick = (index: number) => {
+    carouselApi?.scrollTo(index);
+    setCurrentSlide(index);
+  }
 
   const handleWishlistClick = async () => {
     if (!user || !firestore) {
@@ -113,7 +139,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   }
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-  const imageGallery = [product.mainImage, ...(product.images || [])];
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -134,27 +159,39 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
         {/* Image Gallery */}
         <div className="flex flex-col gap-4">
-            <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
-                {selectedImage && (
-                    <Image
-                        key={selectedImage} // Force re-render on image change for transition
-                        src={selectedImage}
-                        alt={product.name}
-                        fill
-                        className="object-cover animate-in fade-in duration-300"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+             <Carousel setApi={setCarouselApi} className="w-full">
+                <CarouselContent>
+                    {imageGallery.map((img, index) => (
+                        <CarouselItem key={index}>
+                             <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
+                                <Image
+                                    src={img}
+                                    alt={`${product.name} image ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                />
+                            </div>
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                {imageGallery.length > 1 && (
+                    <>
+                        <CarouselPrevious className="left-2" />
+                        <CarouselNext className="right-2" />
+                    </>
                 )}
-            </div>
+            </Carousel>
+
             {imageGallery.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 -mt-2">
                     {imageGallery.map((img, index) => (
                         <button
                             key={index}
-                            onClick={() => setSelectedImage(img)}
+                            onClick={() => handleThumbnailClick(index)}
                             className={cn(
-                                "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors",
-                                selectedImage === img ? "border-primary" : "border-transparent"
+                                "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all",
+                                currentSlide === index ? "border-primary scale-105" : "border-transparent opacity-75 hover:opacity-100"
                             )}
                         >
                             <Image
