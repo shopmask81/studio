@@ -23,7 +23,7 @@ import Link from 'next/link';
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  phone: z.string().optional(),
+  phone: z.string().min(1, 'Phone number is required.'),
   street: z.string().min(3, 'Street address is required.'),
   city: z.string().min(2, 'City is required.'),
   postalCode: z.string().min(4, 'Postal code is required.'),
@@ -68,10 +68,27 @@ export function CheckoutForm() {
         defaultValues: {
             fullName: user?.displayName ?? '',
             email: user?.email ?? '',
+            phone: '',
+            street: '',
+            city: '',
+            postalCode: '',
+            country: '',
             paymentMethod: 'card',
+            cardNumber: '',
+            expiryDate: '',
+            cvv: '',
         },
     });
 
+    useEffect(() => {
+        if (user && !form.getValues().email) {
+            form.setValue('email', user.email || '');
+        }
+        if (user && !form.getValues().fullName) {
+            form.setValue('fullName', user.displayName || '');
+        }
+    }, [user, form]);
+    
     useEffect(() => {
         if (addresses) {
             const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
@@ -168,7 +185,7 @@ export function CheckoutForm() {
                                     <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
                                 <FormField control={form.control} name="phone" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone Number <span className="text-muted-foreground">(Optional)</span></FormLabel><FormControl><Input placeholder="+1 (555) 555-5555" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+1 (555) 555-5555" {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                         </CardContent>
@@ -291,3 +308,5 @@ export function CheckoutForm() {
         </Form>
     );
 }
+
+    
