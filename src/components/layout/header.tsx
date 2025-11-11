@@ -20,8 +20,8 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <ThemeToggle />
-          <CartIcon />
           <UserNav />
+          <CartIcon />
         </div>
       </div>
     </header>
