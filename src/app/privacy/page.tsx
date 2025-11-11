@@ -1,5 +1,6 @@
 
 import { ClientOnly } from "@/components/layout/client-only";
+import Link from "next/link";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -36,7 +37,10 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-foreground">Contact for Privacy Concerns</h2>
           <p>
-            If you have any questions or concerns about our privacy policy or data handling practices, please contact us at <a href="mailto:privacy@maskshop.com" className="text-primary hover:underline">privacy@maskshop.com</a>.
+            If you have any questions or concerns about our privacy policy or data handling practices, please visit our{" "}
+            <Link href="/contact" className="text-primary hover:underline">
+              contact page
+            </Link>.
           </p>
         </div>
       </div>
