@@ -24,16 +24,28 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        toast({
+          variant: 'destructive',
+          title: 'Email Not Verified',
+          description: 'Please check your inbox and verify your email address before logging in.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       toast({
         title: 'Login Successful',
         description: 'Welcome back!',
       });
       router.push('/account');
     } catch (error: any) {
-      const errorMessage = error.code === 'auth/invalid-credential' 
-        ? 'Invalid email or password.'
-        : error.message;
+      let errorMessage = 'An error occurred during login.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        errorMessage = 'Invalid email or password.';
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',

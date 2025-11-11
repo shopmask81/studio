@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,24 +35,37 @@ export function SignupForm() {
       // Update Firebase Auth profile
       await updateProfile(user, { displayName });
 
+      // Send verification email
+      await sendEmailVerification(user);
+
       // Create user document in Firestore
       await setDoc(doc(firestore, 'users', user.uid), {
-        id: user.uid,
-        email: user.email,
+        uid: user.uid,
+        name: displayName,
         firstName: firstName,
         lastName: lastName,
+        email: user.email,
+        role: "customer",
+        affiliateCode: user.uid.slice(0, 8), // simple unique code
+        referredBy: null,
+        createdAt: serverTimestamp(),
+        emailVerified: false,
       });
 
       toast({
-        title: 'Account Created',
-        description: 'Welcome to MaskShop!',
+        title: 'Verification Email Sent',
+        description: 'Your account has been created. Please check your email to verify your address before logging in.',
       });
-      router.push('/account');
+      router.push('/login');
     } catch (error: any) {
+      let description = 'An error occurred during sign up.';
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'This email is already associated with an account.';
+      }
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message || 'An error occurred during sign up.',
+        description: description,
       });
     } finally {
       setIsLoading(false);
