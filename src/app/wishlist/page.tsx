@@ -49,13 +49,15 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
     }
     
     const price = item.price || 0;
+    const imageUrl = item.productImage || 'https://picsum.photos/seed/placeholder/600/800';
+
 
     return (
         <Card className="overflow-hidden group">
             <Link href={`/products/${item.productId}`}>
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
                     <Image
-                        src={item.productImage}
+                        src={imageUrl}
                         alt={item.productName}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
