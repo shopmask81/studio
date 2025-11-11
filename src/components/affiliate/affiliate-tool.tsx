@@ -52,7 +52,7 @@ export function AffiliateTool() {
                         <Label htmlFor="product-url">Product URL</Label>
                         <Input 
                             id="product-url"
-                            placeholder="https://maskshopv2.com/products/..."
+                            placeholder="https://maskshop.com/products/..."
                             value={productUrl}
                             onChange={(e) => setProductUrl(e.target.value)}
                         />
@@ -73,4 +73,7 @@ export function AffiliateTool() {
                         </div>
                     </div>
                 )}
-            </
+            </CardContent>
+        </Card>
+    );
+}

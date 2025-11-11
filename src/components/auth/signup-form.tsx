@@ -45,7 +45,7 @@ export function SignupForm() {
 
       toast({
         title: 'Account Created',
-        description: 'Welcome to MaskShopv2!',
+        description: 'Welcome to Maskshop!',
       });
       router.push('/account');
     } catch (error: any) {

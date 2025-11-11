@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'MaskShopv2',
-  description: 'The finest masks, delivered.',
+  title: 'Maskshop',
+  description: 'The finest handmade and vintage crafts, delivered.',
 };
 
 export default function RootLayout({
