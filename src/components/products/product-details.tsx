@@ -148,12 +148,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 <CarouselContent>
                     {imageGallery.map((img, index) => (
                         <CarouselItem key={index}>
-                             <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
+                             <div className="relative h-[450px] md:h-[600px] w-full overflow-hidden rounded-lg shadow-lg">
                                 <Image
                                     src={img}
                                     alt={`${product.name} image ${index + 1}`}
                                     fill
-                                    className="object-cover"
+                                    className="object-contain"
                                     sizes="(max-width: 768px) 100vw, 50vw"
                                 />
                             </div>
