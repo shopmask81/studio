@@ -104,5 +104,13 @@
     "failed_to_delete_address": "Failed to delete address.",
     "default_address_set_title": "Default Address Set",
     "default_address_set_desc": "This address is now your default for shipping.",
-    "failed_to_set_default": "Failed to set default address."
+    "failed_to_set_default": "Failed to set default address.",
+    "your_account": "Your Account",
+    "profile_details": "Profile Details",
+    "manage_your_account_info": "Manage your account information.",
+    "profile_updated_title": "Profile Updated",
+    "profile_updated_desc": "Your details have been successfully updated.",
+    "update_failed_title": "Update Failed",
+    "update_failed_desc": "An error occurred while updating your profile.",
+    "loading": "Loading..."
 }

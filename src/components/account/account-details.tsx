@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -10,11 +11,13 @@ import { useState, useEffect } from "react";
 import { updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "../language/language-provider";
 
 export function AccountDetails() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     const userDocRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -47,14 +50,14 @@ export function AccountDetails() {
             await setDoc(userDocRef, { name: fullName }, { merge: true });
             
             toast({
-                title: 'Profile Updated',
-                description: 'Your details have been successfully updated.',
+                title: t('profile_updated_title').text,
+                description: t('profile_updated_desc').text,
             });
         } catch (error: any) {
             toast({
                 variant: 'destructive',
-                title: 'Update Failed',
-                description: error.message || 'An error occurred.',
+                title: t('update_failed_title').text,
+                description: error.message || t('update_failed_desc').text,
             });
         } finally {
             setIsLoading(false);
@@ -66,26 +69,26 @@ export function AccountDetails() {
     if (loading) {
         return (
              <div className="container mx-auto px-4 py-12">
-                <h1 className="text-4xl font-headline mb-8">Your Account</h1>
+                <h1 className="text-4xl font-headline mb-8" {...t('your_account')}>{t('your_account').text}</h1>
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>Profile Details</CardTitle>
-                        <CardDescription>Manage your account information.</CardDescription>
+                        <CardTitle {...t('profile_details')}>{t('profile_details').text}</CardTitle>
+                        <CardDescription {...t('manage_your_account_info')}>{t('manage_your_account_info').text}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                             <Label htmlFor="email">Email</Label>
+                             <Label htmlFor="email" {...t('email_address')}>{t('email_address').text}</Label>
                              <Input id="email" type="email" value={user?.email || ''} disabled />
                         </div>
                         <div className="space-y-2">
-                             <Label htmlFor="fullName">Full Name</Label>
+                             <Label htmlFor="fullName" {...t('full_name')}>{t('full_name').text}</Label>
                              <Input id="fullName" disabled />
                         </div>
                     </CardContent>
                      <CardFooter>
                         <Button disabled>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading...
+                            {t('loading').text}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -97,27 +100,27 @@ export function AccountDetails() {
 
     return (
         <div className="container mx-auto px-4 py-12">
-            <h1 className="text-4xl font-headline mb-8">Your Account</h1>
+            <h1 className="text-4xl font-headline mb-8" {...t('your_account')}>{t('your_account').text}</h1>
             <Card className="max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Profile Details</CardTitle>
-                    <CardDescription>Manage your account information.</CardDescription>
+                    <CardTitle {...t('profile_details')}>{t('profile_details').text}</CardTitle>
+                    <CardDescription {...t('manage_your_account_info')}>{t('manage_your_account_info').text}</CardDescription>
                 </CardHeader>
                 <form onSubmit={handleUpdateProfile}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email" {...t('email_address')}>{t('email_address').text}</Label>
                             <Input id="email" type="email" value={user.email || ''} disabled />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="fullName">Full Name</Label>
+                            <Label htmlFor="fullName" {...t('full_name')}>{t('full_name').text}</Label>
                             <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                         </div>
                     </CardContent>
                     <CardFooter>
                         <Button type="submit" disabled={isLoading}>
                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
+                            {t('save_changes').text}
                         </Button>
                     </CardFooter>
                 </form>
