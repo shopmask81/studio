@@ -15,7 +15,7 @@ export function OrderSummary() {
   return (
     <Card className="sticky top-20">
       <CardHeader>
-        <CardTitle>{t('order_summary')}</CardTitle>
+        <CardTitle {...t('order_summary')}>{t('order_summary').text}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -45,11 +45,11 @@ export function OrderSummary() {
 
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-muted-foreground">
-            <span>{t('subtotal')}</span>
+            <span {...t('subtotal')}>{t('subtotal').text}</span>
             <span>${cartTotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>{t('shipping')}</span>
+            <span {...t('shipping')}>{t('shipping').text}</span>
             <span>${shippingCost.toFixed(2)}</span>
           </div>
         </div>
@@ -57,7 +57,7 @@ export function OrderSummary() {
         <Separator className="my-4" />
 
         <div className="flex justify-between font-bold text-lg">
-          <span>{t('total')}</span>
+          <span {...t('total')}>{t('total').text}</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </CardContent>

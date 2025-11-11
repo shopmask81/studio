@@ -131,10 +131,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-3xl font-headline mb-2">{t('product_not_found')}</h1>
-        <p className="text-muted-foreground mb-6">{t('product_not_found_desc')}</p>
+        <h1 className="text-3xl font-headline mb-2" {...t('product_not_found')}>{t('product_not_found').text}</h1>
+        <p className="text-muted-foreground mb-6" {...t('product_not_found_desc')}>{t('product_not_found_desc').text}</p>
         <Button asChild>
-          <Link href="/">{t('return_to_shop')}</Link>
+          <Link href="/">{t('return_to_shop').text}</Link>
         </Button>
       </div>
     );
@@ -148,11 +148,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         <div className="flex items-center text-sm text-muted-foreground mb-8">
             <Link href="/" className="hover:text-primary transition-colors flex items-center">
                 <Home className="h-4 w-4 me-1.5" />
-                {t('home')}
+                {t('home').text}
             </Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <Link href="/" className="hover:text-primary transition-colors">
-                {t('products')}
+                {t('products').text}
             </Link>
             <ChevronRight className="h-4 w-4 mx-1" />
             <span className="font-medium text-foreground truncate">{product.name}</span>
@@ -229,14 +229,14 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-8 break-words text-justify">{product.description}</p>
+            <p className="text-muted-foreground leading-relaxed mb-8 break-words" {...t(product.description)}>{product.description}</p>
             
             {product.stock <= 10 && product.stock > 0 && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
                     product.stock <= 5 ? "text-red-500" : "text-amber-500"
-                )}>
-                    {t('only_left_in_stock', { count: product.stock })}
+                )} {...t('only_left_in_stock', {count: product.stock})}>
+                    {t('only_left_in_stock', { count: product.stock }).text}
                 </p>
             )}
 
@@ -248,11 +248,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {product.stock === 0 ? t('out_of_stock') : t('add_to_cart')}
+                    {product.stock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
                 </Button>
                 <Button size="lg" variant="outline" onClick={handleWishlistClick} className="flex-shrink-0">
                     <Heart className={cn("me-2 h-5 w-5", productIsWishlisted && "fill-destructive text-destructive")} />
-                    {productIsWishlisted ? t('remove_from_wishlist') : t('add_to_wishlist')}
+                    {productIsWishlisted ? t('remove_from_wishlist').text : t('add_to_wishlist').text}
                 </Button>
             </div>
         </div>

@@ -33,10 +33,10 @@ function CartDisplay() {
         return (
             <Card className="text-center border-2 border-dashed rounded-lg p-12">
                 <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">{t('cart_is_empty')}</h2>
-                <p className="text-muted-foreground mb-6">{t('cart_is_empty_desc')}</p>
+                <h2 className="text-2xl font-semibold mb-2" {...t('cart_is_empty')}>{t('cart_is_empty').text}</h2>
+                <p className="text-muted-foreground mb-6" {...t('cart_is_empty_desc')}>{t('cart_is_empty_desc').text}</p>
                 <Button asChild>
-                    <Link href="/">{t('continue_shopping')}</Link>
+                    <Link href="/">{t('continue_shopping').text}</Link>
                 </Button>
             </Card>
         );
@@ -47,10 +47,10 @@ function CartDisplay() {
             <div className="lg:col-span-2">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>{t('your_items')}</CardTitle>
+                        <CardTitle {...t('your_items')}>{t('your_items').text}</CardTitle>
                          <Button variant="outline" size="sm" onClick={clearCart}>
                             <Trash2 className="me-2 h-4 w-4" />
-                            {t('clear_cart')}
+                            {t('clear_cart').text}
                         </Button>
                     </CardHeader>
                     <CardContent className="divide-y">
@@ -100,24 +100,24 @@ function CartDisplay() {
             <div>
                 <Card className="sticky top-20">
                     <CardHeader>
-                        <CardTitle>{t('order_summary')}</CardTitle>
+                        <CardTitle {...t('order_summary')}>{t('order_summary').text}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex justify-between text-muted-foreground">
-                            <span>{t('subtotal')}</span>
+                            <span {...t('subtotal')}>{t('subtotal').text}</span>
                             <span>${cartTotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                            <span>{t('shipping')}</span>
+                            <span {...t('shipping')}>{t('shipping').text}</span>
                             <span>$5.00</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg pt-4 border-t">
-                            <span>{t('total')}</span>
+                            <span {...t('total')}>{t('total').text}</span>
                             <span>${(cartTotal + 5).toFixed(2)}</span>
                         </div>
                     </CardContent>
                     <CardFooter>
-                         <Button className="w-full" onClick={handleCheckout}>{t('proceed_to_checkout')}</Button>
+                         <Button className="w-full" onClick={handleCheckout}>{t('proceed_to_checkout').text}</Button>
                     </CardFooter>
                 </Card>
             </div>

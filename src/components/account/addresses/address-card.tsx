@@ -37,7 +37,7 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcess
             <Home className="h-5 w-5 text-muted-foreground" />
             {address.fullName}
         </CardTitle>
-        {address.isDefault && <Badge>{t('default_badge')}</Badge>}
+        {address.isDefault && <Badge>{t('default_badge').text}</Badge>}
       </CardHeader>
       <CardContent className="text-muted-foreground space-y-2">
         <p>{address.street}</p>
@@ -59,30 +59,30 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcess
             disabled={isProcessing}
             >
                 <Star className="mr-2 h-4 w-4" />
-            {t('set_as_default')}
+            {t('set_as_default').text}
           </Button>
         )}
         <Button variant="secondary" size="sm" onClick={() => onEdit(address)} disabled={isProcessing}>
             <Edit className="mr-2 h-4 w-4" />
-            {t('edit')}
+            {t('edit').text}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm" disabled={isProcessing}>
                 <Trash2 className="mr-2 h-4 w-4" />
-                {t('delete')}
+                {t('delete').text}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('delete_address_confirmation')}
+              <AlertDialogTitle {...t('are_you_sure')}>{t('are_you_sure').text}</AlertDialogTitle>
+              <AlertDialogDescription {...t('delete_address_confirmation')}>
+                {t('delete_address_confirmation').text}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(address.id)}>{t('continue')}</AlertDialogAction>
+              <AlertDialogCancel>{t('cancel').text}</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(address.id)}>{t('continue').text}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

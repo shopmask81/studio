@@ -66,17 +66,17 @@ export function AddressList() {
             // Update existing address
             const addressRef = doc(firestore, `users/${user.uid}/addresses`, addressToEdit.id);
             await updateDoc(addressRef, values);
-            toast({ title: t('address_updated_title'), description: t('address_updated_desc') });
+            toast({ title: t('address_updated_title').text, description: t('address_updated_desc').text });
         } else {
             // Add new address
             await addDoc(addressesCollectionRef, { ...values, createdAt: serverTimestamp() });
-            toast({ title: t('address_added_title'), description: t('address_added_desc') });
+            toast({ title: t('address_added_title').text, description: t('address_added_desc').text });
         }
         setIsFormOpen(false);
         setAddressToEdit(null);
     } catch (error) {
         console.error("Error saving address:", error);
-        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_save_address') });
+        toast({ variant: 'destructive', title: t('error_title').text, description: t('failed_to_save_address').text });
     } finally {
         setIsProcessing(false);
     }
@@ -88,9 +88,9 @@ export function AddressList() {
     try {
         const addressRef = doc(firestore, `users/${user.uid}/addresses`, addressId);
         await deleteDoc(addressRef);
-        toast({ title: t('address_deleted_title'), description: t('address_deleted_desc') });
+        toast({ title: t('address_deleted_title').text, description: t('address_deleted_desc').text });
     } catch (error) {
-        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_delete_address') });
+        toast({ variant: 'destructive', title: t('error_title').text, description: t('failed_to_delete_address').text });
     } finally {
         setIsProcessing(false);
     }
@@ -111,9 +111,9 @@ export function AddressList() {
             }
         });
         await batch.commit();
-        toast({ title: t('default_address_set_title'), description: t('default_address_set_desc') });
+        toast({ title: t('default_address_set_title').text, description: t('default_address_set_desc').text });
     } catch (error) {
-        toast({ variant: 'destructive', title: t('error_title'), description: t('failed_to_set_default') });
+        toast({ variant: 'destructive', title: t('error_title').text, description: t('failed_to_set_default').text });
     } finally {
         setIsProcessing(false);
     }
@@ -155,11 +155,11 @@ export function AddressList() {
         
         {(!addresses || addresses.length === 0) && !isFormOpen && (
              <Card className="text-center border-2 border-dashed rounded-lg p-12">
-                <h2 className="text-2xl font-semibold mb-2">{t('no_saved_addresses_title')}</h2>
-                <p className="text-muted-foreground mb-6">{t('no_saved_addresses_desc')}</p>
+                <h2 className="text-2xl font-semibold mb-2" {...t('no_saved_addresses_title')}>{t('no_saved_addresses_title').text}</h2>
+                <p className="text-muted-foreground mb-6" {...t('no_saved_addresses_desc')}>{t('no_saved_addresses_desc').text}</p>
                 <Button onClick={handleAddNew}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    {t('add_new_address')}
+                    {t('add_new_address').text}
                 </Button>
             </Card>
         )}
@@ -167,7 +167,7 @@ export function AddressList() {
         {addresses && addresses.length > 0 && (
              <Button onClick={handleAddNew} className="mt-6">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {t('add_new_address')}
+                {t('add_new_address').text}
             </Button>
         )}
     </div>

@@ -9,10 +9,25 @@ type Language = 'en' | 'ar';
 
 const translations = { en, ar };
 
+const arabicRegex = /[\u0600-\u06FF]/;
+const getDirection = (text: string) => {
+    const isArabic = arabicRegex.test(text);
+    return {
+        dir: isArabic ? 'rtl' : 'ltr',
+        style: { textAlign: isArabic ? 'right' : 'left' }
+    }
+}
+
+type TranslationResult = {
+  text: string;
+  dir: 'ltr' | 'rtl';
+  style: { textAlign: 'left' | 'right' };
+};
+
 type TranslationContextType = {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: keyof typeof en, replacements?: Record<string, string | number>) => string;
+  t: (key: keyof typeof en, replacements?: Record<string, string | number>) => TranslationResult;
 };
 
 const LanguageContext = createContext<TranslationContextType | undefined>(undefined);
@@ -35,14 +50,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, lang);
     document.documentElement.lang = lang;
   };
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
   
 
-  const t = useCallback((key: keyof typeof en, replacements?: Record<string, string | number>) => {
-    let translation = translations[language][key] || translations['en'][key];
+  const t = useCallback((key: keyof typeof en, replacements?: Record<string, string | number>): TranslationResult => {
+    let translation = translations[language][key] || translations['en'][key] || key;
     
     if (replacements) {
         Object.entries(replacements).forEach(([key, value]) => {
@@ -50,7 +61,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         });
     }
     
-    return translation;
+    return {
+        text: translation,
+        ...getDirection(translation)
+    };
   }, [language]);
 
   const value = {

@@ -69,11 +69,11 @@ export function UserNav() {
             variant="ghost" 
             size="icon" 
             className="group transition-all duration-300 ease-in-out"
-            aria-label="Login"
+            aria-label={t('login').text}
         >
             <Link href="/login">
                 <User className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-                <span className="sr-only">{t('login')}</span>
+                <span className="sr-only">{t('login').text}</span>
             </Link>
         </Button>
     );
@@ -107,26 +107,26 @@ export function UserNav() {
             <DropdownMenuItem asChild>
               <Link href="/account">
                 <User className="mr-2 h-4 w-4" />
-                <span>{t('account')}</span>
+                <span>{t('account').text}</span>
               </Link>
             </DropdownMenuItem>
              <DropdownMenuItem asChild>
               <Link href="/account/addresses">
                 <MapPin className="mr-2 h-4 w-4" />
-                <span>{t('my_addresses')}</span>
+                <span>{t('my_addresses').text}</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/wishlist">
                 <Heart className="mr-2 h-4 w-4" />
-                <span>{t('wishlist')}</span>
+                <span>{t('wishlist').text}</span>
               </Link>
             </DropdownMenuItem>
             {isAffiliate && (
               <DropdownMenuItem asChild>
                 <Link href="/affiliate">
                   <LinkIcon className="mr-2 h-4 w-4" />
-                  <span>{t('affiliate')}</span>
+                  <span>{t('affiliate').text}</span>
                 </Link>
               </DropdownMenuItem>
             )}
@@ -134,7 +134,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>{t('log_out')}</span>
+          <span>{t('log_out').text}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

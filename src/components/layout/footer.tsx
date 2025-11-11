@@ -32,17 +32,17 @@ export function Footer() {
           </div>
 
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('about')}</Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('contact')}</Link>
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('about').text}</Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('contact').text}</Link>
             {isAffiliate && (
-                <Link href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('affiliate')}</Link>
+                <Link href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('affiliate').text}</Link>
             )}
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('terms_of_use')}</Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('privacy_policy')}</Link>
+            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('terms_of_use').text}</Link>
+            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('privacy_policy').text}</Link>
           </nav>
 
-          <div className="text-sm text-muted-foreground mt-4">
-            {t('copyright', { year: new Date().getFullYear() })}
+          <div className="text-sm text-muted-foreground mt-4" {...t('copyright', { year: new Date().getFullYear() })}>
+            {t('copyright', { year: new Date().getFullYear() }).text}
           </div>
         </div>
       </div>

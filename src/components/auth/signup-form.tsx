@@ -51,18 +51,18 @@ export function SignupForm() {
       });
 
       toast({
-        title: t('signup_verification_sent_title'),
-        description: t('signup_verification_sent_desc'),
+        title: t('signup_verification_sent_title').text,
+        description: t('signup_verification_sent_desc').text,
       });
       router.push('/login');
     } catch (error: any) {
-      let description = t('signup_error_default');
+      let description = t('signup_error_default').text;
       if (error.code === 'auth/email-already-in-use') {
-        description = t('signup_error_email_in_use');
+        description = t('signup_error_email_in_use').text;
       }
       toast({
         variant: 'destructive',
-        title: t('signup_failed_title'),
+        title: t('signup_failed_title').text,
         description: description,
       });
     } finally {
@@ -73,33 +73,33 @@ export function SignupForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">{t('sign_up')}</CardTitle>
-        <CardDescription>{t('signup_desc')}</CardDescription>
+        <CardTitle className="text-2xl font-headline" {...t('sign_up')}>{t('sign_up').text}</CardTitle>
+        <CardDescription {...t('signup_desc')}>{t('signup_desc').text}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSignUp}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="full-name">{t('full_name')}</Label>
+            <Label htmlFor="full-name" {...t('full_name')}>{t('full_name').text}</Label>
             <Input id="full-name" placeholder="John Doe" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">{t('email_address')}</Label>
+            <Label htmlFor="email" {...t('email_address')}>{t('email_address').text}</Label>
             <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">{t('password')}</Label>
+            <Label htmlFor="password" {...t('password')}>{t('password').text}</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('create_account')}
+            {t('create_account').text}
           </Button>
-          <div className="mt-4 text-center text-sm">
-            {t('already_have_account')}{' '}
+          <div className="mt-4 text-center text-sm" {...t('already_have_account')}>
+            {t('already_have_account').text}{' '}
             <Link href="/login" className="underline text-primary hover:text-accent">
-              {t('login')}
+              {t('login').text}
             </Link>
           </div>
         </CardFooter>

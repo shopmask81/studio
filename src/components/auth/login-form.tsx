@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -31,26 +32,26 @@ export function LoginForm() {
       if (!userCredential.user.emailVerified) {
         toast({
           variant: 'destructive',
-          title: t('email_not_verified_title'),
-          description: t('email_not_verified_desc'),
+          title: t('email_not_verified_title').text,
+          description: t('email_not_verified_desc').text,
         });
         setIsLoading(false);
         return;
       }
 
       toast({
-        title: t('login_successful_title'),
-        description: t('login_successful_desc'),
+        title: t('login_successful_title').text,
+        description: t('login_successful_desc').text,
       });
       router.push('/account');
     } catch (error: any) {
-      let errorMessage = t('login_error_default');
+      let errorMessage = t('login_error_default').text;
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        errorMessage = t('login_error_invalid_credentials');
+        errorMessage = t('login_error_invalid_credentials').text;
       }
       toast({
         variant: 'destructive',
-        title: t('login_failed_title'),
+        title: t('login_failed_title').text,
         description: errorMessage,
       });
     } finally {
@@ -61,29 +62,29 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">{t('login')}</CardTitle>
-        <CardDescription>{t('login_desc')}</CardDescription>
+        <CardTitle className="text-2xl font-headline" {...t('login')}>{t('login').text}</CardTitle>
+        <CardDescription {...t('login_desc')}>{t('login_desc').text}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSignIn}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">{t('email_address')}</Label>
+            <Label htmlFor="email" {...t('email_address')}>{t('email_address').text}</Label>
             <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">{t('password')}</Label>
+            <Label htmlFor="password" {...t('password')}>{t('password').text}</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('sign_in')}
+            {t('sign_in').text}
           </Button>
-          <div className="mt-4 text-center text-sm">
-            {t('dont_have_account')}{' '}
+          <div className="mt-4 text-center text-sm" {...t('dont_have_account')}>
+            {t('dont_have_account').text}{' '}
             <Link href="/signup" className="underline text-primary hover:text-accent">
-              {t('sign_up')}
+              {t('sign_up').text}
             </Link>
           </div>
         </CardFooter>

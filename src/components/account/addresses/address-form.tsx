@@ -63,7 +63,9 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{addressToEdit ? t('edit_address') : t('add_new_address')}</CardTitle>
+        <CardTitle {...t(addressToEdit ? 'edit_address' : 'add_new_address')}>
+            {addressToEdit ? t('edit_address').text : t('add_new_address').text}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -73,7 +75,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('full_name')}</FormLabel>
+                  <FormLabel {...t('full_name')}>{t('full_name').text}</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -87,7 +89,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     name="phone"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{t('phone_number')}</FormLabel>
+                        <FormLabel {...t('phone_number')}>{t('phone_number').text}</FormLabel>
                         <FormControl>
                             <Input placeholder="+1 234 567 890" {...field} />
                         </FormControl>
@@ -100,7 +102,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     name="street"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{t('street_address')}</FormLabel>
+                        <FormLabel {...t('street_address')}>{t('street_address').text}</FormLabel>
                         <FormControl>
                             <Input placeholder="123 Mask Lane" {...field} />
                         </FormControl>
@@ -115,7 +117,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('city')}</FormLabel>
+                    <FormLabel {...t('city')}>{t('city').text}</FormLabel>
                     <FormControl>
                       <Input placeholder="Venice" {...field} />
                     </FormControl>
@@ -128,7 +130,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="zipCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('postal_code')}</FormLabel>
+                    <FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel>
                     <FormControl>
                       <Input placeholder="90210" {...field} />
                     </FormControl>
@@ -141,7 +143,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('country')}</FormLabel>
+                    <FormLabel {...t('country')}>{t('country').text}</FormLabel>
                     <FormControl>
                       <Input placeholder="USA" {...field} />
                     </FormControl>
@@ -162,8 +164,8 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>
-                      {t('set_as_default_address')}
+                    <FormLabel {...t('set_as_default_address')}>
+                      {t('set_as_default_address').text}
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -171,11 +173,11 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
             />
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-                    {t('cancel')}
+                    {t('cancel').text}
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {addressToEdit ? t('save_changes') : t('add_address')}
+                    {addressToEdit ? t('save_changes').text : t('add_address').text}
                 </Button>
             </div>
           </form>

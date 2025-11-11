@@ -71,7 +71,7 @@ function WishlistItemCard({ item }: { item: WishlistItem }) {
             <CardFooter className="p-4 flex gap-2">
                 <Button onClick={handleAddToCart} className="w-full" disabled={isProductLoading || !product}>
                     {isProductLoading ? <Loader2 className="h-4 w-4 me-2 animate-spin"/> : <ShoppingCart className="h-4 w-4 me-2" />}
-                    {t('add_to_cart')}
+                    {t('add_to_cart').text}
                 </Button>
                 <Button variant="outline" size="icon" onClick={handleRemove}>
                     <Trash2 className="h-4 w-4" />
@@ -89,7 +89,7 @@ export default function WishlistPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-12">
-                <h1 className="text-4xl font-headline mb-8">{t('your_wishlist')}</h1>
+                <h1 className="text-4xl font-headline mb-8" {...t('your_wishlist')}>{t('your_wishlist').text}</h1>
                 {isWishlistLoading ? (
                      <div className="flex justify-center items-center h-64">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -108,10 +108,10 @@ export default function WishlistPage() {
                 ) : (
                     <Card className="text-center border-2 border-dashed rounded-lg p-12">
                         <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                        <h2 className="text-2xl font-semibold mb-2">{t('wishlist_is_empty')}</h2>
-                        <p className="text-muted-foreground mb-6">{t('wishlist_is_empty_desc')}</p>
+                        <h2 className="text-2xl font-semibold mb-2" {...t('wishlist_is_empty')}>{t('wishlist_is_empty').text}</h2>
+                        <p className="text-muted-foreground mb-6" {...t('wishlist_is_empty_desc')}>{t('wishlist_is_empty_desc').text}</p>
                         <Button asChild>
-                            <Link href="/">{t('start_exploring')}</Link>
+                            <Link href="/">{t('start_exploring').text}</Link>
                         </Button>
                     </Card>
                 )}
