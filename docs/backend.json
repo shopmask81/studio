@@ -1,5 +1,59 @@
 {
   "entities": {
+    "Address": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Address",
+      "type": "object",
+      "description": "Represents a user's shipping address.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the address."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name for the shipping address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number."
+        },
+        "street": {
+          "type": "string",
+          "description": "Street address."
+        },
+        "city": {
+          "type": "string",
+          "description": "City."
+        },
+        "country": {
+          "type": "string",
+          "description": "Country."
+        },
+        "zipCode": {
+          "type": "string",
+          "description": "ZIP or postal code."
+        },
+        "isDefault": {
+          "type": "boolean",
+          "description": "Whether this is the default address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the address was created."
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "street",
+        "city",
+        "country",
+        "zipCode",
+        "isDefault"
+      ]
+    },
     "Affiliate": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Affiliate",
@@ -423,6 +477,26 @@
   "firestore": {
     "structure": [
       {
+        "path": "/users/{userId}/addresses/{addressId}",
+        "definition": {
+          "entityName": "Address",
+          "schema": {
+            "$ref": "#/backend/entities/Address"
+          },
+          "description": "Stores user shipping addresses. Each address is uniquely identified by addressId and is a subcollection of a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "addressId",
+              "description": "Unique identifier for the address."
+            }
+          ]
+        }
+      },
+      {
         "path": "/affiliates/{affiliateId}",
         "definition": {
           "entityName": "Affiliate",
@@ -583,6 +657,6 @@
         }
       }
     ],
-    "reasoning": "Given the existing Firestore database structure with collections like `affiliates`, `banners`, `categories`, `coupons`, `messages`, `orders`, `products`, `settings`, `users`, and `wishlists`, the design will focus on maintaining this structure while emphasizing authorization independence and clear data ownership, especially where relationships between entities exist. The structure is already segregated, as each collection serves a distinct purpose. To enhance security and scalability, we will focus on denormalizing authorization data where needed, particularly for relationships like User-Affiliate, User-Orders, and User-Wishlists. This eliminates the need for `get()` calls in security rules, enabling atomic operations. The design uses standard naming conventions and relies on path-based ownership for private user data. This approach supports secure `list` operations, as rules can be based on collection-level access and document-level ownership without complex filtering. The structure also supports the integrity of ownership and timestamps. The affiliate program utilizes the 'affiliates' collection, and the `userId` field links to the `users` collection, establishing the relationship between the User and the Affiliate entity."
+    "reasoning": "Given the existing Firestore database structure with collections like `affiliates`, `banners`, `categories`, `coupons`, `messages`, `orders`, `products`, `settings`, `users`, and `wishlists`, the design will focus on maintaining this structure while emphasizing authorization independence and clear data ownership, especially where relationships between entities exist. The structure is already segregated, as each collection serves a distinct purpose. To enhance security and scalability, we will focus on denormalizing authorization data where needed, particularly for relationships like User-Affiliate, User-Orders, and User-Wishlists. This eliminates the need for `get()` calls in security rules, enabling atomic operations. The design uses standard naming conventions and relies on path-based ownership for private user data. This approach supports secure `list` operations, as rules can be based on collection-level access and document-level ownership without complex filtering. The structure also supports the integrity of ownership and timestamps. The affiliate program utilizes the 'affiliates' collection, and the `userId` field links to the `users` collection, establishing the relationship between the User and the Affiliate entity. A new subcollection for user addresses has been added to support the saved addresses feature."
   }
 }

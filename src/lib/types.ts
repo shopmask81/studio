@@ -31,3 +31,15 @@ export type WishlistItem = {
   price: number;
   addedAt: Timestamp;
 };
+
+export type Address = {
+  id: string;
+  fullName: string;
+  phone?: string;
+  street: string;
+  city: string;
+  country: string;
+  zipCode: string;
+  isDefault: boolean;
+  createdAt?: Timestamp;
+};

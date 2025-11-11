@@ -168,6 +168,14 @@ service cloud.firestore {
       match /cart/{productId} {
         allow read, write: if isOwner(userId);
       }
+
+      /**
+       * @description Allows a user to manage their own addresses subcollection.
+       * @path /users/{userId}/addresses/{addressId}
+       */
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     /**

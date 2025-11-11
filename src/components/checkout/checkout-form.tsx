@@ -4,18 +4,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { CreditCard, Loader2, Lock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Address } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -52,6 +55,14 @@ export function CheckoutForm() {
     const { toast } = useToast();
     const { cartItems, cartTotal, clearCart } = useCart();
     
+    const addressesRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, `users/${user.uid}/addresses`);
+    }, [user, firestore]);
+
+    const { data: addresses, isLoading: areAddressesLoading } = useCollection<Address>(addressesRef);
+    const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -60,6 +71,37 @@ export function CheckoutForm() {
             paymentMethod: 'card',
         },
     });
+
+    useEffect(() => {
+        if (addresses) {
+            const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
+            if (defaultAddress) {
+                form.reset({
+                    ...form.getValues(),
+                    fullName: defaultAddress.fullName,
+                    phone: defaultAddress.phone,
+                    street: defaultAddress.street,
+                    city: defaultAddress.city,
+                    postalCode: defaultAddress.zipCode,
+                    country: defaultAddress.country,
+                });
+                setSelectedAddressId(defaultAddress.id);
+            }
+        }
+    }, [addresses, form]);
+
+    const handleAddressChange = (addressId: string) => {
+        const selected = addresses?.find(a => a.id === addressId);
+        if (selected) {
+            form.setValue('fullName', selected.fullName);
+            form.setValue('phone', selected.phone);
+            form.setValue('street', selected.street);
+            form.setValue('city', selected.city);
+            form.setValue('postalCode', selected.zipCode);
+            form.setValue('country', selected.country);
+            setSelectedAddressId(addressId);
+        }
+    }
 
     const paymentMethod = form.watch('paymentMethod');
 
@@ -137,6 +179,31 @@ export function CheckoutForm() {
                             <CardTitle>Shipping Address</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {user && !areAddressesLoading && addresses && addresses.length > 0 && (
+                                <FormItem>
+                                    <FormLabel>Select Address</FormLabel>
+                                    <Select onValueChange={handleAddressChange} value={selectedAddressId}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a saved address" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {addresses.map(addr => (
+                                                <SelectItem key={addr.id} value={addr.id}>
+                                                    {addr.street}, {addr.city}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                     <FormDescription>
+                                        <Link href="/account/addresses" className="text-sm text-primary hover:underline flex items-center gap-1">
+                                            <PlusCircle className="h-4 w-4" /> Manage saved addresses
+                                        </Link>
+                                    </FormDescription>
+                                </FormItem>
+                            )}
+
                             <FormField control={form.control} name="street" render={({ field }) => (
                                 <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Mask Lane" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
