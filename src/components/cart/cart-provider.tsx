@@ -4,7 +4,7 @@ import { createContext, useContext, useState, type ReactNode, useMemo, useEffect
 import type { CartItem, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
 
 const LOCAL_STORAGE_CART_KEY = 'maskshop-guest-cart';
 
