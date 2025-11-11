@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useDoc, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -226,7 +226,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <p className="text-muted-foreground leading-relaxed mb-8">{product.description}</p>
             
             {product.stock <= 10 && product.stock > 0 && (
-                <p className="text-destructive font-medium mb-6">Only {product.stock} left in stock!</p>
+                <p className={cn(
+                    "font-bold mb-6 transition-colors duration-200",
+                    product.stock <= 5 ? "text-red-500" : "text-amber-500"
+                )}>
+                    Only {product.stock} left in stock!
+                </p>
             )}
 
             <div className="flex flex-col sm:flex-row gap-4">
