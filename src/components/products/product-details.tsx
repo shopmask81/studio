@@ -148,7 +148,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 <CarouselContent>
                     {imageGallery.map((img, index) => (
                         <CarouselItem key={index}>
-                             <div className="relative h-[450px] md:h-[600px] w-full overflow-hidden rounded-lg shadow-lg">
+                             <div className="relative h-[450px] md:h-[600px] w-full overflow-hidden rounded-lg shadow-lg flex justify-center items-center">
                                 <Image
                                     src={img}
                                     alt={`${product.name} image ${index + 1}`}
@@ -169,25 +169,27 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             </Carousel>
 
             {imageGallery.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 -mt-2">
-                    {imageGallery.map((img, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleThumbnailClick(index)}
-                            className={cn(
-                                "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all",
-                                currentSlide === index ? "border-primary scale-105" : "border-transparent opacity-75 hover:opacity-100"
-                            )}
-                        >
-                            <Image
-                                src={img}
-                                alt={`${product.name} thumbnail ${index + 1}`}
-                                fill
-                                className="object-cover"
-                                sizes="80px"
-                            />
-                        </button>
-                    ))}
+                <div className="w-full flex justify-center">
+                    <div className="flex gap-2 overflow-x-auto pb-2 -mt-2 justify-start max-w-full">
+                        {imageGallery.map((img, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handleThumbnailClick(index)}
+                                className={cn(
+                                    "relative aspect-square w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all",
+                                    currentSlide === index ? "border-primary scale-105" : "border-transparent opacity-75 hover:opacity-100"
+                                )}
+                            >
+                                <Image
+                                    src={img}
+                                    alt={`${product.name} thumbnail ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="80px"
+                                />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
