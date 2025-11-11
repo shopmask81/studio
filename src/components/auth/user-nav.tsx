@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User, Heart, Link as LinkIcon } from 'lucide-react';
+import { LogOut, User, Heart, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { useUser, useAuth } from '@/firebase';
@@ -18,9 +18,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Skeleton } from '../ui/skeleton';
 
 export function UserNav() {
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -41,6 +42,10 @@ export function UserNav() {
       });
     }
   };
+
+  if (isUserLoading) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
+  }
 
   if (!user) {
     return (
