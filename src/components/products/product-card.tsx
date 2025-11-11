@@ -90,7 +90,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
-        <Card className="overflow-hidden flex flex-col h-full shadow-md hover:shadow-primary/20 transition-shadow duration-300">
+        <Card className="overflow-hidden flex flex-col h-full shadow-md hover:shadow-primary/20 transition-all duration-300 ease-in-out hover:transform hover:-translate-y-1">
             <CardHeader className="p-0">
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
                 <Image
@@ -122,7 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button onClick={handleAddToCart}>
+                 <Button onClick={handleAddToCart} variant="default">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Add to Cart
                 </Button>
