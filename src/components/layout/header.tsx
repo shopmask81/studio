@@ -16,7 +16,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
+      <div className="container flex h-14 items-center justify-between" suppressHydrationWarning>
         {/* Left side - Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <Theater className="h-6 w-6 text-primary" />
@@ -27,24 +27,24 @@ export function Header() {
         
         {/* Right side - Icons. This entire block is client-side only. */}
         <ClientOnly>
-          <div className="flex items-center gap-1">
-            <UserNav />
-            <ThemeToggle />
-            <LanguageSwitcher />
-            <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2" aria-label="Wishlist">
-                <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-                {wishlistItemCount > 0 && (
-                    <span
-                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
-                        aria-label={`${wishlistItemCount} items in wishlist`}
-                    >
-                        {wishlistItemCount}
-                    </span>
-                )}
-                <span className="sr-only">Wishlist</span>
-            </Link>
-            <CartIcon />
-          </div>
+            <div className="flex items-center gap-1">
+                <UserNav />
+                <ThemeToggle />
+                <LanguageSwitcher />
+                <Link href="/wishlist" className="relative group transition-all duration-300 ease-in-out p-2" aria-label="Wishlist">
+                    <Heart className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
+                    {wishlistItemCount > 0 && (
+                        <span
+                            className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                            aria-label={`${wishlistItemCount} items in wishlist`}
+                        >
+                            {wishlistItemCount}
+                        </span>
+                    )}
+                    <span className="sr-only">Wishlist</span>
+                </Link>
+                <CartIcon />
+            </div>
         </ClientOnly>
       </div>
     </header>
