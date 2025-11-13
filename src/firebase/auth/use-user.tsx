@@ -1,9 +1,8 @@
 'use client';
 
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '@/firebase/provider';
-
 
 export interface UserAuthHookResult {
   user: User | null;
@@ -12,9 +11,9 @@ export interface UserAuthHookResult {
 }
 
 /**
- * Hook specifically for accessing the authenticated user's state.
- * This provides the User object, loading status, and any auth errors.
- * @returns {UserAuthHookResult} Object with user, isUserLoading, userError.
+ * A simplified hook to get the current Firebase user.
+ * It acts as a direct wrapper around Firebase's onAuthStateChanged listener,
+ * making Firebase the single source of truth for auth state.
  */
 export const useUser = (): UserAuthHookResult => {
     const auth = useAuth();
@@ -29,6 +28,8 @@ export const useUser = (): UserAuthHookResult => {
             return;
         }
 
+        // The onAuthStateChanged listener is the single source of truth.
+        // It provides the user object when logged in, and null when logged out.
         const unsubscribe = onAuthStateChanged(
             auth,
             (firebaseUser) => {
@@ -44,6 +45,7 @@ export const useUser = (): UserAuthHookResult => {
             }
         );
 
+        // Cleanup subscription on unmount
         return () => unsubscribe();
     }, [auth]);
 

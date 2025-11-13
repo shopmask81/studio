@@ -28,46 +28,50 @@ export function LoginForm() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || !firestore) return;
     setIsLoading(true);
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        toast({
-          variant: 'destructive',
-          title: t('email_not_verified_title').text,
-          description: t('email_not_verified_desc').text,
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Check for admin role
+      // After successful login, check the user's role from Firestore.
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (userDocSnap.exists()) {
         const userProfile = userDocSnap.data() as UserProfile;
+        
+        // Redirect based on role
         if (userProfile.role === 'admin') {
           toast({
             title: t('login_successful_title').text,
             description: "Welcome Admin! Redirecting to dashboard...",
           });
           router.push('/admin/dashboard');
-          return;
+        } else {
+          toast({
+            title: t('login_successful_title').text,
+            description: t('login_successful_desc').text,
+          });
+          router.push('/account');
         }
+      } else {
+        // Fallback if user document doesn't exist for some reason
+        toast({
+          title: t('login_successful_title').text,
+          description: t('login_successful_desc').text,
+        });
+        router.push('/account');
       }
 
-      toast({
-        title: t('login_successful_title').text,
-        description: t('login_successful_desc').text,
-      });
-      router.push('/account');
     } catch (error: any) {
       let errorMessage = t('login_error_default').text;
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         errorMessage = t('login_error_invalid_credentials').text;
+      }
+       else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later.";
       }
       toast({
         variant: 'destructive',

@@ -12,9 +12,9 @@ type WishlistContextType = {
   addToWishlist: (item: Omit<WishlistItem, 'addedAt'>) => void;
   removeFromWishlist: (productId: string) => void;
   isWishlisted: (productId: string) => boolean;
-  syncAndClearLocalWishlist: (userId: string) => Promise<void>;
   loadWishlistFromFirestore: (userId: string) => Promise<void>;
-  saveWishlistToLocalStorage: () => Promise<void>;
+  clearLocalWishlist: () => void;
+  setWishlistItems: React.Dispatch<React.SetStateAction<WishlistItem[]>>;
   isWishlistLoading: boolean;
   wishlistItemCount: number;
   error: Error | null;
@@ -58,8 +58,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       );
 
       return () => unsubscribe();
-    } else {
-      // Handle guest user: load from localStorage
+    } else if (!user) {
+      // Handle guest user: load from localStorage on mount
       try {
         const localData = localStorage.getItem(LOCAL_STORAGE_WISHLIST_KEY);
         setWishlistItems(localData ? JSON.parse(localData) : []);
@@ -85,7 +85,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         if (user && firestore) {
             const docRef = doc(firestore, `users/${user.uid}/wishlists`, item.productId);
             // Use serverTimestamp for Firestore
-            setDoc(docRef, { ...item, addedAt: serverTimestamp() }).catch(e => console.error(e));
+            setDoc(docRef, { ...item, addedAt: serverTimestamp() }).catch(e => console.error("Error adding to wishlist in Firestore:", e));
         } else {
             localStorage.setItem(LOCAL_STORAGE_WISHLIST_KEY, JSON.stringify(newItems));
         }
@@ -98,7 +98,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         const newItems = prev.filter(i => i.productId !== productId);
         if (user && firestore) {
             const docRef = doc(firestore, `users/${user.uid}/wishlists`, productId);
-            deleteDoc(docRef).catch(e => console.error(e));
+            deleteDoc(docRef).catch(e => console.error("Error removing from wishlist in Firestore:", e));
         } else {
             localStorage.setItem(LOCAL_STORAGE_WISHLIST_KEY, JSON.stringify(newItems));
         }
@@ -109,27 +109,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const isWishlisted = useCallback((productId: string) => {
       return wishlistItems.some(item => item.productId === productId);
   }, [wishlistItems]);
-
-  const syncAndClearLocalWishlist = useCallback(async (userId: string) => {
-    if (!firestore) return;
-    const localWishlistRaw = localStorage.getItem(LOCAL_STORAGE_WISHLIST_KEY);
-    if (!localWishlistRaw) return;
-
-    const localItems: WishlistItem[] = JSON.parse(localWishlistRaw);
-    if (localItems.length === 0) return;
-    
-    const wishlistColRef = getWishlistCollectionRef(userId);
-    if(!wishlistColRef) return;
-    
-    const batch = writeBatch(firestore);
-    localItems.forEach(item => {
-        const docRef = doc(wishlistColRef, item.productId);
-        batch.set(docRef, { ...item, addedAt: serverTimestamp() }, { merge: true });
-    });
-
-    await batch.commit();
-    localStorage.removeItem(LOCAL_STORAGE_WISHLIST_KEY);
-  }, [firestore, getWishlistCollectionRef]);
 
   const loadWishlistFromFirestore = useCallback(async (userId: string) => {
     const wishlistColRef = getWishlistCollectionRef(userId);
@@ -146,16 +125,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         setIsWishlistLoading(false);
     }
   }, [getWishlistCollectionRef]);
+  
+  const clearLocalWishlist = useCallback(() => {
+    localStorage.removeItem(LOCAL_STORAGE_WISHLIST_KEY);
+  }, []);
 
-  const saveWishlistToLocalStorage = useCallback(async () => {
-    if (wishlistItems.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_WISHLIST_KEY, JSON.stringify(wishlistItems));
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_WISHLIST_KEY);
-    }
-     // After saving, we can clear the state for the next user.
-    setWishlistItems([]);
-  }, [wishlistItems]);
 
   const wishlistItemCount = useMemo(() => wishlistItems.length, [wishlistItems]);
   
@@ -164,9 +138,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     addToWishlist,
     removeFromWishlist,
     isWishlisted,
-    syncAndClearLocalWishlist,
     loadWishlistFromFirestore,
-    saveWishlistToLocalStorage,
+    clearLocalWishlist,
+    setWishlistItems,
     isWishlistLoading,
     wishlistItemCount,
     error,
