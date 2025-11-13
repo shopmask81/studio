@@ -14,27 +14,27 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
-    // Wait for the user to be loaded before creating the ref
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  // Combine loading states: still loading if auth is checking, or if we have a user but are still fetching their profile.
-  const isLoading = isUserLoading || (user && isProfileLoading);
-  const isDefinitelyNotAdmin = !isLoading && (!user || userProfile?.role !== 'admin');
+  const isLoading = isUserLoading || isProfileLoading;
 
   useEffect(() => {
-    // Only redirect when we are certain the user is not an admin.
-    if (isDefinitelyNotAdmin) {
-      router.push('/login');
+    // Only perform redirection logic after all loading is complete.
+    if (!isLoading) {
+      // If there's no user or the user's role is not 'admin', redirect.
+      if (!user || userProfile?.role !== 'admin') {
+        router.push('/login');
+      }
     }
-  }, [isDefinitelyNotAdmin, router]);
+  }, [isLoading, user, userProfile, router]);
 
-  // While loading, or if the user is not an admin (and is about to be redirected), show a loader.
-  // This prevents rendering the children prematurely or showing a blank screen.
-  if (isLoading || isDefinitelyNotAdmin) {
+  // While loading, or if the user is not a confirmed admin yet, show the loader.
+  // This prevents rendering children or redirecting prematurely.
+  if (isLoading || !user || userProfile?.role !== 'admin') {
     return (
         <div className="flex items-center justify-center h-screen bg-background">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -42,7 +42,6 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If we're here, it means isLoading is false and isDefinitelyNotAdmin is false,
-  // so the user is a confirmed admin.
+  // If all checks pass (not loading, user exists, and is an admin), render the children.
   return <>{children}</>;
 }
