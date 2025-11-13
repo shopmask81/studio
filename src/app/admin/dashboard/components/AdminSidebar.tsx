@@ -15,6 +15,8 @@ import {
     Theater,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const sidebarNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,28 +33,35 @@ export function AdminSidebar() {
     const pathname = usePathname();
 
     return (
-        <aside className="w-64 border-r bg-background flex flex-col">
-            <div className="h-16 border-b flex items-center px-6">
-                <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
+        <Sidebar>
+            <SidebarHeader>
+                 <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
                     <Theater className="h-6 w-6 text-primary" />
-                    <span>MaskShop Admin</span>
+                    <span className="duration-200 group-data-[collapsible=icon]:opacity-0">MaskShop Admin</span>
                 </Link>
-            </div>
-            <nav className="flex-1 px-4 py-6 space-y-2">
-                {sidebarNavItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
-                            pathname === item.href && "bg-muted text-primary"
-                        )}
-                    >
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                    </Link>
-                ))}
-            </nav>
-        </aside>
+                <SidebarTrigger className="hidden md:flex" />
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    {sidebarNavItems.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                             <SidebarMenuButton
+                                asChild
+                                isActive={pathname === item.href}
+                                tooltip={{children: item.label}}
+                                >
+                                <Link href={item.href}>
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter>
+                {/* Optional footer content */}
+            </SidebarFooter>
+        </Sidebar>
     );
 }
