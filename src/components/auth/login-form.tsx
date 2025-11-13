@@ -11,8 +11,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { useTranslation } from '../language/language-provider';
+import { doc, getDoc } from 'firebase/firestore';
+import { UserProfile } from '@/lib/types';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -21,6 +23,7 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { t } = useTranslation();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -28,8 +31,9 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      if (!userCredential.user.emailVerified) {
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
         toast({
           variant: 'destructive',
           title: t('email_not_verified_title').text,
@@ -37,6 +41,22 @@ export function LoginForm() {
         });
         setIsLoading(false);
         return;
+      }
+      
+      // Check for admin role
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userProfile = userDocSnap.data() as UserProfile;
+        if (userProfile.role === 'admin') {
+          toast({
+            title: t('login_successful_title').text,
+            description: "Welcome Admin! Redirecting to dashboard...",
+          });
+          router.push('/admin/dashboard');
+          return;
+        }
       }
 
       toast({
@@ -81,7 +101,7 @@ export function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('sign_in').text}
           </Button>
-          <div className="mt-4 text-center text-sm" {...t('dont_have_account')}>
+          <div className="mt-4 text-center text-sm">
             {t('dont_have_account').text}{' '}
             <Link href="/signup" className="underline text-primary hover:text-accent">
               {t('sign_up').text}
