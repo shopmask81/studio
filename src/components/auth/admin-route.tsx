@@ -22,8 +22,9 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   // isProfileLoading will be true until userDocRef is created and the doc is fetched
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
+  // Master loading state: true if either Firebase auth or Firestore profile is loading.
   const isLoading = isUserLoading || isProfileLoading;
-  const isConfirmedAdmin = user && userProfile?.role === 'admin';
+  const isConfirmedAdmin = !isLoading && user && userProfile?.role === 'admin';
 
   useEffect(() => {
     // This effect should only handle redirection logic, and only when loading is complete.
@@ -38,9 +39,8 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isConfirmedAdmin, router]);
 
-  // While any authentication or data fetching is in progress, show the loader.
-  // This is the key change: we check for loading *before* checking for admin status.
-  // We also ensure we don't render children prematurely until the admin status is confirmed.
+  // While any authentication or data fetching is in progress, or if the user isn't confirmed as an admin yet, show the loader.
+  // This prevents rendering children prematurely.
   if (isLoading || !isConfirmedAdmin) {
     return (
         <div className="flex items-center justify-center h-screen bg-background">
