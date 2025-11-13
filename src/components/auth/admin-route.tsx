@@ -14,27 +14,34 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
+    // Wait until we have a user to create the document reference
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
+  // isProfileLoading will be true until userDocRef is created and the doc is fetched
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   const isLoading = isUserLoading || isProfileLoading;
+  const isConfirmedAdmin = user && userProfile?.role === 'admin';
 
   useEffect(() => {
-    // Only perform redirection logic after all loading is complete.
-    if (!isLoading) {
-      // If there's no user or the user's role is not 'admin', redirect.
-      if (!user || userProfile?.role !== 'admin') {
-        router.push('/login');
-      }
+    // This effect should only handle redirection logic, and only when loading is complete.
+    // If we are still loading any data, we should wait.
+    if (isLoading) {
+      return; // Do nothing while loading
     }
-  }, [isLoading, user, userProfile, router]);
 
-  // While loading, or if the user is not a confirmed admin yet, show the loader.
-  // This prevents rendering children or redirecting prematurely.
-  if (isLoading || !user || userProfile?.role !== 'admin') {
+    // After loading, if the user is not a confirmed admin, redirect.
+    if (!isConfirmedAdmin) {
+      router.push('/login');
+    }
+  }, [isLoading, isConfirmedAdmin, router]);
+
+  // While any authentication or data fetching is in progress, show the loader.
+  // This is the key change: we check for loading *before* checking for admin status.
+  // We also ensure we don't render children prematurely until the admin status is confirmed.
+  if (isLoading || !isConfirmedAdmin) {
     return (
         <div className="flex items-center justify-center h-screen bg-background">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -42,6 +49,6 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If all checks pass (not loading, user exists, and is an admin), render the children.
+  // If all checks pass (not loading, user exists, and is a confirmed admin), render the children.
   return <>{children}</>;
 }
