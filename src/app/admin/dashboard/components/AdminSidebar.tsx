@@ -34,8 +34,8 @@ export function AdminSidebar() {
 
     return (
         <Sidebar>
-            <SheetTitle className="sr-only">Admin Navigation</SheetTitle>
             <SidebarHeader>
+                 <SheetTitle className="sr-only">Admin Navigation</SheetTitle>
                  <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
                     <Theater className="h-6 w-6 text-primary" />
                     <span className="duration-200 group-data-[collapsible=icon]:opacity-0">MaskShop Admin</span>
