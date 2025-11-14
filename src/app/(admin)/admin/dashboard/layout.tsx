@@ -12,14 +12,14 @@ export default function AdminDashboardLayout({
   return (
     <AdminRoute>
       <SidebarProvider>
-        <div className="flex min-h-screen">
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] group-data-[collapsible=icon]:md:grid-cols-[5rem_1fr]">
           <AdminSidebar />
-          <main className="flex-1 flex flex-col">
+          <div className="flex flex-col">
             <AdminHeader />
-            <div className="flex-1 p-8 bg-muted/40">
+            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20 dark:bg-black/20">
               {children}
-            </div>
-          </main>
+            </main>
+          </div>
         </div>
       </SidebarProvider>
     </AdminRoute>
