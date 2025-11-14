@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,6 +95,8 @@ async function deleteFromImgBB(deleteUrl: string): Promise<void> {
     // reliable. For this demo, we'll simulate a successful deletion.
     // In a real-world scenario, this should be handled by a server-side proxy/function.
     console.log(`Simulating deletion of image at: ${deleteUrl}`);
+    // A real fetch call could look like this, but might be blocked by CORS
+    // await fetch(deleteUrl, { method: 'DELETE' });
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network latency
 }
 
@@ -178,7 +180,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       const newFiles = Array.from(files);
       const uniqueNewFiles = newFiles.filter(file => !selectedFiles.some(f => f.name === file.name && f.size === file.size));
       
-      const wasEmpty = selectedFiles.length === 0;
+      const wasEmpty = selectedFiles.length === 0 && uploadedImages.length === 0;
 
       setSelectedFiles(prev => [...prev, ...uniqueNewFiles]);
       setLocalPreviews(prev => [...prev, ...uniqueNewFiles.map(file => URL.createObjectURL(file))]);
@@ -207,7 +209,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       if (mainImageIndex !== null) {
         if (mainImageIndex === indexToRemove) {
           // If the main image is removed, set the new first image as main, or null if empty
-          setMainImageIndex(selectedFiles.length > 1 ? 0 : null);
+          setMainImageIndex(selectedFiles.length > 1 ? 0 : (uploadedImages.length > 0 ? uploadedImages.length : null));
         } else if (mainImageIndex > indexToRemove) {
           // If an image before the main one is removed, decrement the main index
           setMainImageIndex(mainImageIndex - 1);
@@ -221,7 +223,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   
     setDeletingUrl(urlToRemove);
     try {
-      await deleteFromImgBB(imageToRemove.deleteUrl);
+      if (imageToRemove.deleteUrl && !imageToRemove.deleteUrl.startsWith('placeholder')) {
+        await deleteFromImgBB(imageToRemove.deleteUrl);
+      }
   
       setUploadedImages(prevImages => {
         const urlIndex = prevImages.findIndex(img => img.url === urlToRemove);
@@ -229,9 +233,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   
         // Adjust main image index
         if (mainImageIndex !== null) {
-          if (mainImageIndex === urlIndex) {
-            setMainImageIndex(newImages.length > 0 ? 0 : null);
-          } else if (mainImageIndex > urlIndex) {
+          const totalLocalImages = selectedFiles.length;
+          const uploadedIndex = urlIndex + totalLocalImages;
+
+          if (mainImageIndex === uploadedIndex) {
+            setMainImageIndex(totalLocalImages > 0 ? 0 : (newImages.length > 0 ? totalLocalImages : null));
+          } else if (mainImageIndex > uploadedIndex) {
             setMainImageIndex(prev => (prev !== null ? prev - 1 : null));
           }
         }
@@ -254,7 +261,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       toast({ variant: 'destructive', title: 'No new images selected', description: 'Please select images to upload first.'});
       return;
     }
-    if (mainImageIndex === null && uploadedImages.length === 0) {
+    if (mainImageIndex === null) {
       toast({ variant: 'destructive', title: 'Main image not selected', description: 'Please select a main image before uploading.'});
       return;
     }
@@ -273,31 +280,19 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         setUploadProgress(((i + 1) / selectedFiles.length) * 100);
       }
       
-      setUploadedImages(prev => [...prev, ...newUploadedImages]);
+      const combinedUploadedImages = [...uploadedImages, ...newUploadedImages];
+      setUploadedImages(combinedUploadedImages);
+      
+      // After upload, mainImageIndex should point to the correct image in the combined array
+      if (mainImageIndex !== null && mainImageIndex < selectedFiles.length) {
+          // The main image was in the local previews that just got uploaded
+          setMainImageIndex(mainImageIndex + uploadedImages.length);
+      }
+      
       setSelectedFiles([]);
       localPreviews.forEach(url => URL.revokeObjectURL(url)); 
       setLocalPreviews([]); 
 
-      // After upload, the mainImageIndex from local previews should be transferred
-      // to the new position in the combined uploadedImages array.
-      if (mainImageIndex !== null && selectedFiles.length > 0) {
-        // Find the URL of the main image from the local previews
-        const mainImageLocalUrl = localPreviews[mainImageIndex];
-        const mainImageFile = selectedFiles.find((_, i) => localPreviews[i] === mainImageLocalUrl);
-        // Find its new object in the newly uploaded images and then its final index
-        const uploadedEquivalent = newUploadedImages.find(u => u.url.includes(mainImageFile?.name.split('.')[0] ?? ''));
-        const newMainIndex = uploadedImages.length + newUploadedImages.findIndex(u => u.url === uploadedEquivalent?.url);
-
-        if (newMainIndex !== -1) {
-            setMainImageIndex(newMainIndex);
-        } else {
-             // If local selection was cleared, default main to the first uploaded
-            setMainImageIndex(uploadedImages.length > 0 ? 0 : (newUploadedImages.length > 0 ? uploadedImages.length : null));
-        }
-      } else if (uploadedImages.length === 0 && newUploadedImages.length > 0) {
-         setMainImageIndex(0);
-      }
-      
       setUploadStatus('Upload Complete!');
       toast({ title: 'Upload Successful', description: `${newUploadedImages.length} images have been uploaded.`});
     } catch (error) {
@@ -310,7 +305,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   };
 
   const handleDragSort = () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return;
     
     // Create copies of the arrays
     let _selectedFiles = [...selectedFiles];
@@ -326,20 +321,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     
     // Update main image index
     if (mainImageIndex !== null) {
+      if (mainImageIndex < selectedFiles.length) { // main image is a local preview
         if (dragItem.current === mainImageIndex) {
             setMainImageIndex(dragOverItem.current);
         } else {
-            const start = Math.min(dragItem.current, dragOverItem.current);
-            const end = Math.max(dragItem.current, dragOverItem.current);
-
-            if (mainImageIndex >= start && mainImageIndex <= end) {
-                if (dragItem.current < dragOverItem.current && mainImageIndex > dragItem.current) {
-                    setMainImageIndex(mainImageIndex - 1);
-                } else if (dragItem.current > dragOverItem.current && mainImageIndex < dragItem.current) {
-                    setMainImageIndex(mainImageIndex + 1);
-                }
+            if (dragItem.current < mainImageIndex && dragOverItem.current >= mainImageIndex) {
+              setMainImageIndex(mainImageIndex - 1);
+            } else if (dragItem.current > mainImageIndex && dragOverItem.current <= mainImageIndex) {
+              setMainImageIndex(mainImageIndex + 1);
             }
         }
+      }
     }
     
     // Reset refs
@@ -355,14 +347,20 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
     
-    if (uploadedImages.length === 0) {
-      toast({ variant: 'destructive', title: 'No images uploaded', description: 'You must upload at least one image before saving.'});
+    const allImages = [...localPreviews, ...uploadedImages.map(img => img.url)];
+    if (allImages.length === 0) {
+      toast({ variant: 'destructive', title: 'No images available', description: 'You must select or upload at least one image.'});
       return;
     }
 
-    if (mainImageIndex === null || uploadedImages[mainImageIndex] === undefined) {
+    if (mainImageIndex === null || allImages[mainImageIndex] === undefined) {
         toast({ variant: 'destructive', title: 'Main image required', description: 'Please select a main image for the product.'});
         return;
+    }
+    
+    if (selectedFiles.length > 0) {
+      toast({ variant: 'destructive', title: 'Un-uploaded images', description: `You have ${selectedFiles.length} selected images that have not been uploaded. Please upload them before saving.`});
+      return;
     }
 
     setIsSubmitting(true);
@@ -408,13 +406,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         }
     } catch (error) {
         console.error('Error in onSubmit logic:', error);
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'An unexpected error occurred while saving the product.' });
     } finally {
         setIsSubmitting(false);
     }
   };
   
-  const isCreateDisabled = uploadedImages.length === 0 || mainImageIndex === null || isUploading || isSubmitting;
-  const isUploadDisabled = isUploading || selectedFiles.length === 0 || (mainImageIndex === null && uploadedImages.length === 0);
+  const isCreateDisabled = uploadedImages.length === 0 || mainImageIndex === null || isUploading || isSubmitting || selectedFiles.length > 0;
+  const isUploadDisabled = isUploading || selectedFiles.length === 0 || mainImageIndex === null || mainImageIndex >= selectedFiles.length;
 
   return (
     <Form {...form}>
@@ -524,16 +523,19 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                </div>
                             </div>
                         )}
-                        {isUploading && (
-                          <div className="mt-4 space-y-2">
-                              <p className="text-sm font-medium text-muted-foreground">{uploadStatus}</p>
-                              <Progress value={uploadProgress} className="w-full" />
-                          </div>
-                        )}
-                        <Button type="button" onClick={handleUploadImages} disabled={isUploadDisabled} className="mt-4">
-                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                            {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s)`}
-                        </Button>
+                        
+                        <div className="flex items-center gap-4 mt-4">
+                            <Button type="button" onClick={handleUploadImages} disabled={isUploadDisabled}>
+                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s)`}
+                            </Button>
+                            {isUploading && (
+                                <div className="flex-grow space-y-1">
+                                    <p className="text-sm font-medium text-muted-foreground">{uploadStatus}</p>
+                                    <Progress value={uploadProgress} className="w-full h-2" />
+                                </div>
+                            )}
+                        </div>
 
                     </div>
                     
@@ -541,29 +543,41 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                          <div className="mt-4">
                                <h3 className="font-medium text-sm mb-2">Uploaded Images ({uploadedImages.length})</h3>
                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                                   {uploadedImages.map((image, index) => (
-                                       <div key={image.url} className={cn("relative group aspect-square", deletingUrl === image.url && "opacity-50 pointer-events-none")}>
-                                           {deletingUrl === image.url && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md z-20">
-                                                    <Loader2 className="h-6 w-6 animate-spin text-white" />
-                                                </div>
-                                           )}
-                                           <Image src={image.url} alt={`Uploaded ${index}`} fill className={cn("object-cover rounded-md border-2", mainImageIndex === index + selectedFiles.length ? "border-primary" : "border-transparent")}/>
-                                           <Button
-                                               type="button"
-                                               variant="destructive"
-                                               size="icon"
-                                               className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                               onClick={() => removeUploadedImage(image.url)}
-                                               disabled={deletingUrl !== null}
-                                           >
-                                               <X className="h-4 w-4" />
-                                           </Button>
-                                           {(mainImageIndex !== null && mainImageIndex === index + selectedFiles.length) && (
-                                                <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
-                                           )}
-                                       </div>
-                                   ))}
+                                   {uploadedImages.map((image, index) => {
+                                        const totalIndex = index + selectedFiles.length;
+                                        return (
+                                            <div key={image.url} className={cn("relative group aspect-square", deletingUrl === image.url && "opacity-50 pointer-events-none")}>
+                                                {deletingUrl === image.url && (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md z-20">
+                                                            <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                                        </div>
+                                                )}
+                                                <Image src={image.url} alt={`Uploaded ${index}`} fill className={cn("object-cover rounded-md border-2", mainImageIndex === totalIndex ? "border-primary" : "border-transparent")}/>
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    onClick={() => removeUploadedImage(image.url)}
+                                                    disabled={deletingUrl !== null}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                                {mainImageIndex === totalIndex ? (
+                                                     <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
+                                                ) : (
+                                                     <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        onClick={() => setMainImageIndex(totalIndex)}
+                                                    >
+                                                        Set as main
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
                                </div>
                         </div>
                     )}
@@ -720,7 +734,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
-
-    
