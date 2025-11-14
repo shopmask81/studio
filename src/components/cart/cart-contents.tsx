@@ -22,8 +22,8 @@ function CartDisplay() {
         router.push('/checkout');
     };
 
-    const handleRemoveItem = (productId: string, productName: string) => {
-        removeFromCart(productId);
+    const handleRemoveItem = (productId: string, productName: string, selectedColor?: string, selectedSize?: string) => {
+        removeFromCart(productId, { selectedColor, selectedSize });
         const translatedName = t('item_removed_desc', { productName }).text;
         toast({
             title: t('item_removed_title').text,
@@ -63,12 +63,17 @@ function CartDisplay() {
                             const { dir } = t(displayName);
 
                             return (
-                                <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
+                                <div key={`${item.product.id}-${item.selectedColor}-${item.selectedSize}`} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
                                     <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
                                          <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
                                     </div>
                                     <div className="flex-grow">
                                         <h3 className="font-semibold" dir={dir}>{displayName}</h3>
+                                        {(item.selectedColor || item.selectedSize) && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {item.selectedColor}{item.selectedColor && item.selectedSize && ', '}{item.selectedSize}
+                                            </p>
+                                        )}
                                         <div className="text-sm">
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
@@ -82,16 +87,16 @@ function CartDisplay() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {item.quantity > 1 ? (
-                                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
+                                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1, { selectedColor: item.selectedColor, selectedSize: item.selectedSize })}>
                                                 <Minus className="h-4 w-4" />
                                             </Button>
                                         ) : (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, displayName)}>
+                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, displayName, item.selectedColor, item.selectedSize)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}
                                         <span className="w-10 text-center font-medium">{item.quantity}</span>
-                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1, { selectedColor: item.selectedColor, selectedSize: item.selectedSize })}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>

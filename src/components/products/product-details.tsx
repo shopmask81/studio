@@ -20,6 +20,8 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { useTranslation } from '../language/language-provider';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 interface ProductDetailsProps {
   productId: string;
@@ -34,12 +36,21 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
+
   const productRef = useMemo(() => {
     if (!firestore || !productId) return null;
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
+
+  useEffect(() => {
+    // Reset selections when product changes
+    setSelectedColor(undefined);
+    setSelectedSize(undefined);
+  }, [productId])
 
   const imageGallery = useMemo(() => {
       if (!product) return [];
@@ -78,6 +89,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     setCurrentSlide(index);
   }
 
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart(product, 1, { selectedColor, selectedSize });
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-20rem)]">
@@ -105,6 +121,14 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { dir: descDir, style: descStyle } = t(displayDescription);
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+  const hasVariants = product.variants?.enabled;
+  const hasColors = hasVariants && product.variants.colors && product.variants.colors.length > 0;
+  const hasSizes = hasVariants && product.variants.sizes && product.variants.sizes.length > 0;
+
+  const isAddToCartDisabled =
+    product.stock === 0 ||
+    (hasColors && !selectedColor) ||
+    (hasSizes && !selectedSize);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -195,7 +219,70 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
             
-            {product.stock <= 10 && product.stock > 0 && (
+            {/* Variants Section */}
+            {hasVariants && (
+              <div className="space-y-6 mb-8">
+                {hasColors && (
+                  <div>
+                    <Label className="text-lg font-medium">Color</Label>
+                    <RadioGroup
+                      value={selectedColor}
+                      onValueChange={setSelectedColor}
+                      className="flex flex-wrap gap-2 mt-2"
+                    >
+                      {product.variants!.colors!.map((color) => (
+                        <RadioGroupItem key={color} value={color} id={`color-${color}`} className="sr-only" />
+                      ))}
+                      {product.variants!.colors!.map((color) => (
+                        <Label
+                          key={`label-${color}`}
+                          htmlFor={`color-${color}`}
+                          className={cn(
+                            "cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors",
+                            selectedColor === color
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background hover:bg-muted"
+                          )}
+                        >
+                          {color}
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+                {hasSizes && (
+                   <div>
+                    <Label className="text-lg font-medium">Size</Label>
+                    <RadioGroup
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
+                      className="flex flex-wrap gap-2 mt-2"
+                    >
+                      {product.variants!.sizes!.map((size) => (
+                        <RadioGroupItem key={size} value={size} id={`size-${size}`} className="sr-only" />
+                      ))}
+                      {product.variants!.sizes!.map((size) => (
+                        <Label
+                          key={`label-${size}`}
+                          htmlFor={`size-${size}`}
+                          className={cn(
+                            "cursor-pointer rounded-md border w-12 h-12 flex items-center justify-center text-sm font-medium transition-colors",
+                            selectedSize === size
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background hover:bg-muted"
+                          )}
+                        >
+                          {size}
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+              </div>
+            )}
+
+
+            {product.stock <= 10 && product.stock > 0 && !hasVariants && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
                     product.stock <= 5 ? "text-red-500" : "text-amber-500"
@@ -207,8 +294,8 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                     size="lg" 
-                    onClick={() => addToCart(product)}
-                    disabled={product.stock === 0}
+                    onClick={handleAddToCart}
+                    disabled={isAddToCartDisabled}
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />

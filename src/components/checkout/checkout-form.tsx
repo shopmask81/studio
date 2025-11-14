@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -146,6 +147,8 @@ export function CheckoutForm() {
                     name: item.product.name,
                     quantity: item.quantity,
                     price: item.product.discountPrice ?? item.product.price,
+                    selectedColor: item.selectedColor,
+                    selectedSize: item.selectedSize
                 })),
                 totalAmount: cartTotal,
                 paymentMethod: values.paymentMethod,

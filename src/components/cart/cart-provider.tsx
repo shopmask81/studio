@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
@@ -7,9 +8,14 @@ import { useUser, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
 import { useTranslation } from '../language/language-provider';
 
+type AddToCartOptions = {
+  selectedColor?: string;
+  selectedSize?: string;
+}
+
 type CartContextType = {
   cartItems: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product, quantity?: number, options?: AddToCartOptions) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -45,8 +51,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           try {
             const snapshot = await getDocs(cartColRef);
             const firestoreItems: CartItem[] = snapshot.docs.map(d => ({
-              product: d.data() as Product,
-              quantity: d.data().quantity
+              product: d.data().product as Product,
+              quantity: d.data().quantity,
+              selectedColor: d.data().selectedColor,
+              selectedSize: d.data().selectedSize,
             }));
             setCartItems(firestoreItems);
           } catch (error) {
@@ -78,26 +86,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [user, firestore, getCartCollectionRef, toast, t]);
   
 
-  const addToCart = useCallback((product: Product, quantity: number = 1) => {
+  const addToCart = useCallback((product: Product, quantity: number = 1, options?: AddToCartOptions) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.product.id === product.id);
+      // For variant products, each unique combination is a separate cart item.
+      // For non-variant products, we just check by product ID.
+      const findPredicate = (item: CartItem) =>
+        item.product.id === product.id &&
+        item.selectedColor === options?.selectedColor &&
+        item.selectedSize === options?.selectedSize;
+
+      const existingItem = prevItems.find(findPredicate);
       let newItems: CartItem[];
 
       if (existingItem) {
         newItems = prevItems.map((item) =>
-          item.product.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+          findPredicate(item) ? { ...item, quantity: item.quantity + quantity } : item
         );
       } else {
-        newItems = [...prevItems, { product, quantity }];
+        newItems = [...prevItems, { 
+          product, 
+          quantity, 
+          selectedColor: options?.selectedColor, 
+          selectedSize: options?.selectedSize 
+        }];
       }
-
+      
+      const cartItemId = `${product.id}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
+      
       if (user && firestore) {
-        const cartItemRef = doc(firestore, `users/${user.uid}/cart`, product.id);
-        const itemData = newItems.find(i => i.product.id === product.id);
+        const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
+        const itemData = newItems.find(findPredicate);
         if (itemData) {
           setDoc(cartItemRef, { 
-            ...itemData.product, 
-            quantity: itemData.quantity 
+            product: itemData.product,
+            quantity: itemData.quantity,
+            selectedColor: itemData.selectedColor,
+            selectedSize: itemData.selectedSize,
           }, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
         }
       } else {
@@ -113,35 +137,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, [user, firestore, toast, t]);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setCartItems((prevItems) => {
-        const newItems = prevItems.filter((item) => item.product.id !== productId);
 
-        if (user && firestore) {
-            const cartItemRef = doc(firestore, `users/${user.uid}/cart`, productId);
-            deleteDoc(cartItemRef).catch(e => console.error("Error removing from cart in Firestore:", e));
-        } else {
-            localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
-        }
-        return newItems;
+  const removeFromCart = useCallback((productId: string, options?: AddToCartOptions) => {
+    setCartItems((prevItems) => {
+      const cartItemId = `${productId}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
+      const newItems = prevItems.filter((item) => {
+        const currentItemId = `${item.product.id}${item.selectedColor || ''}${item.selectedSize || ''}`;
+        return currentItemId !== cartItemId;
+      });
+
+      if (user && firestore) {
+          const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
+          deleteDoc(cartItemRef).catch(e => console.error("Error removing from cart in Firestore:", e));
+      } else {
+          localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
+      }
+      return newItems;
     });
   }, [user, firestore]);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, options?: AddToCartOptions) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, options);
       return;
     }
     setCartItems((prevItems) => {
-        const newItems = prevItems.map((item) => (item.product.id === productId ? { ...item, quantity } : item));
-        
-        if (user && firestore) {
-            const cartItemRef = doc(firestore, `users/${user.uid}/cart`, productId);
-            updateDoc(cartItemRef, { quantity }).catch(e => console.error("Error updating cart quantity in Firestore:", e));
-        } else {
-            localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
-        }
-        return newItems;
+      const findPredicate = (item: CartItem) =>
+        item.product.id === productId &&
+        item.selectedColor === options?.selectedColor &&
+        item.selectedSize === options?.selectedSize;
+      
+      const newItems = prevItems.map((item) => (findPredicate(item) ? { ...item, quantity } : item));
+      
+      const cartItemId = `${productId}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
+      
+      if (user && firestore) {
+          const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
+          updateDoc(cartItemRef, { quantity }).catch(e => console.error("Error updating cart quantity in Firestore:", e));
+      } else {
+          localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
+      }
+      return newItems;
     });
   }, [user, firestore, removeFromCart]);
 

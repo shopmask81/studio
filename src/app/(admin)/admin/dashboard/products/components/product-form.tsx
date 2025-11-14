@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -36,7 +36,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X, PlusCircle, GripVertical } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -50,6 +50,13 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
+const variantSchema = z.object({
+  enabled: z.boolean().default(false),
+  colors: z.array(z.object({ value: z.string() })).optional(),
+  sizes: z.array(z.object({ value: z.string() })).optional(),
+});
+
+
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
@@ -62,6 +69,7 @@ const formSchema = z.object({
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
+  variants: variantSchema.optional(),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -137,6 +145,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           stock: productToEdit.stock || 0,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
+          variants: {
+            enabled: productToEdit.variants?.enabled ?? false,
+            colors: productToEdit.variants?.colors?.map(c => ({value: c})) ?? [],
+            sizes: productToEdit.variants?.sizes?.map(s => ({value: s})) ?? [],
+          }
         }
       : {
           name: '',
@@ -150,9 +163,26 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           sku: '',
           active: true,
           featured: false,
+          variants: {
+            enabled: false,
+            colors: [],
+            sizes: []
+          }
         },
   });
+
+  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
+    control: form.control,
+    name: "variants.colors"
+  });
+
+  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
+    control: form.control,
+    name: "variants.sizes"
+  });
   
+  const variantsEnabled = form.watch('variants.enabled');
+
   useEffect(() => {
     if (productToEdit) {
       const mainImageUrl = productToEdit.mainImage;
@@ -209,7 +239,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
       if (mainImageIndex !== null) {
         if (mainImageIndex === indexToRemove) {
-          setMainImageIndex(selectedFiles.length > 1 ? 0 : (uploadedImages.length > 0 ? uploadedImages.length : null));
+          const newTotalImages = selectedFiles.length - 1 + uploadedImages.length;
+          setMainImageIndex(newTotalImages > 0 ? 0 : null);
         } else if (mainImageIndex > indexToRemove) {
           setMainImageIndex(mainImageIndex - 1);
         }
@@ -238,7 +269,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           const uploadedIndex = urlIndex + totalLocalImages;
 
           if (mainImageIndex === uploadedIndex) {
-            setMainImageIndex(totalLocalImages > 0 ? 0 : (newImages.length > 0 ? totalLocalImages : null));
+            const newTotalImages = totalLocalImages + newImages.length;
+            setMainImageIndex(newTotalImages > 0 ? 0 : null);
           } else if (mainImageIndex > uploadedIndex) {
             setMainImageIndex(prev => (prev !== null ? prev - 1 : null));
           }
@@ -365,6 +397,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             ...data,
             mainImage: mainImage,
             images: additionalImages,
+            variants: {
+              enabled: data.variants?.enabled ?? false,
+              colors: data.variants?.colors?.map(c => c.value).filter(Boolean) ?? [],
+              sizes: data.variants?.sizes?.map(s => s.value).filter(Boolean) ?? [],
+            }
         };
 
         if (productToEdit) {
@@ -654,8 +691,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         <FormItem>
                             <FormLabel>Stock Quantity</FormLabel>
                             <FormControl>
-                            <Input type="number" placeholder="100" {...field} />
+                            <Input type="number" placeholder="100" {...field} disabled={variantsEnabled}/>
                             </FormControl>
+                            {variantsEnabled && <FormDescription>Stock is managed in variants.</FormDescription>}
                             <FormMessage />
                         </FormItem>
                         )}
@@ -676,6 +714,109 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Product Variants</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <FormField
+                        control={form.control}
+                        name="variants.enabled"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel>Enable Variants</FormLabel>
+                                    <FormDescription>
+                                        Allow customers to choose options like color or size.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+
+                    {variantsEnabled && (
+                        <div className="space-y-6 pt-6">
+                            {/* Colors */}
+                            <div>
+                                <h3 className="text-lg font-medium mb-2">Colors</h3>
+                                <div className="space-y-2">
+                                    {colorFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`variants.colors.${index}.value`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl>
+                                                            <Input placeholder="e.g. Red, Blue, Green" {...field} />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(index)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => appendColor({ value: '' })}
+                                >
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Add Color
+                                </Button>
+                            </div>
+
+                            {/* Sizes */}
+                            <div>
+                                <h3 className="text-lg font-medium mb-2">Sizes</h3>
+                                <div className="space-y-2">
+                                    {sizeFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`variants.sizes.${index}.value`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl>
+                                                            <Input placeholder="e.g. S, M, L, XL" {...field} />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(index)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => appendSize({ value: '' })}
+                                >
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Add Size
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
           </div>
 
           <div className="lg:col-span-1 space-y-8">

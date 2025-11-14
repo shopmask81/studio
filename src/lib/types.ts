@@ -1,6 +1,12 @@
 
 import { Timestamp } from 'firebase/firestore';
 
+export type ProductVariant = {
+  enabled: boolean;
+  colors?: string[];
+  sizes?: string[];
+}
+
 export type Product = {
   id: string;
   name: string;
@@ -13,6 +19,7 @@ export type Product = {
   images: string[];
   category: string;
   stock: number;
+  variants?: ProductVariant;
   featured?: boolean;
   active?: boolean;
   sku?: string;
@@ -25,6 +32,8 @@ export type Product = {
 export type CartItem = {
   product: Product;
   quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
 };
 
 export type WishlistItem = {
