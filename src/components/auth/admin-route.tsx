@@ -24,7 +24,6 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 
   // Master loading state: true if either Firebase auth or Firestore profile is loading.
   const isLoading = isUserLoading || isProfileLoading;
-  const isConfirmedAdmin = !isLoading && user && userProfile?.role === 'admin';
 
   useEffect(() => {
     // This effect should only handle redirection logic, and only when loading is complete.
@@ -33,15 +32,16 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
       return; // Do nothing while loading
     }
 
-    // After loading, if the user is not a confirmed admin, redirect.
-    if (!isConfirmedAdmin) {
+    // After loading, if the user is not an admin, redirect.
+    if (!user || userProfile?.role !== 'admin') {
       router.push('/login');
     }
-  }, [isLoading, isConfirmedAdmin, router]);
+  }, [isLoading, user, userProfile, router]);
 
-  // While any authentication or data fetching is in progress, or if the user isn't confirmed as an admin yet, show the loader.
-  // This prevents rendering children prematurely.
-  if (isLoading || !isConfirmedAdmin) {
+
+  // While any authentication or data fetching is in progress, show a loader.
+  // This prevents rendering children prematurely and handles the "redirect on refresh" bug.
+  if (isLoading) {
     return (
         <div className="flex items-center justify-center h-screen bg-background">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -49,6 +49,16 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If all checks pass (not loading, user exists, and is a confirmed admin), render the children.
-  return <>{children}</>;
+  // If all checks pass (not loading, user exists, and is an admin), render the children.
+  if (user && userProfile?.role === 'admin') {
+    return <>{children}</>;
+  }
+  
+  // In the brief moment between loading finishing and the redirect effect running, 
+  // continue showing the loader to prevent a flicker of content.
+  return (
+    <div className="flex items-center justify-center h-screen bg-background">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+    </div>
+  );
 }

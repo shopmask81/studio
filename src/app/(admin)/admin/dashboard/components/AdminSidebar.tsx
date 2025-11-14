@@ -8,25 +8,19 @@ import {
     ShoppingBag, 
     Tags, 
     ClipboardList,
-    MessageSquare,
-    Ticket,
     Users,
-    BadgePercent,
+    Settings,
     Theater,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 
 const sidebarNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/dashboard/products', label: 'Products', icon: ShoppingBag },
     { href: '/admin/dashboard/categories', label: 'Categories', icon: Tags },
     { href: '/admin/dashboard/orders', label: 'Orders', icon: ClipboardList },
-    { href: '/admin/dashboard/messages', label: 'Messages', icon: MessageSquare },
-    { href: '/admin/dashboard/coupons', label: 'Coupons', icon: Ticket },
     { href: '/admin/dashboard/users', label: 'Users', icon: Users },
-    { href: '/admin/dashboard/affiliates', label: 'Affiliates', icon: BadgePercent },
+    { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminSidebar() {
@@ -39,7 +33,6 @@ export function AdminSidebar() {
                     <Theater className="h-6 w-6 text-primary" />
                     <span className="duration-200 group-data-[collapsible=icon]:opacity-0">MaskShop Admin</span>
                 </Link>
-                <SidebarTrigger className="hidden md:flex" />
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
@@ -59,9 +52,6 @@ export function AdminSidebar() {
                     ))}
                 </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter>
-                {/* Optional footer content */}
-            </SidebarFooter>
         </Sidebar>
     );
 }

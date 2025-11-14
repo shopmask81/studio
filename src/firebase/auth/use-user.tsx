@@ -1,7 +1,8 @@
+
 'use client';
 
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/firebase/provider';
 
 export interface UserAuthHookResult {
@@ -17,7 +18,8 @@ export interface UserAuthHookResult {
  */
 export const useUser = (): UserAuthHookResult => {
     const auth = useAuth();
-    const [user, setUser] = useState<User | null>(auth.currentUser);
+    // Initialize state from auth.currentUser to handle sync cases, but know it might be null initially
+    const [user, setUser] = useState<User | null>(() => auth?.currentUser ?? null);
     const [isUserLoading, setIsUserLoading] = useState(true);
     const [userError, setUserError] = useState<Error | null>(null);
 

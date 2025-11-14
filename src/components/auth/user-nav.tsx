@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User, Heart, Link as LinkIcon, MapPin, Loader2 } from 'lucide-react';
+import { LogOut, User, Heart, Link as LinkIcon, MapPin, LayoutDashboard } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,14 +40,16 @@ export function UserNav() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   const handleSignOut = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
       toast({
         title: t('signed_out_title').text,
         description: t('signed_out_desc').text,
       });
+      // Force a router push to ensure state is cleared and user is redirected.
       router.push('/');
-      // The AuthSync hook will handle saving the cart/wishlist to localStorage
+      router.refresh(); // This can help ensure a clean state.
     } catch (error) {
       toast({
         variant: "destructive",
@@ -81,6 +83,7 @@ export function UserNav() {
   }
 
   const isAffiliate = userProfile?.role === 'affiliate';
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <DropdownMenu>
@@ -105,6 +108,14 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+            {isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/admin/dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href="/account">
                 <User className="mr-2 h-4 w-4" />

@@ -1,5 +1,4 @@
 
-
 import { AdminRoute } from "@/components/auth/admin-route";
 import { AdminHeader } from "./components/AdminHeader";
 import { AdminSidebar } from "./components/AdminSidebar";
@@ -15,12 +14,12 @@ export default function AdminDashboardLayout({
       <SidebarProvider>
         <div className="flex min-h-screen">
           <AdminSidebar />
-          <div className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col">
             <AdminHeader />
-            <main className="flex-1 p-8 bg-muted/40">
+            <div className="flex-1 p-8 bg-muted/40">
               {children}
-            </main>
-          </div>
+            </div>
+          </main>
         </div>
       </SidebarProvider>
     </AdminRoute>
