@@ -41,6 +41,8 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
@@ -146,7 +148,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       const newFiles = Array.from(files);
       const uniqueNewFiles = newFiles.filter(file => !selectedFiles.some(f => f.name === file.name && f.size === file.size));
 
-      setSelectedFiles(prev => [...prev, ...uniqueNewFiles]);
+      setSelectedFiles(prev => {
+        const updatedFiles = [...prev, ...uniqueNewFiles];
+        // If this is the first batch of images, set the first one as main
+        if (prev.length === 0 && updatedFiles.length > 0) {
+            setMainImageIndex(0);
+        }
+        return updatedFiles;
+      });
       const newPreviews = uniqueNewFiles.map(file => URL.createObjectURL(file));
       setLocalPreviews(prev => [...prev, ...newPreviews]);
     }
@@ -165,10 +174,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       setLocalPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
       setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
 
+      // Update main image index if the removed image was the main one
       if (mainImageIndex === indexToRemove) {
-        setMainImageIndex(null);
+          const newFileCount = selectedFiles.length - 1;
+          setMainImageIndex(newFileCount > 0 ? 0 : null);
       } else if (mainImageIndex !== null && mainImageIndex > indexToRemove) {
-        setMainImageIndex(mainImageIndex - 1);
+          setMainImageIndex(mainImageIndex - 1);
       }
   };
   
@@ -397,6 +408,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             </div>
                             <input type="file" className="hidden" onChange={(e) => handleFileSelect(e.target.files)} multiple accept="image/*" />
                         </label>
+                        <p className="text-xs text-muted-foreground mt-2">Recommended size: 1200×1200 px — Square images work best (1:1 ratio). Max file size: 5 MB.</p>
+
 
                         {localPreviews.length > 0 && (
                             <div className="mt-4">
