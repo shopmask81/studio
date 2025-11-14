@@ -5,6 +5,7 @@ export type ProductVariant = {
   enabled: boolean;
   colors?: string[];
   sizes?: string[];
+  stock?: { [key: string]: number };
 }
 
 export type Product = {

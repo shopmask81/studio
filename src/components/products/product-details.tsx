@@ -45,6 +45,21 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   }, [firestore, productId]);
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
+  
+  const hasVariants = product?.variants?.enabled;
+  const hasColors = hasVariants && product.variants.colors && product.variants.colors.length > 0;
+  const hasSizes = hasVariants && product.variants.sizes && product.variants.sizes.length > 0;
+
+  const currentVariantStock = useMemo(() => {
+    if (!hasVariants || !product?.variants?.stock) {
+      return product?.stock ?? null;
+    }
+    if (hasColors && !selectedColor) return null;
+    if (hasSizes && !selectedSize) return null;
+
+    const key = [selectedColor, selectedSize].filter(Boolean).join('-');
+    return product.variants.stock[key] ?? 0;
+  }, [product, hasVariants, hasColors, hasSizes, selectedColor, selectedSize]);
 
   useEffect(() => {
     // Reset selections when product changes
@@ -121,14 +136,8 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { dir: descDir, style: descStyle } = t(displayDescription);
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-  const hasVariants = product.variants?.enabled;
-  const hasColors = hasVariants && product.variants.colors && product.variants.colors.length > 0;
-  const hasSizes = hasVariants && product.variants.sizes && product.variants.sizes.length > 0;
 
-  const isAddToCartDisabled =
-    product.stock === 0 ||
-    (hasColors && !selectedColor) ||
-    (hasSizes && !selectedSize);
+  const isAddToCartDisabled = currentVariantStock === 0 || (hasVariants && currentVariantStock === null);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -282,12 +291,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             )}
 
 
-            {product.stock <= 10 && product.stock > 0 && !hasVariants && (
+            {currentVariantStock !== null && currentVariantStock <= 10 && currentVariantStock > 0 && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
-                    product.stock <= 5 ? "text-red-500" : "text-amber-500"
-                )} {...t('only_left_in_stock', {count: product.stock})}>
-                    {t('only_left_in_stock', { count: product.stock }).text}
+                    currentVariantStock <= 5 ? "text-red-500" : "text-amber-500"
+                )} {...t('only_left_in_stock', {count: currentVariantStock})}>
+                    {t('only_left_in_stock', { count: currentVariantStock }).text}
                 </p>
             )}
 
@@ -299,7 +308,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {product.stock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
+                    {currentVariantStock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
                 </Button>
             </div>
         </div>

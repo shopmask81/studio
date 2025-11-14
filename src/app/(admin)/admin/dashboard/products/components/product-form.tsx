@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +43,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type UploadedImage = {
   id: string;
@@ -50,10 +51,13 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
+const variantStockSchema = z.record(z.coerce.number().int().min(0, 'Stock must be non-negative.'));
+
 const variantSchema = z.object({
   enabled: z.boolean().default(false),
   colors: z.array(z.object({ value: z.string() })).optional(),
   sizes: z.array(z.object({ value: z.string() })).optional(),
+  stock: variantStockSchema.optional(),
 });
 
 
@@ -149,6 +153,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             enabled: productToEdit.variants?.enabled ?? false,
             colors: productToEdit.variants?.colors?.map(c => ({value: c})) ?? [],
             sizes: productToEdit.variants?.sizes?.map(s => ({value: s})) ?? [],
+            stock: productToEdit.variants?.stock ?? {},
           }
         }
       : {
@@ -166,7 +171,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           variants: {
             enabled: false,
             colors: [],
-            sizes: []
+            sizes: [],
+            stock: {}
           }
         },
   });
@@ -182,6 +188,21 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   });
   
   const variantsEnabled = form.watch('variants.enabled');
+  const watchedColors = form.watch('variants.colors');
+  const watchedSizes = form.watch('variants.sizes');
+
+  const variantCombinations = useMemo(() => {
+    const colors = watchedColors?.map(c => c.value).filter(Boolean) ?? [];
+    const sizes = watchedSizes?.map(s => s.value).filter(Boolean) ?? [];
+
+    if (colors.length === 0 && sizes.length === 0) return [];
+    if (colors.length > 0 && sizes.length === 0) return colors.map(c => ({ color: c, size: null, key: c }));
+    if (colors.length === 0 && sizes.length > 0) return sizes.map(s => ({ color: null, size: s, key: s }));
+
+    return colors.flatMap(color =>
+      sizes.map(size => ({ color, size, key: `${color}-${size}` }))
+    );
+  }, [watchedColors, watchedSizes]);
 
   useEffect(() => {
     if (productToEdit) {
@@ -401,6 +422,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
               enabled: data.variants?.enabled ?? false,
               colors: data.variants?.colors?.map(c => c.value).filter(Boolean) ?? [],
               sizes: data.variants?.sizes?.map(s => s.value).filter(Boolean) ?? [],
+              stock: data.variants?.stock ?? {},
             }
         };
 
@@ -693,7 +715,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             <FormControl>
                             <Input type="number" placeholder="100" {...field} disabled={variantsEnabled}/>
                             </FormControl>
-                            {variantsEnabled && <FormDescription>Stock is managed in variants.</FormDescription>}
+                            {variantsEnabled && <FormDescription>Stock is managed per variant below.</FormDescription>}
                             <FormMessage />
                         </FormItem>
                         )}
@@ -812,6 +834,49 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     Add Size
                                 </Button>
                             </div>
+
+                             {/* Variant Stock */}
+                            {variantCombinations.length > 0 && (
+                                <div>
+                                    <h3 className="text-lg font-medium mb-2 mt-6">Variant Stock</h3>
+                                    <div className="border rounded-lg overflow-hidden">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Variant</TableHead>
+                                                    <TableHead className="w-[120px]">Stock</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {variantCombinations.map(({ color, size, key }) => (
+                                                    <TableRow key={key}>
+                                                        <TableCell className="font-medium">
+                                                            {color && <Badge variant="secondary" className="mr-2">{color}</Badge>}
+                                                            {size && <Badge variant="outline">{size}</Badge>}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <FormField
+                                                                control={form.control}
+                                                                name={`variants.stock.${key}`}
+                                                                defaultValue={0}
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormControl>
+                                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} className="h-8" />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     )}
                 </CardContent>
