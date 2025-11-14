@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -756,7 +757,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
                                     />
                                 </FormControl>
                             </FormItem>
@@ -925,7 +926,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
                         />
                       </FormControl>
                     </FormItem>
@@ -945,7 +946,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
                         />
                       </FormControl>
                     </FormItem>
@@ -969,3 +970,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
