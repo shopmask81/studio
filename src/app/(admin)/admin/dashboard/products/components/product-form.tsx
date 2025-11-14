@@ -26,7 +26,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
   collection,
   addDoc,
@@ -36,7 +36,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
-import { Loader2, Trash2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 
@@ -150,62 +150,79 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
     setIsSubmitting(true);
-    setIsUploading(true);
-
+    
     try {
-      let uploadedImageUrls: string[] = [];
-      
-      // Separate existing URLs from new local blob previews
-      const existingUrls = imagePreviews.filter(p => p.startsWith('http'));
-      const newLocalPreviews = imagePreviews.filter(p => p.startsWith('blob:'));
-      
-      // Upload new files
-      if (imageFiles.length > 0) {
-        const uploadPromises = imageFiles.map(file => uploadToImgBB(file));
-        uploadedImageUrls = await Promise.all(uploadPromises);
-      }
+        setIsUploading(true);
+        let uploadedImageUrls: string[] = [];
+        const existingUrls = imagePreviews.filter(p => p.startsWith('http'));
+        
+        if (imageFiles.length > 0) {
+            const uploadPromises = imageFiles.map(file => uploadToImgBB(file));
+            uploadedImageUrls = await Promise.all(uploadPromises);
+        }
+        setIsUploading(false);
+        
+        const finalImageUrls = [...existingUrls, ...uploadedImageUrls];
+        if (finalImageUrls.length === 0) {
+            toast({ variant: 'destructive', title: 'Image required', description: 'You must upload at least one image.'});
+            setIsSubmitting(false);
+            return;
+        }
+        
+        const mainImage = finalImageUrls[0];
+        const additionalImages = finalImageUrls.slice(1);
 
-      setIsUploading(false);
-      
-      const finalImageUrls = [...existingUrls, ...uploadedImageUrls];
-      
-      if (finalImageUrls.length === 0) {
-        toast({ variant: 'destructive', title: 'Image required', description: 'You must upload at least one image.'});
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const mainImage = finalImageUrls[0];
-      const additionalImages = finalImageUrls.slice(1);
+        const productData = {
+            ...data,
+            mainImage: mainImage,
+            images: additionalImages,
+        };
 
-      const productData = {
-        ...data,
-        mainImage: mainImage,
-        images: additionalImages,
-        updatedAt: serverTimestamp(),
-      };
+        if (productToEdit) {
+            const productRef = doc(firestore, 'products', productToEdit.id);
+            const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
+            updateDoc(productRef, dataToUpdate)
+                .then(() => {
+                    toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
+                    router.push('/admin/dashboard/products');
+                    router.refresh();
+                })
+                .catch(async (serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: productRef.path,
+                        operation: 'update',
+                        requestResourceData: dataToUpdate,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
 
-      if (productToEdit) {
-        const productRef = doc(firestore, 'products', productToEdit.id);
-        await updateDoc(productRef, productData);
-        toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
-      } else {
-        await addDoc(collection(firestore, 'products'), {
-          ...productData,
-          createdAt: serverTimestamp(),
-        });
-        toast({ title: 'Product Created', description: 'The new product has been added.' });
-      }
-      router.push('/admin/dashboard/products');
-      router.refresh();
-
+        } else {
+            const collectionRef = collection(firestore, 'products');
+            const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+            addDoc(collectionRef, dataToCreate)
+                .then(() => {
+                    toast({ title: 'Product Created', description: 'The new product has been added.' });
+                    router.push('/admin/dashboard/products');
+                    router.refresh();
+                })
+                .catch(async (serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: collectionRef.path,
+                        operation: 'create',
+                        requestResourceData: dataToCreate,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
+        }
     } catch (error) {
-      console.error('Error saving product:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save the product.' });
-    } finally {
-      setIsSubmitting(false);
-      setIsUploading(false);
+        // This catch block now only handles errors from the image upload or other pre-Firestore logic.
+        console.error('Error preparing product for save:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload images or prepare the product.' });
+        setIsSubmitting(false); // Only stop submitting on pre-firestore errors
+        setIsUploading(false);
     }
+    // We intentionally do not set isSubmitting to false here for the Firestore operations,
+    // as navigation will occur on success. The button remains disabled.
   };
 
   return (
@@ -437,5 +454,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
