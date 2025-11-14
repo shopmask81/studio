@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -60,12 +60,29 @@ interface ProductFormProps {
 
 // Placeholder for your image upload function
 async function uploadToImgBB(file: File): Promise<string> {
-    // I will implement this part myself.
-    // This function will take a file, upload it, and return the URL.
-    console.log("Uploading file:", file.name);
-    // For now, returning a placeholder.
-    return new Promise(resolve => setTimeout(() => resolve(`https://i.ibb.co/XYZ/placeholder.png`), 1000));
+    const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
+    const formData = new FormData();
+    
+    // The API expects the file directly, not base64 for FormData
+    formData.append('image', file);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Image upload failed with status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (!result.data || !result.data.display_url) {
+        throw new Error('Invalid response from image upload service.');
+    }
+    
+    return result.data.display_url;
 }
+
 
 export function ProductForm({ productToEdit }: ProductFormProps) {
   const router = useRouter();
@@ -76,6 +93,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   // State for image management
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [mainImage, setMainImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<ProductFormValues>({
@@ -103,6 +121,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     if (productToEdit) {
       const allImages = [productToEdit.mainImage, ...(productToEdit.images || [])].filter(Boolean);
       setImagePreviews(allImages);
+      setMainImage(productToEdit.mainImage);
     }
   }, [productToEdit]);
 
@@ -110,54 +129,74 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const files = Array.from(event.target.files);
-      setImageFiles(prev => [...prev, ...files]);
+      const newFiles = [...imageFiles, ...files];
+      setImageFiles(newFiles);
       
       const newPreviews = files.map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...newPreviews]);
+      const allPreviews = [...imagePreviews, ...newPreviews];
+      setImagePreviews(allPreviews);
+
+      // If no main image is set, set the first one.
+      if (!mainImage && allPreviews.length > 0) {
+        setMainImage(allPreviews[0]);
+      }
     }
   };
 
-  const removeImage = (index: number) => {
-    const targetPreview = imagePreviews[index];
+  const removeImage = (indexToRemove: number) => {
+      const removedUrl = imagePreviews[indexToRemove];
+      const newPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
+      setImagePreviews(newPreviews);
 
-    // Revoke object URL to prevent memory leaks if it's a local preview
-    if(targetPreview.startsWith('blob:')){
-        URL.revokeObjectURL(targetPreview);
-    }
-    
-    // Remove from previews
-    const updatedPreviews = imagePreviews.filter((_, i) => i !== index);
-    setImagePreviews(updatedPreviews);
-
-    // If the removed image was a new file, remove it from the files to be uploaded
-    // This logic assumes a 1-to-1 mapping and order between new files and blob previews
-    const newFilePreviewsCount = imagePreviews.filter(p => p.startsWith('blob:')).length;
-    const removedWasNewFile = targetPreview.startsWith('blob:');
-    
-    if (removedWasNewFile) {
-        // This is a simplification. A more robust solution would track files and previews with IDs.
-        // Let's find the corresponding file in imageFiles based on the blob URL. This is tricky.
-        // A simple assumption for now: order is preserved.
-        const blobPreviews = imagePreviews.filter(p => p.startsWith('blob:'));
-        const fileIndexToRemove = blobPreviews.indexOf(targetPreview);
-        if (fileIndexToRemove > -1) {
-            setImageFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
-        }
-    }
+      // If the removed image was the main image, reset it
+      if (mainImage === removedUrl) {
+          setMainImage(newPreviews.length > 0 ? newPreviews[0] : null);
+      }
+      
+      // Clean up blob URLs to prevent memory leaks
+      if (removedUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(removedUrl);
+          
+          // Try to remove the corresponding file from the files list
+          // This is a bit tricky, best way is to associate files with previews via an ID
+          // For simplicity, we assume the blobs are at the end and in order.
+          const blobPreviews = imagePreviews.filter(p => p.startsWith('blob:'));
+          const fileIndexToRemove = blobPreviews.indexOf(removedUrl);
+          
+          if(fileIndexToRemove !== -1) {
+            const newImageFiles = imageFiles.filter((_, i) => {
+                const fileBlobIndex = imageFiles.length - blobPreviews.length + i;
+                return fileBlobIndex !== fileIndexToRemove;
+            });
+            setImageFiles(newImageFiles);
+          }
+      }
   };
 
 
   const onSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
+
+    if (!mainImage) {
+        toast({ variant: 'destructive', title: 'Main image required', description: 'You must select at least one image and set a main image.'});
+        return;
+    }
+
     setIsSubmitting(true);
     
     try {
         setIsUploading(true);
-        let uploadedImageUrls: string[] = [];
         const existingUrls = imagePreviews.filter(p => p.startsWith('http'));
         
+        let uploadedImageUrls: string[] = [];
         if (imageFiles.length > 0) {
-            const uploadPromises = imageFiles.map(file => uploadToImgBB(file));
+            const filesToUpload = imageFiles.filter(file => {
+                const objectUrl = URL.createObjectURL(file);
+                const shouldUpload = imagePreviews.includes(objectUrl);
+                URL.revokeObjectURL(objectUrl); // Clean up immediately
+                return shouldUpload;
+            });
+            const uploadPromises = filesToUpload.map(file => uploadToImgBB(file));
             uploadedImageUrls = await Promise.all(uploadPromises);
         }
         setIsUploading(false);
@@ -168,13 +207,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             setIsSubmitting(false);
             return;
         }
-        
-        const mainImage = finalImageUrls[0];
-        const additionalImages = finalImageUrls.slice(1);
+
+        // Determine which URL from the final list corresponds to the main image
+        const finalMainImage = finalImageUrls.find(url => url === mainImage || imagePreviews.indexOf(mainImage) === finalImageUrls.indexOf(url)) || finalImageUrls[0];
+        const additionalImages = finalImageUrls.filter(url => url !== finalMainImage);
 
         const productData = {
             ...data,
-            mainImage: mainImage,
+            mainImage: finalMainImage,
             images: additionalImages,
         };
 
@@ -194,6 +234,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         requestResourceData: dataToUpdate,
                     });
                     errorEmitter.emit('permission-error', permissionError);
+                    setIsSubmitting(false);
                 });
 
         } else {
@@ -212,17 +253,15 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         requestResourceData: dataToCreate,
                     });
                     errorEmitter.emit('permission-error', permissionError);
+                    setIsSubmitting(false);
                 });
         }
     } catch (error) {
-        // This catch block now only handles errors from the image upload or other pre-Firestore logic.
         console.error('Error preparing product for save:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload images or prepare the product.' });
-        setIsSubmitting(false); // Only stop submitting on pre-firestore errors
+        setIsSubmitting(false);
         setIsUploading(false);
     }
-    // We intentionally do not set isSubmitting to false here for the Firestore operations,
-    // as navigation will occur on success. The button remains disabled.
   };
 
   return (
@@ -274,12 +313,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             <Card>
                 <CardHeader>
                     <CardTitle>Product Images</CardTitle>
-                    <CardDescription>Upload images for your product gallery. The first image will be the main image.</CardDescription>
+                    <CardDescription>Upload images for your product gallery. The first image is the main image.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                         {imagePreviews.map((src, index) => (
-                            <div key={index} className="relative group aspect-square">
+                            <div key={src} className="relative group aspect-square">
                                 <Image src={src} alt={`Preview ${index}`} fill className="object-cover rounded-md"/>
                                 <Button
                                     type="button"
@@ -290,7 +329,18 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
-                                {index === 0 && <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>}
+                                {mainImage === src ? (
+                                    <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        onClick={() => setMainImage(src)}
+                                    >
+                                        Set as main
+                                    </Button>
+                                )}
                             </div>
                         ))}
                          <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
@@ -454,3 +504,4 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
