@@ -1,7 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(request: NextRequest) {
+// This route now accepts POST requests
+export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const deleteUrl = body.deleteUrl;
@@ -10,23 +11,18 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid deleteUrl provided.' }, { status: 400 });
         }
         
-        // The deleteUrl from ImgBB contains all that's needed.
-        // We are acting as a server-side proxy to bypass client-side CORS restrictions.
+        // CRITICAL FIX: IMGBB's delete URL needs to be visited with a GET request,
+        // not called with a DELETE method. We are acting as a server-side proxy.
         const imgbbResponse = await fetch(deleteUrl, {
-            method: 'DELETE',
+            method: 'GET',
         });
 
-        // ImgBB's delete endpoint might not return a JSON body or might redirect.
-        // We'll consider any 2xx or 3xx response as likely successful.
-        if (imgbbResponse.ok || (imgbbResponse.status >= 300 && imgbbResponse.status < 400)) {
-            return NextResponse.json({ success: true, message: 'Image deletion initiated.' }, { status: 200 });
+        // The response will likely be HTML, not JSON. We check the status to confirm.
+        // A successful deletion often results in a 200 OK or a redirect.
+        if (imgbbResponse.ok) {
+            return NextResponse.json({ success: true, message: 'Image deletion successful.' }, { status: 200 });
         } else {
-            // Try to parse the error from ImgBB if possible
-            let errorBody = 'Unknown error from ImgBB.';
-            try {
-                errorBody = await imgbbResponse.text();
-            } catch {}
-            
+            const errorBody = await imgbbResponse.text();
             return NextResponse.json({ 
                 error: 'Failed to delete image from ImgBB.',
                 details: errorBody,
@@ -35,7 +31,7 @@ export async function DELETE(request: NextRequest) {
         }
 
     } catch (error) {
-        console.error('API Route Error:', error);
+        console.error('API Route Error in /api/delete-image:', error);
         return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
     }
 }

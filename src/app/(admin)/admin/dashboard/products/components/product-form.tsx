@@ -81,16 +81,17 @@ async function uploadToImgBB(file: File): Promise<UploadedImage> {
     }
 
     const result = await response.json();
-    if (!result.data || !result.data.display_url || !result.data.delete_url) {
-        throw new Error('Invalid response from image upload service.');
+    if (!result.data || !result.data.url || !result.data.delete_url) {
+        throw new Error('Invalid response from image upload service. Missing url or delete_url.');
     }
     
-    return { url: result.data.display_url, deleteUrl: result.data.delete_url };
+    return { url: result.data.url, deleteUrl: result.data.delete_url };
 }
 
 async function deleteFromImgBB(deleteUrl: string): Promise<void> {
+  // We call our own API route which will then call IMGBB's delete URL.
   const response = await fetch('/api/delete-image', {
-      method: 'DELETE',
+      method: 'POST', // Use POST to send a body to our API route
       headers: {
           'Content-Type': 'application/json',
       },
@@ -99,7 +100,7 @@ async function deleteFromImgBB(deleteUrl: string): Promise<void> {
 
   if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete image from the server.');
+      throw new Error(errorData.error || 'Failed to delete image via server proxy.');
   }
 }
 
@@ -133,6 +134,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     defaultValues: productToEdit
       ? {
           ...productToEdit,
+          price: productToEdit.price || 0,
+          stock: productToEdit.stock || 0,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
         }
@@ -155,14 +158,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     if (productToEdit) {
       const mainImageUrl = productToEdit.mainImage;
       const otherImageUrls = productToEdit.images || [];
-      const allImageUrls = [mainImageUrl, ...otherImageUrls].filter(Boolean);
-
-      // We don't have delete URLs for existing products, so we'll create placeholder ones.
-      // In a real app, delete URLs would need to be stored in Firestore as well.
-      const loadedImages: UploadedImage[] = allImageUrls.map(url => ({
-        url,
-        deleteUrl: `placeholder-delete-url-for-${url}` 
-      }));
+      // Assuming you don't store delete URLs in Firestore. If you do, you'd fetch them here.
+      // For now, we'll create placeholder delete URLs for existing images.
+      const loadedImages: UploadedImage[] = [mainImageUrl, ...otherImageUrls]
+        .filter(Boolean)
+        .map(url => ({
+          url,
+          // In a real app, delete URLs must be stored alongside image URLs in Firestore
+          // to be able to delete them later.
+          deleteUrl: `placeholder-delete-url-for-${url}` 
+        }));
       
       setUploadedImages(loadedImages);
       
@@ -224,11 +229,15 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     const imageToRemove = uploadedImages.find(img => img.url === urlToRemove);
     if (!imageToRemove) return;
   
+    // Don't attempt to delete placeholders
+    if (imageToRemove.deleteUrl.startsWith('placeholder')) {
+        toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This image was saved without a deletion link.' });
+        return;
+    }
+
     setDeletingUrl(urlToRemove);
     try {
-      if (imageToRemove.deleteUrl && !imageToRemove.deleteUrl.startsWith('placeholder')) {
-        await deleteFromImgBB(imageToRemove.deleteUrl);
-      }
+      await deleteFromImgBB(imageToRemove.deleteUrl);
   
       setUploadedImages(prevImages => {
         const urlIndex = prevImages.findIndex(img => img.url === urlToRemove);
@@ -253,7 +262,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   
     } catch (error) {
       console.error('Failed to delete image:', error);
-      toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete the image from the server.' });
+      toast({ variant: 'destructive', title: 'Deletion Failed', description: (error as Error).message || 'Could not delete the image from the server.' });
     } finally {
       setDeletingUrl(null);
     }
@@ -264,8 +273,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       toast({ variant: 'destructive', title: 'No new images selected', description: 'Please select images to upload first.'});
       return;
     }
-    if (mainImageIndex === null) {
-      toast({ variant: 'destructive', title: 'Main image not selected', description: 'Please select a main image before uploading.'});
+    if (mainImageIndex === null || mainImageIndex >= selectedFiles.length) {
+      toast({ variant: 'destructive', title: 'Main image not selected', description: 'Please select a main image from the "Selected for Upload" section before uploading.'});
       return;
     }
     
@@ -283,11 +292,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         setUploadProgress(((i + 1) / selectedFiles.length) * 100);
       }
       
+      // The order of newUploadedImages already matches selectedFiles order
       const combinedUploadedImages = [...uploadedImages, ...newUploadedImages];
       setUploadedImages(combinedUploadedImages);
       
       // After upload, mainImageIndex should point to the correct image in the combined array
-      if (mainImageIndex !== null && mainImageIndex < selectedFiles.length) {
+      if (mainImageIndex !== null) {
           // The main image was in the local previews that just got uploaded
           setMainImageIndex(mainImageIndex + uploadedImages.length);
       }
@@ -300,7 +310,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       toast({ title: 'Upload Successful', description: `${newUploadedImages.length} images have been uploaded.`});
     } catch (error) {
       console.error("Image upload error:", error);
-      toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was a problem uploading your images.'});
+      toast({ variant: 'destructive', title: 'Upload Failed', description: (error as Error).message || 'There was a problem uploading your images.'});
       setUploadStatus('Upload Failed!');
     } finally {
       setTimeout(() => setIsUploading(false), 2000);
@@ -310,38 +320,30 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const handleDragSort = () => {
     if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return;
     
-    // Create copies of the arrays
     let _selectedFiles = [...selectedFiles];
     let _localPreviews = [...localPreviews];
 
-    // Remove and save the dragged items
     const draggedFile = _selectedFiles.splice(dragItem.current, 1)[0];
     const draggedPreview = _localPreviews.splice(dragItem.current, 1)[0];
 
-    // Insert the dragged items at the new position
     _selectedFiles.splice(dragOverItem.current, 0, draggedFile);
     _localPreviews.splice(dragOverItem.current, 0, draggedPreview);
     
-    // Update main image index
     if (mainImageIndex !== null) {
-      if (mainImageIndex < selectedFiles.length) { // main image is a local preview
-        if (dragItem.current === mainImageIndex) {
-            setMainImageIndex(dragOverItem.current);
-        } else {
-            if (dragItem.current < mainImageIndex && dragOverItem.current >= mainImageIndex) {
-              setMainImageIndex(mainImageIndex - 1);
-            } else if (dragItem.current > mainImageIndex && dragOverItem.current <= mainImageIndex) {
-              setMainImageIndex(mainImageIndex + 1);
-            }
-        }
+      if (dragItem.current === mainImageIndex) {
+          setMainImageIndex(dragOverItem.current);
+      } else {
+          if (dragItem.current < mainImageIndex && dragOverItem.current >= mainImageIndex) {
+            setMainImageIndex(mainImageIndex - 1);
+          } else if (dragItem.current > mainImageIndex && dragOverItem.current <= mainImageIndex) {
+            setMainImageIndex(mainImageIndex + 1);
+          }
       }
     }
     
-    // Reset refs
     dragItem.current = null;
     dragOverItem.current = null;
 
-    // Update state
     setSelectedFiles(_selectedFiles);
     setLocalPreviews(_localPreviews);
   };
@@ -350,13 +352,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
     
-    const allImages = [...localPreviews, ...uploadedImages.map(img => img.url)];
-    if (allImages.length === 0) {
-      toast({ variant: 'destructive', title: 'No images available', description: 'You must select or upload at least one image.'});
+    if (uploadedImages.length === 0) {
+      toast({ variant: 'destructive', title: 'No images available', description: 'You must upload at least one image.'});
       return;
     }
 
-    if (mainImageIndex === null || allImages[mainImageIndex] === undefined) {
+    if (mainImageIndex === null || mainImageIndex >= uploadedImages.length + selectedFiles.length) {
         toast({ variant: 'destructive', title: 'Main image required', description: 'Please select a main image for the product.'});
         return;
     }
@@ -370,6 +371,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     
     try {
         const mainImage = uploadedImages[mainImageIndex].url;
+        // In a real-world scenario, you would also save the deleteUrls to Firestore
+        // so you can delete them later if the product is edited.
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
         const productData = {
@@ -737,5 +740,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
