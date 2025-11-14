@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -16,7 +17,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -25,6 +26,9 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+
+  const displayName = (language === 'ar' && product.name_ar) || product.name;
+  const { dir, style } = t(displayName);
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
@@ -42,7 +46,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                <CardTitle className="font-headline text-2xl mb-2 group-hover:text-primary transition-colors">{product.name}</CardTitle>
+                <CardTitle className="font-headline text-2xl mb-2 group-hover:text-primary transition-colors" dir={dir} style={style}>{displayName}</CardTitle>
             </CardContent>
             <CardFooter className="p-4 flex justify-between items-center mt-auto">
                 <div className="flex items-baseline gap-2">

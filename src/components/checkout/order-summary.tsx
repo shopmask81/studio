@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -8,7 +9,7 @@ import { useTranslation } from '../language/language-provider';
 
 export function OrderSummary() {
   const { cartItems, cartTotal } = useCart();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const shippingCost = 5.00;
   const total = cartTotal + shippingCost;
 
@@ -21,6 +22,8 @@ export function OrderSummary() {
         <div className="space-y-4">
           {cartItems.map((item) => {
             const price = item.product.discountPrice ?? item.product.price;
+            const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
+            const { dir } = t(displayName);
             return (
                 <div key={item.product.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-3">
@@ -31,7 +34,7 @@ export function OrderSummary() {
                             </span>
                         </div>
                         <div>
-                            <p className="font-medium truncate max-w-[150px]">{item.product.name}</p>
+                            <p className="font-medium truncate max-w-[150px]" dir={dir}>{displayName}</p>
                             <p className="text-muted-foreground">${price.toFixed(2)}</p>
                         </div>
                     </div>

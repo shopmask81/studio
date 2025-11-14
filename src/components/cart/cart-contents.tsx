@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -15,7 +16,7 @@ function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
     const router = useRouter();
     const { toast } = useToast();
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
 
     const handleCheckout = () => {
         router.push('/checkout');
@@ -23,9 +24,10 @@ function CartDisplay() {
 
     const handleRemoveItem = (productId: string, productName: string) => {
         removeFromCart(productId);
+        const translatedName = t('item_removed_desc', { productName }).text;
         toast({
             title: t('item_removed_title').text,
-            description: t('item_removed_desc', { productName }).text,
+            description: translatedName,
         });
     }
 
@@ -57,13 +59,16 @@ function CartDisplay() {
                         {cartItems.map(item => {
                             const hasDiscount = item.product.discountPrice && item.product.discountPrice < item.product.price;
                             const price = hasDiscount ? item.product.discountPrice! : item.product.price;
+                            const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
+                            const { dir } = t(displayName);
+
                             return (
                                 <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
                                     <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
                                          <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
                                     </div>
                                     <div className="flex-grow">
-                                        <h3 className="font-semibold">{item.product.name}</h3>
+                                        <h3 className="font-semibold" dir={dir}>{displayName}</h3>
                                         <div className="text-sm">
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
@@ -81,7 +86,7 @@ function CartDisplay() {
                                                 <Minus className="h-4 w-4" />
                                             </Button>
                                         ) : (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, item.product.name)}>
+                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, displayName)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}

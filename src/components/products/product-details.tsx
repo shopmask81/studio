@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -27,7 +28,7 @@ interface ProductDetailsProps {
 export function ProductDetails({ productId }: ProductDetailsProps) {
   const firestore = useFirestore();
   const { addToCart } = useCart();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -97,6 +98,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
       </div>
     );
   }
+  
+  const displayName = (language === 'ar' && product.name_ar) || product.name;
+  const displayDescription = (language === 'ar' && product.description_ar) || product.description;
+  const { dir: nameDir, style: nameStyle } = t(displayName);
+  const { dir: descDir, style: descStyle } = t(displayDescription);
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
 
@@ -113,7 +119,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 {t('products').text}
             </Link>
             <ChevronRight className="h-4 w-4 mx-1" />
-            <span className="font-medium text-foreground truncate">{product.name}</span>
+            <span className="font-medium text-foreground truncate">{displayName}</span>
         </div>
 
       <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
@@ -174,7 +180,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         {/* Product Info */}
         <div>
             <p className="text-primary font-semibold mb-2">{product.category}</p>
-            <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words">{product.name}</h1>
+            <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words" dir={nameDir} style={nameStyle}>{displayName}</h1>
 
             <div className="flex items-baseline gap-3 mb-6">
                 {hasDiscount ? (
@@ -187,7 +193,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-8 break-words" {...t(product.description)}>{product.description}</p>
+            <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
             
             {product.stock <= 10 && product.stock > 0 && (
                 <p className={cn(

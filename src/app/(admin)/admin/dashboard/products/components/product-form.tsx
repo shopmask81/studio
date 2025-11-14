@@ -53,6 +53,8 @@ type UploadedImage = {
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
+  name_ar: z.string().optional(),
+  description_ar: z.string().optional(),
   price: z.coerce.number().positive('Price must be a positive number.'),
   discountPrice: z.coerce.number().optional(),
   stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
@@ -139,6 +141,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       : {
           name: '',
           description: '',
+          name_ar: '',
+          description_ar: '',
           price: 0,
           discountPrice: undefined,
           stock: 0,
@@ -156,7 +160,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       const loadedImages: UploadedImage[] = [mainImageUrl, ...otherImageUrls]
         .filter(Boolean)
         .map(url => ({
-          id: url,
+          id: `${url}-${Math.random().toString(36).substring(2, 9)}`,
           url,
           deleteUrl: `placeholder-delete-url-for-${url}` 
         }));
@@ -412,40 +416,77 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
               <CardHeader>
                 <CardTitle>Product Details</CardTitle>
                 <CardDescription>
-                  Provide the main details for your product.
+                  Provide the main details for your product in English and Arabic.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Venetian Gold Mask" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe the product..."
-                          rows={5}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Name (English)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Venetian Gold Mask" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="name_ar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Name (Arabic)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="مثال: قناع فينيسي ذهبي" {...field} dir="rtl" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                <div>
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (English)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe the product in English..."
+                              rows={5}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                 <div>
+                    <FormField
+                      control={form.control}
+                      name="description_ar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (Arabic)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="صف المنتج باللغة العربية..."
+                              rows={5}
+                              dir="rtl"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
               </CardContent>
             </Card>
 
@@ -722,5 +763,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
