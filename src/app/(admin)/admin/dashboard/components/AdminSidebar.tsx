@@ -17,7 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SheetTitle } from "@/components/ui/sheet";
 
 const sidebarNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,7 +34,6 @@ export function AdminSidebar() {
 
     return (
         <Sidebar>
-            <SheetTitle className="sr-only">Admin Navigation</SheetTitle>
             <SidebarHeader>
                  <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
                     <Theater className="h-6 w-6 text-primary" />
