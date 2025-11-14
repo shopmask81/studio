@@ -1,5 +1,4 @@
 
-
 'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense } from 'react';

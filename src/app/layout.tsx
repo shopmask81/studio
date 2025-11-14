@@ -1,10 +1,12 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { FirebaseClientProvider } from '@/firebase';
 import { LanguageProvider } from '@/components/language/language-provider';
+import { AuthProvider } from '@/components/auth/auth-provider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'MaskShop',
@@ -41,14 +43,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Lato:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased")}>
-        <LanguageProvider>
-            <FirebaseClientProvider>
-            <Providers>
+        <FirebaseClientProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <Providers>
                 {children}
                 <Toaster />
-            </Providers>
-            </FirebaseClientProvider>
-        </LanguageProvider>
+              </Providers>
+            </LanguageProvider>
+          </AuthProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

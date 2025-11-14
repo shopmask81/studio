@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input, PasswordInput } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/firebase/client';
 import { useTranslation } from '../language/language-provider';
 import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '@/lib/types';
@@ -22,13 +22,12 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const { t } = useTranslation();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) return;
+    const auth = getAuthInstance();
+    const firestore = getFirestoreInstance();
     setIsLoading(true);
 
     try {

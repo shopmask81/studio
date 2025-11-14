@@ -1,21 +1,23 @@
+
 'use client';
 
-import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useAuth } from './auth-provider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    // Wait until loading is false before checking for user
+    if (!isLoading && !user) {
       router.push('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isLoading, router]);
 
-  if (isUserLoading || !user) {
+  if (isLoading || !user) {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="space-y-4">

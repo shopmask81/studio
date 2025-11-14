@@ -4,7 +4,8 @@
 import Link from 'next/link';
 import { LogOut, User, Heart, Link as LinkIcon, MapPin, LayoutDashboard } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useAuth } from './auth-provider';
+import { getAuthInstance } from '@/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,37 +20,23 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
-import { doc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
 import { useTranslation } from '../language/language-provider';
 
-
 export function UserNav() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const { user, userProfile, isLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { t } = useTranslation();
 
-  const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-  
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
-
   const handleSignOut = async () => {
-    if (!auth) return;
+    const auth = getAuthInstance();
     try {
       await signOut(auth);
       toast({
         title: t('signed_out_title').text,
         description: t('signed_out_desc').text,
       });
-      // Force a router push to ensure state is cleared and user is redirected.
       router.push('/');
-      router.refresh(); // This can help ensure a clean state.
     } catch (error) {
       toast({
         variant: "destructive",
@@ -58,8 +45,6 @@ export function UserNav() {
       });
     }
   };
-
-  const isLoading = isUserLoading || (user && isProfileLoading);
 
   if (isLoading) {
     return <Skeleton className="h-8 w-8 rounded-full" />;

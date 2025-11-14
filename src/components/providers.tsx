@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ThemeProvider } from '@/components/theme-provider';
@@ -7,11 +8,11 @@ import { WishlistProvider } from './wishlist/wishlist-provider';
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="maskshop-theme">
-      <CartProvider>
-        <WishlistProvider>
-          {children}
-        </WishlistProvider>
-      </CartProvider>
+        <CartProvider>
+            <WishlistProvider>
+            {children}
+            </WishlistProvider>
+        </CartProvider>
     </ThemeProvider>
   );
 }
