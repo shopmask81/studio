@@ -90,14 +90,43 @@ async function uploadToImgBB(file: File): Promise<UploadedImage> {
 }
 
 async function deleteFromImgBB(deleteUrl: string): Promise<void> {
-    // IMGBB's deletion is tricky. It doesn't use a standard DELETE verb and often involves CORS issues
-    // when called from the client. A common workaround is to "visit" the URL, but that's not
-    // reliable. For this demo, we'll simulate a successful deletion.
-    // In a real-world scenario, this should be handled by a server-side proxy/function.
-    console.log(`Simulating deletion of image at: ${deleteUrl}`);
-    // A real fetch call could look like this, but might be blocked by CORS
-    // await fetch(deleteUrl, { method: 'DELETE' });
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network latency
+  return new Promise((resolve, reject) => {
+    // Create a hidden iframe to "visit" the delete URL, bypassing CORS issues.
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = deleteUrl;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    };
+    
+    iframe.onload = () => {
+      cleanup();
+      // Assume success on load, as we can't inspect the iframe's content.
+      resolve();
+    };
+
+    iframe.onerror = () => {
+      cleanup();
+      reject(new Error('Failed to load the deletion URL in iframe.'));
+    };
+
+    // Failsafe timeout in case 'onload' or 'onerror' doesn't fire
+    timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('Deletion request timed out.'));
+    }, 10000); // 10 seconds timeout
+
+    document.body.appendChild(iframe);
+  });
 }
 
 
@@ -734,3 +763,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
