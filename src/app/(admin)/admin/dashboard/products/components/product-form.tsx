@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -90,43 +89,18 @@ async function uploadToImgBB(file: File): Promise<UploadedImage> {
 }
 
 async function deleteFromImgBB(deleteUrl: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Create a hidden iframe to "visit" the delete URL, bypassing CORS issues.
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = deleteUrl;
-
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    const cleanup = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-    };
-    
-    iframe.onload = () => {
-      cleanup();
-      // Assume success on load, as we can't inspect the iframe's content.
-      resolve();
-    };
-
-    iframe.onerror = () => {
-      cleanup();
-      reject(new Error('Failed to load the deletion URL in iframe.'));
-    };
-
-    // Failsafe timeout in case 'onload' or 'onerror' doesn't fire
-    timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error('Deletion request timed out.'));
-    }, 10000); // 10 seconds timeout
-
-    document.body.appendChild(iframe);
+  const response = await fetch('/api/delete-image', {
+      method: 'DELETE',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ deleteUrl }),
   });
+
+  if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete image from the server.');
+  }
 }
 
 
@@ -278,7 +252,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       toast({ title: 'Image Deleted', description: 'The image has been removed from the server.' });
   
     } catch (error) {
-      console.error('Failed to delete image from IMGBB:', error);
+      console.error('Failed to delete image:', error);
       toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete the image from the server.' });
     } finally {
       setDeletingUrl(null);
