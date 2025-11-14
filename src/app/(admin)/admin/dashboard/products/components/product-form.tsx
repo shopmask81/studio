@@ -146,8 +146,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     defaultValues: productToEdit
       ? {
           ...productToEdit,
-          price: productToEdit.price || 0,
-          stock: productToEdit.stock || 0,
+          price: productToEdit.price,
+          stock: productToEdit.stock,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
           variants: {
@@ -162,9 +162,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           description: '',
           name_ar: '',
           description_ar: '',
-          price: 0,
+          price: undefined,
           discountPrice: undefined,
-          stock: 0,
+          stock: undefined,
           category: '',
           sku: '',
           active: true,
@@ -686,7 +686,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormItem>
                         <FormLabel>Price</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="99.99" {...field} />
+                          <Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -714,7 +714,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         <FormItem>
                             <FormLabel>Stock Quantity</FormLabel>
                             <FormControl>
-                            <Input type="number" placeholder="100" {...field} disabled={variantsEnabled}/>
+                            <Input type="number" placeholder="100" {...field} disabled={variantsEnabled} value={field.value ?? ''}/>
                             </FormControl>
                             {variantsEnabled && <FormDescription>Stock is managed per variant below.</FormDescription>}
                             <FormMessage />
