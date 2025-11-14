@@ -1,8 +1,7 @@
-
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User, Heart, Link as LinkIcon, MapPin, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, Link as LinkIcon, MapPin, LayoutDashboard } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './auth-provider';
 import { getAuthInstance } from '@/firebase/client';
@@ -111,12 +110,6 @@ export function UserNav() {
               <Link href="/account/addresses">
                 <MapPin className="mr-2 h-4 w-4" />
                 <span>{t('my_addresses').text}</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/wishlist">
-                <Heart className="mr-2 h-4 w-4" />
-                <span>{t('wishlist').text}</span>
               </Link>
             </DropdownMenuItem>
             {isAffiliate && (

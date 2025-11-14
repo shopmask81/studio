@@ -1,18 +1,15 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
-import { useToast } from '@/hooks/use-toast';
-import { Heart, ShoppingCart, Loader2, AlertCircle, ChevronRight, Home } from 'lucide-react';
+import { ShoppingCart, Loader2, AlertCircle, ChevronRight, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 import {
   Carousel,
   CarouselContent,
@@ -21,7 +18,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel"
-import { useWishlist } from '../wishlist/wishlist-provider';
 import { useTranslation } from '../language/language-provider';
 
 interface ProductDetailsProps {
@@ -30,10 +26,7 @@ interface ProductDetailsProps {
 
 export function ProductDetails({ productId }: ProductDetailsProps) {
   const firestore = useFirestore();
-  const { user } = useUser();
   const { addToCart } = useCart();
-  const { toast } = useToast();
-  const router = useRouter();
   const { t } = useTranslation();
   
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
@@ -46,10 +39,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   }, [firestore, productId]);
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
-  const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
 
-  const productIsWishlisted = product ? isWishlisted(product.id) : false;
-  
   const imageGallery = useMemo(() => {
       if (!product) return [];
       return [product.mainImage, ...(product.images || [])];
@@ -86,38 +76,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     carouselApi?.scrollTo(index);
     setCurrentSlide(index);
   }
-
-  const handleWishlistClick = () => {
-    if (!product) return;
-
-    if (!user) {
-        toast({
-            variant: "default",
-            title: t('save_for_later_title').text,
-            description: t('save_for_later_desc').text,
-            action: <Button onClick={() => router.push('/login')}>{t('login').text}</Button>
-        });
-    }
-
-    if (productIsWishlisted) {
-      removeFromWishlist(product.id);
-      toast({
-        title: t('removed_from_wishlist_title').text,
-        description: t('removed_from_wishlist_desc', { productName: product.name }).text,
-      });
-    } else {
-      addToWishlist({
-        productId: product.id,
-        productName: product.name,
-        productImage: product.mainImage,
-        price: product.discountPrice ?? product.price,
-      });
-      toast({
-        title: t('added_to_wishlist_title').text,
-        description: t('added_to_wishlist_desc', { productName: product.name }).text,
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -249,10 +207,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
                     {product.stock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
-                </Button>
-                <Button size="lg" variant="outline" onClick={handleWishlistClick} className="flex-shrink-0">
-                    <Heart className={cn("me-2 h-5 w-5", productIsWishlisted && "fill-destructive text-destructive")} />
-                    {productIsWishlisted ? t('remove_from_wishlist').text : t('add_to_wishlist').text}
                 </Button>
             </div>
         </div>

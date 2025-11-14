@@ -3,7 +3,7 @@
  * @fileOverview Firestore Security Rules for the existing e-commerce database.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user-related data (e.g., users, wishlists, affiliates, orders),
+ * This ruleset enforces a strict user-ownership model for user-related data (e.g., users, affiliates, orders),
  * and public read access for general content (e.g., banners, categories, coupons, products, settings). Write access
  * to public content is generally denied, requiring specific administrative roles (which are not yet defined in this
  * prototype) for modification.
@@ -19,10 +19,9 @@
  * - /products/{productId}
  * - /settings/{settingId}
  * - /users/{userId}
- * - /wishlists/{wishlistId}
  *
  * Key Security Decisions:
- * - User data and associated resources (wishlists, affiliates, orders) are protected by owner-only access.
+ * - User data and associated resources (affiliates, orders) are protected by owner-only access.
  * - Public content (banners, categories, coupons, products, settings) is readable by all, but writable only by
  *   unspecified administrative roles (requiring future refinement).
  * - User listing is disallowed to protect privacy.
@@ -154,14 +153,6 @@ service cloud.firestore {
       allow update, delete: if isExistingOwner(userId);
 
       /**
-       * @description Allows a user to manage their own wishlist subcollection.
-       * @path /users/{userId}/wishlists/{productId}
-       */
-      match /wishlists/{productId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      /**
        * @description Allows a user to manage their own cart subcollection.
        * @path /users/{userId}/cart/{productId}
        */
@@ -176,18 +167,6 @@ service cloud.firestore {
       match /addresses/{addressId} {
         allow read, write: if isOwner(userId);
       }
-    }
-
-    /**
-     * @description Allows a user to manage their own wishlist. This rule is for a top-level wishlists collection.
-     * The primary wishlist logic uses a subcollection under /users.
-     * @path /wishlists/{wishlistId}
-     */
-    match /wishlists/{wishlistId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // --- Helper Functions ---

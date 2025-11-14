@@ -2,16 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ShoppingCart } from 'lucide-react';
-import type { Product, WishlistItem } from '@/lib/types';
+import { ShoppingCart } from 'lucide-react';
+import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/components/cart/cart-provider';
-import { useWishlist } from '../wishlist/wishlist-provider';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
 import { useTranslation } from '../language/language-provider';
 
 interface ProductCardProps {
@@ -19,52 +15,13 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { toast } = useToast();
-  const { user } = useUser();
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
-  const router = useRouter();
   const { t } = useTranslation();
-
-  const productIsWishlisted = isWishlisted(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product);
-  };
-
-  const handleWishlistClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-        toast({
-            variant: "default",
-            title: t('save_for_later_title').text,
-            description: t('save_for_later_desc').text,
-            action: <Button onClick={() => router.push('/login')}>{t('login').text}</Button>
-        });
-    }
-    
-    if (productIsWishlisted) {
-      removeFromWishlist(product.id);
-      toast({
-        title: t('removed_from_wishlist_title').text,
-        description: t('removed_from_wishlist_desc', { productName: product.name }).text,
-      });
-    } else {
-      addToWishlist({
-        productId: product.id,
-        productName: product.name,
-        productImage: product.mainImage,
-        price: product.discountPrice ?? product.price,
-      });
-      toast({
-        title: t('added_to_wishlist_title').text,
-        description: t('added_to_wishlist_desc', { productName: product.name }).text,
-      });
-    }
   };
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
@@ -82,9 +39,6 @@ export function ProductCard({ product }: ProductCardProps) {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     data-ai-hint={product.imageHint}
                 />
-                <Button variant="ghost" size="icon" onClick={handleWishlistClick} aria-label="Add to wishlist" className="absolute top-2 right-2 bg-background/50 hover:bg-background/80 rounded-full z-10">
-                    <Heart className={cn("h-5 w-5 text-primary", productIsWishlisted && "fill-destructive text-destructive")} />
-                </Button>
                 </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
