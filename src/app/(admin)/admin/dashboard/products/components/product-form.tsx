@@ -84,12 +84,13 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       ? {
           ...productToEdit,
           discountPrice: productToEdit.discountPrice ?? undefined,
-          sku: productToEdit.sku ?? undefined,
+          sku: productToEdit.sku ?? '',
         }
       : {
           name: '',
           description: '',
           price: 0,
+          discountPrice: undefined,
           stock: 0,
           category: '',
           sku: '',
@@ -312,7 +313,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormItem>
                         <FormLabel>Discount Price (Optional)</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="89.99" {...field} />
+                          <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -340,7 +341,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         <FormItem>
                             <FormLabel>SKU (Optional)</FormLabel>
                             <FormControl>
-                            <Input placeholder="MASK-VG-01" {...field} />
+                            <Input placeholder="MASK-VG-01" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -436,3 +437,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
