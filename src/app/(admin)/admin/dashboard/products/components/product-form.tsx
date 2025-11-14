@@ -58,12 +58,10 @@ interface ProductFormProps {
   productToEdit?: Product;
 }
 
-// Placeholder for your image upload function
+// Image upload function for IMGBB
 async function uploadToImgBB(file: File): Promise<string> {
     const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
     const formData = new FormData();
-    
-    // The API expects the file directly, not base64 for FormData
     formData.append('image', file);
 
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
@@ -83,7 +81,6 @@ async function uploadToImgBB(file: File): Promise<string> {
     return result.data.display_url;
 }
 
-
 export function ProductForm({ productToEdit }: ProductFormProps) {
   const router = useRouter();
   const firestore = useFirestore();
@@ -91,8 +88,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State for image management
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [localPreviews, setLocalPreviews] = useState<string[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [mainImage, setMainImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -120,149 +118,128 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   useEffect(() => {
     if (productToEdit) {
       const allImages = [productToEdit.mainImage, ...(productToEdit.images || [])].filter(Boolean);
-      setImagePreviews(allImages);
+      setUploadedImageUrls(allImages);
       setMainImage(productToEdit.mainImage);
     }
   }, [productToEdit]);
+  
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      localPreviews.forEach(url => URL.revokeObjectURL(url));
+    }
+  }, [localPreviews]);
 
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const files = Array.from(event.target.files);
-      const newFiles = [...imageFiles, ...files];
-      setImageFiles(newFiles);
-      
-      const newPreviews = files.map(file => URL.createObjectURL(file));
-      const allPreviews = [...imagePreviews, ...newPreviews];
-      setImagePreviews(allPreviews);
-
-      // If no main image is set, set the first one.
-      if (!mainImage && allPreviews.length > 0) {
-        setMainImage(allPreviews[0]);
-      }
+  const handleFileSelect = (files: FileList | null) => {
+    if (files) {
+      const newFiles = Array.from(files);
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      setLocalPreviews(prev => [...prev, ...newPreviews]);
     }
   };
+  
+  const handleFileDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleFileSelect(event.dataTransfer.files);
+  };
 
-  const removeImage = (indexToRemove: number) => {
-      const removedUrl = imagePreviews[indexToRemove];
-      const newPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
-      setImagePreviews(newPreviews);
+  const removeLocalPreview = (indexToRemove: number) => {
+      const removedUrl = localPreviews[indexToRemove];
+      URL.revokeObjectURL(removedUrl);
+      setLocalPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+      setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+  
+  const removeUploadedImage = (urlToRemove: string) => {
+    setUploadedImageUrls(prev => prev.filter(url => url !== urlToRemove));
+    if (mainImage === urlToRemove) {
+      setMainImage(null);
+    }
+  }
 
-      // If the removed image was the main image, reset it
-      if (mainImage === removedUrl) {
-          setMainImage(newPreviews.length > 0 ? newPreviews[0] : null);
-      }
+  const handleUploadImages = async () => {
+    if (selectedFiles.length === 0) {
+      toast({ variant: 'destructive', title: 'No images selected', description: 'Please select images to upload first.'});
+      return;
+    }
+    
+    setIsUploading(true);
+    try {
+      const uploadPromises = selectedFiles.map(file => uploadToImgBB(file));
+      const newUrls = await Promise.all(uploadPromises);
       
-      // Clean up blob URLs to prevent memory leaks
-      if (removedUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(removedUrl);
-          
-          // Try to remove the corresponding file from the files list
-          // This is a bit tricky, best way is to associate files with previews via an ID
-          // For simplicity, we assume the blobs are at the end and in order.
-          const blobPreviews = imagePreviews.filter(p => p.startsWith('blob:'));
-          const fileIndexToRemove = blobPreviews.indexOf(removedUrl);
-          
-          if(fileIndexToRemove !== -1) {
-            const newImageFiles = imageFiles.filter((_, i) => {
-                const fileBlobIndex = imageFiles.length - blobPreviews.length + i;
-                return fileBlobIndex !== fileIndexToRemove;
-            });
-            setImageFiles(newImageFiles);
-          }
-      }
+      setUploadedImageUrls(prev => [...prev, ...newUrls]);
+      setSelectedFiles([]);
+      setLocalPreviews([]); // Clear local previews after successful upload
+      localPreviews.forEach(url => URL.revokeObjectURL(url)); // Manual cleanup
+      
+      toast({ title: 'Upload Successful', description: `${newUrls.length} images have been uploaded.`});
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was a problem uploading your images.'});
+    } finally {
+      setIsUploading(false);
+    }
   };
 
 
   const onSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
+    
+    if (uploadedImageUrls.length === 0) {
+      toast({ variant: 'destructive', title: 'No images uploaded', description: 'You must upload at least one image before saving.'});
+      return;
+    }
 
     if (!mainImage) {
-        toast({ variant: 'destructive', title: 'Main image required', description: 'You must select at least one image and set a main image.'});
+        toast({ variant: 'destructive', title: 'Main image required', description: 'Please select a main image for the product.'});
         return;
     }
 
     setIsSubmitting(true);
     
     try {
-        setIsUploading(true);
-        const existingUrls = imagePreviews.filter(p => p.startsWith('http'));
-        
-        let uploadedImageUrls: string[] = [];
-        if (imageFiles.length > 0) {
-            const filesToUpload = imageFiles.filter(file => {
-                const objectUrl = URL.createObjectURL(file);
-                const shouldUpload = imagePreviews.includes(objectUrl);
-                URL.revokeObjectURL(objectUrl); // Clean up immediately
-                return shouldUpload;
-            });
-            const uploadPromises = filesToUpload.map(file => uploadToImgBB(file));
-            uploadedImageUrls = await Promise.all(uploadPromises);
-        }
-        setIsUploading(false);
-        
-        const finalImageUrls = [...existingUrls, ...uploadedImageUrls];
-        if (finalImageUrls.length === 0) {
-            toast({ variant: 'destructive', title: 'Image required', description: 'You must upload at least one image.'});
-            setIsSubmitting(false);
-            return;
-        }
-
-        // Determine which URL from the final list corresponds to the main image
-        const finalMainImage = finalImageUrls.find(url => url === mainImage || imagePreviews.indexOf(mainImage) === finalImageUrls.indexOf(url)) || finalImageUrls[0];
-        const additionalImages = finalImageUrls.filter(url => url !== finalMainImage);
+        const additionalImages = uploadedImageUrls.filter(url => url !== mainImage);
 
         const productData = {
             ...data,
-            mainImage: finalMainImage,
+            mainImage: mainImage,
             images: additionalImages,
         };
 
         if (productToEdit) {
             const productRef = doc(firestore, 'products', productToEdit.id);
             const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
-            updateDoc(productRef, dataToUpdate)
-                .then(() => {
-                    toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
-                    router.push('/admin/dashboard/products');
-                    router.refresh();
-                })
-                .catch(async (serverError) => {
-                    const permissionError = new FirestorePermissionError({
-                        path: productRef.path,
-                        operation: 'update',
-                        requestResourceData: dataToUpdate,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                    setIsSubmitting(false);
-                });
-
+            await updateDoc(productRef, dataToUpdate);
+            toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
+            router.push('/admin/dashboard/products');
+            router.refresh();
         } else {
             const collectionRef = collection(firestore, 'products');
             const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            addDoc(collectionRef, dataToCreate)
-                .then(() => {
-                    toast({ title: 'Product Created', description: 'The new product has been added.' });
-                    router.push('/admin/dashboard/products');
-                    router.refresh();
-                })
-                .catch(async (serverError) => {
-                    const permissionError = new FirestorePermissionError({
-                        path: collectionRef.path,
-                        operation: 'create',
-                        requestResourceData: dataToCreate,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                    setIsSubmitting(false);
-                });
+            await addDoc(collectionRef, dataToCreate);
+            toast({ title: 'Product Created', description: 'The new product has been added.' });
+            router.push('/admin/dashboard/products');
+            router.refresh();
         }
     } catch (error) {
-        console.error('Error preparing product for save:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload images or prepare the product.' });
+        const path = productToEdit ? `products/${productToEdit.id}` : 'products';
+        const operation = productToEdit ? 'update' : 'create';
+        const permissionError = new FirestorePermissionError({
+            path: path,
+            operation: operation,
+            requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        console.error('Error saving product:', error);
+    } finally {
         setIsSubmitting(false);
-        setIsUploading(false);
     }
   };
+  
+  const isCreateDisabled = uploadedImageUrls.length === 0 || !mainImage || isUploading || isSubmitting;
 
   return (
     <Form {...form}>
@@ -313,44 +290,82 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             <Card>
                 <CardHeader>
                     <CardTitle>Product Images</CardTitle>
-                    <CardDescription>Upload images for your product gallery. The first image is the main image.</CardDescription>
+                    <CardDescription>Drag and drop images, then upload them and select a main image.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                        {imagePreviews.map((src, index) => (
-                            <div key={src} className="relative group aspect-square">
-                                <Image src={src} alt={`Preview ${index}`} fill className="object-cover rounded-md"/>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                    onClick={() => removeImage(index)}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                                {mainImage === src ? (
-                                    <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        onClick={() => setMainImage(src)}
-                                    >
-                                        Set as main
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
-                         <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <CardContent className="space-y-6">
+                    <div>
+                        <label 
+                            className="flex flex-col items-center justify-center w-full min-h-[150px] border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={handleFileDrop}
+                        >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
                                 <Upload className="w-8 h-8 mb-2 text-muted-foreground"/>
-                                <p className="mb-2 text-sm text-muted-foreground text-center">Click to upload</p>
+                                <p className="mb-2 text-sm text-muted-foreground">Drag & Drop images here or click to select</p>
                             </div>
-                            <input type="file" className="hidden" onChange={handleFileChange} multiple accept="image/*" />
+                            <input type="file" className="hidden" onChange={(e) => handleFileSelect(e.target.files)} multiple accept="image/*" />
                         </label>
+
+                        {localPreviews.length > 0 && (
+                            <div className="mt-4">
+                               <h3 className="font-medium text-sm mb-2">Selected for Upload ({localPreviews.length})</h3>
+                               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                   {localPreviews.map((src, index) => (
+                                       <div key={src} className="relative group aspect-square">
+                                           <Image src={src} alt={`Preview ${index}`} fill className="object-cover rounded-md"/>
+                                           <Button
+                                               type="button"
+                                               variant="destructive"
+                                               size="icon"
+                                               className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                               onClick={() => removeLocalPreview(index)}
+                                           >
+                                               <X className="h-4 w-4" />
+                                           </Button>
+                                       </div>
+                                   ))}
+                               </div>
+                                <Button type="button" onClick={handleUploadImages} disabled={isUploading} className="mt-4">
+                                    {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s) to IMGBB`}
+                                </Button>
+                            </div>
+                        )}
                     </div>
+                    
+                    {uploadedImageUrls.length > 0 && (
+                         <div className="mt-4">
+                               <h3 className="font-medium text-sm mb-2">Uploaded Images</h3>
+                               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                   {uploadedImageUrls.map((url, index) => (
+                                       <div key={url} className="relative group aspect-square">
+                                           <Image src={url} alt={`Uploaded ${index}`} fill className="object-cover rounded-md"/>
+                                           <Button
+                                               type="button"
+                                               variant="destructive"
+                                               size="icon"
+                                               className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                               onClick={() => removeUploadedImage(url)}
+                                           >
+                                               <X className="h-4 w-4" />
+                                           </Button>
+                                           {mainImage === url ? (
+                                                <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
+                                           ) : (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    onClick={() => setMainImage(url)}
+                                                >
+                                                    Set as main
+                                                </Button>
+                                           )}
+                                       </div>
+                                   ))}
+                               </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -495,9 +510,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isCreateDisabled}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isUploading ? 'Uploading images...' : (productToEdit ? 'Save Changes' : 'Create Product')}
+            {productToEdit ? 'Save Changes' : 'Create Product'}
           </Button>
         </div>
       </form>
@@ -505,3 +520,4 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   );
 }
 
+    
