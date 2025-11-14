@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,7 +26,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import {
   collection,
   addDoc,
@@ -39,6 +39,8 @@ import type { Product } from '@/lib/types';
 import { Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
@@ -58,7 +60,6 @@ interface ProductFormProps {
   productToEdit?: Product;
 }
 
-// Image upload function for IMGBB
 async function uploadToImgBB(file: File): Promise<string> {
     const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
     const formData = new FormData();
@@ -91,8 +92,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
-  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [mainImageIndex, setMainImageIndex] = useState<number | null>(null);
+
+  // State for upload progress
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
+
+  // State for drag-and-drop reordering
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -119,7 +128,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     if (productToEdit) {
       const allImages = [productToEdit.mainImage, ...(productToEdit.images || [])].filter(Boolean);
       setUploadedImageUrls(allImages);
-      setMainImage(productToEdit.mainImage);
+      // In edit mode, we find the index of the main image from the already uploaded URLs.
+      const mainIdx = allImages.findIndex(url => url === productToEdit.mainImage);
+      setMainImageIndex(mainIdx !== -1 ? mainIdx : null);
     }
   }, [productToEdit]);
   
@@ -133,8 +144,10 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const handleFileSelect = (files: FileList | null) => {
     if (files) {
       const newFiles = Array.from(files);
-      setSelectedFiles(prev => [...prev, ...newFiles]);
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      const uniqueNewFiles = newFiles.filter(file => !selectedFiles.some(f => f.name === file.name && f.size === file.size));
+
+      setSelectedFiles(prev => [...prev, ...uniqueNewFiles]);
+      const newPreviews = uniqueNewFiles.map(file => URL.createObjectURL(file));
       setLocalPreviews(prev => [...prev, ...newPreviews]);
     }
   };
@@ -148,40 +161,109 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const removeLocalPreview = (indexToRemove: number) => {
       const removedUrl = localPreviews[indexToRemove];
       URL.revokeObjectURL(removedUrl);
+
       setLocalPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
       setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+
+      if (mainImageIndex === indexToRemove) {
+        setMainImageIndex(null);
+      } else if (mainImageIndex !== null && mainImageIndex > indexToRemove) {
+        setMainImageIndex(mainImageIndex - 1);
+      }
   };
   
   const removeUploadedImage = (urlToRemove: string) => {
-    setUploadedImageUrls(prev => prev.filter(url => url !== urlToRemove));
-    if (mainImage === urlToRemove) {
-      setMainImage(null);
-    }
+    setUploadedImageUrls(prevUrls => {
+        const urlIndex = prevUrls.indexOf(urlToRemove);
+        if (mainImageIndex === urlIndex) {
+            setMainImageIndex(null);
+        } else if (mainImageIndex !== null && mainImageIndex > urlIndex) {
+            setMainImageIndex(mainImageIndex - 1);
+        }
+        return prevUrls.filter(url => url !== urlToRemove);
+    });
   }
 
   const handleUploadImages = async () => {
     if (selectedFiles.length === 0) {
-      toast({ variant: 'destructive', title: 'No images selected', description: 'Please select images to upload first.'});
+      toast({ variant: 'destructive', title: 'No new images selected', description: 'Please select images to upload first.'});
+      return;
+    }
+    if (mainImageIndex === null) {
+      toast({ variant: 'destructive', title: 'Main image not selected', description: 'Please select a main image before uploading.'});
       return;
     }
     
     setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStatus('Preparing...');
+    const newUrls: string[] = [];
+
     try {
-      const uploadPromises = selectedFiles.map(file => uploadToImgBB(file));
-      const newUrls = await Promise.all(uploadPromises);
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        setUploadStatus(`Uploading image ${i + 1} of ${selectedFiles.length}...`);
+        const newUrl = await uploadToImgBB(file);
+        newUrls.push(newUrl);
+        setUploadProgress(((i + 1) / selectedFiles.length) * 100);
+      }
       
       setUploadedImageUrls(prev => [...prev, ...newUrls]);
       setSelectedFiles([]);
-      setLocalPreviews([]); // Clear local previews after successful upload
-      localPreviews.forEach(url => URL.revokeObjectURL(url)); // Manual cleanup
+      localPreviews.forEach(url => URL.revokeObjectURL(url)); 
+      setLocalPreviews([]); 
       
+      setUploadStatus('Upload Complete!');
       toast({ title: 'Upload Successful', description: `${newUrls.length} images have been uploaded.`});
     } catch (error) {
       console.error("Image upload error:", error);
       toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was a problem uploading your images.'});
+      setUploadStatus('Upload Failed!');
     } finally {
-      setIsUploading(false);
+      setTimeout(() => setIsUploading(false), 2000);
     }
+  };
+
+  const handleDragSort = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    
+    // Create copies of the arrays
+    let _selectedFiles = [...selectedFiles];
+    let _localPreviews = [...localPreviews];
+
+    // Remove and save the dragged items
+    const draggedFile = _selectedFiles.splice(dragItem.current, 1)[0];
+    const draggedPreview = _localPreviews.splice(dragItem.current, 1)[0];
+
+    // Insert the dragged items at the new position
+    _selectedFiles.splice(dragOverItem.current, 0, draggedFile);
+    _localPreviews.splice(dragOverItem.current, 0, draggedPreview);
+    
+    // Update main image index
+    if (mainImageIndex !== null) {
+        if (dragItem.current === mainImageIndex) {
+            setMainImageIndex(dragOverItem.current);
+        } else {
+            const start = Math.min(dragItem.current, dragOverItem.current);
+            const end = Math.max(dragItem.current, dragOverItem.current);
+
+            if (mainImageIndex >= start && mainImageIndex <= end) {
+                if (dragItem.current < dragOverItem.current && mainImageIndex > dragItem.current) {
+                    setMainImageIndex(mainImageIndex - 1);
+                } else if (dragItem.current > dragOverItem.current && mainImageIndex < dragItem.current) {
+                    setMainImageIndex(mainImageIndex + 1);
+                }
+            }
+        }
+    }
+    
+    // Reset refs
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    // Update state
+    setSelectedFiles(_selectedFiles);
+    setLocalPreviews(_localPreviews);
   };
 
 
@@ -193,7 +275,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       return;
     }
 
-    if (!mainImage) {
+    if (mainImageIndex === null || uploadedImageUrls[mainImageIndex] === undefined) {
         toast({ variant: 'destructive', title: 'Main image required', description: 'Please select a main image for the product.'});
         return;
     }
@@ -201,7 +283,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     setIsSubmitting(true);
     
     try {
-        const additionalImages = uploadedImageUrls.filter(url => url !== mainImage);
+        const mainImage = uploadedImageUrls[mainImageIndex];
+        const additionalImages = uploadedImageUrls.filter((_, index) => index !== mainImageIndex);
 
         const productData = {
             ...data,
@@ -212,34 +295,43 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         if (productToEdit) {
             const productRef = doc(firestore, 'products', productToEdit.id);
             const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
-            await updateDoc(productRef, dataToUpdate);
+            updateDoc(productRef, dataToUpdate).catch(async (serverError) => {
+              const permissionError = new FirestorePermissionError({
+                  path: productRef.path,
+                  operation: 'update',
+                  requestResourceData: dataToUpdate,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              console.error('Error saving product:', serverError);
+            });
             toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
             router.push('/admin/dashboard/products');
             router.refresh();
         } else {
             const collectionRef = collection(firestore, 'products');
             const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            await addDoc(collectionRef, dataToCreate);
+            addDoc(collectionRef, dataToCreate).catch(async (serverError) => {
+              const permissionError = new FirestorePermissionError({
+                  path: collectionRef.path,
+                  operation: 'create',
+                  requestResourceData: dataToCreate,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              console.error('Error saving product:', serverError);
+            });
             toast({ title: 'Product Created', description: 'The new product has been added.' });
             router.push('/admin/dashboard/products');
             router.refresh();
         }
     } catch (error) {
-        const path = productToEdit ? `products/${productToEdit.id}` : 'products';
-        const operation = productToEdit ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({
-            path: path,
-            operation: operation,
-            requestResourceData: data,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        console.error('Error saving product:', error);
+        console.error('Error in onSubmit logic:', error);
     } finally {
         setIsSubmitting(false);
     }
   };
   
-  const isCreateDisabled = uploadedImageUrls.length === 0 || !mainImage || isUploading || isSubmitting;
+  const isCreateDisabled = uploadedImageUrls.length === 0 || mainImageIndex === null || isUploading || isSubmitting;
+  const isUploadDisabled = isUploading || selectedFiles.length === 0 || mainImageIndex === null;
 
   return (
     <Form {...form}>
@@ -290,7 +382,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             <Card>
                 <CardHeader>
                     <CardTitle>Product Images</CardTitle>
-                    <CardDescription>Drag and drop images, then upload them and select a main image.</CardDescription>
+                    <CardDescription>Drag and drop images, select a main one, reorder them, then upload.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div>
@@ -308,11 +400,19 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
                         {localPreviews.length > 0 && (
                             <div className="mt-4">
-                               <h3 className="font-medium text-sm mb-2">Selected for Upload ({localPreviews.length})</h3>
+                               <h3 className="font-medium text-sm mb-2">Selected for Upload ({localPreviews.length}) - Drag to reorder</h3>
                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                    {localPreviews.map((src, index) => (
-                                       <div key={src} className="relative group aspect-square">
-                                           <Image src={src} alt={`Preview ${index}`} fill className="object-cover rounded-md"/>
+                                       <div 
+                                         key={src} 
+                                         className="relative group aspect-square cursor-grab"
+                                         draggable
+                                         onDragStart={() => dragItem.current = index}
+                                         onDragEnter={() => dragOverItem.current = index}
+                                         onDragEnd={handleDragSort}
+                                         onDragOver={(e) => e.preventDefault()}
+                                        >
+                                           <Image src={src} alt={`Preview ${index}`} fill className={cn("object-cover rounded-md border-2", mainImageIndex === index ? "border-primary" : "border-transparent")}/>
                                            <Button
                                                type="button"
                                                variant="destructive"
@@ -322,24 +422,43 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                            >
                                                <X className="h-4 w-4" />
                                            </Button>
+                                            {mainImageIndex === index ? (
+                                                <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
+                                           ) : (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    onClick={() => setMainImageIndex(index)}
+                                                >
+                                                    Set as main
+                                                </Button>
+                                           )}
                                        </div>
                                    ))}
                                </div>
-                                <Button type="button" onClick={handleUploadImages} disabled={isUploading} className="mt-4">
-                                    {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s) to IMGBB`}
-                                </Button>
                             </div>
                         )}
+                        {isUploading && (
+                          <div className="mt-4 space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">{uploadStatus}</p>
+                              <Progress value={uploadProgress} className="w-full" />
+                          </div>
+                        )}
+                        <Button type="button" onClick={handleUploadImages} disabled={isUploadDisabled} className="mt-4">
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s)`}
+                        </Button>
+
                     </div>
                     
                     {uploadedImageUrls.length > 0 && (
                          <div className="mt-4">
-                               <h3 className="font-medium text-sm mb-2">Uploaded Images</h3>
+                               <h3 className="font-medium text-sm mb-2">Uploaded Images ({uploadedImageUrls.length})</h3>
                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                    {uploadedImageUrls.map((url, index) => (
                                        <div key={url} className="relative group aspect-square">
-                                           <Image src={url} alt={`Uploaded ${index}`} fill className="object-cover rounded-md"/>
+                                           <Image src={url} alt={`Uploaded ${index}`} fill className={cn("object-cover rounded-md border-2", mainImageIndex === index ? "border-primary" : "border-transparent")}/>
                                            <Button
                                                type="button"
                                                variant="destructive"
@@ -349,17 +468,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                            >
                                                <X className="h-4 w-4" />
                                            </Button>
-                                           {mainImage === url ? (
+                                           {mainImageIndex === index && (
                                                 <Badge className="absolute bottom-1 left-1 z-10">Main</Badge>
-                                           ) : (
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    className="absolute bottom-1 left-1 h-auto px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    onClick={() => setMainImage(url)}
-                                                >
-                                                    Set as main
-                                                </Button>
                                            )}
                                        </div>
                                    ))}
