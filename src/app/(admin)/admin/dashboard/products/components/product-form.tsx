@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -292,8 +293,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         setUploadProgress(((i + 1) / selectedFiles.length) * 100);
       }
       
-      // The order of newUploadedImages already matches selectedFiles order
-      const combinedUploadedImages = [...uploadedImages, ...newUploadedImages];
+      // Filter out any duplicates before combining
+      const uniqueNewUploads = newUploadedImages.filter(
+        (newImg) => !uploadedImages.some((existingImg) => existingImg.url === newImg.url)
+      );
+
+      const combinedUploadedImages = [...uploadedImages, ...uniqueNewUploads];
       setUploadedImages(combinedUploadedImages);
       
       // After upload, mainImageIndex should point to the correct image in the combined array
@@ -371,8 +376,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     
     try {
         const mainImage = uploadedImages[mainImageIndex].url;
-        // In a real-world scenario, you would also save the deleteUrls to Firestore
-        // so you can delete them later if the product is edited.
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
         const productData = {
