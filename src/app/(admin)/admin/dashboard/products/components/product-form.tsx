@@ -45,6 +45,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
 type UploadedImage = {
+  id: string;
   url: string;
   deleteUrl: string;
 };
@@ -67,7 +68,7 @@ interface ProductFormProps {
   productToEdit?: Product;
 }
 
-async function uploadToImgBB(file: File): Promise<UploadedImage> {
+async function uploadToImgBB(file: File): Promise<Omit<UploadedImage, 'id'>> {
     const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
     const formData = new FormData();
     formData.append('image', file);
@@ -90,9 +91,8 @@ async function uploadToImgBB(file: File): Promise<UploadedImage> {
 }
 
 async function deleteFromImgBB(deleteUrl: string): Promise<void> {
-  // We call our own API route which will then call IMGBB's delete URL.
   const response = await fetch('/api/delete-image', {
-      method: 'POST', // Use POST to send a body to our API route
+      method: 'POST',
       headers: {
           'Content-Type': 'application/json',
       },
@@ -112,21 +112,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State for image management
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState<number | null>(null);
 
-  // State for upload progress
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
   
-  // State for deletion
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
 
-  // State for drag-and-drop reordering
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
@@ -153,20 +149,15 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         },
   });
   
-  // This effect populates the form and image state when editing an existing product.
-  // It transforms the string arrays from Firestore into the UploadedImage object array.
   useEffect(() => {
     if (productToEdit) {
       const mainImageUrl = productToEdit.mainImage;
       const otherImageUrls = productToEdit.images || [];
-      // Assuming you don't store delete URLs in Firestore. If you do, you'd fetch them here.
-      // For now, we'll create placeholder delete URLs for existing images.
       const loadedImages: UploadedImage[] = [mainImageUrl, ...otherImageUrls]
         .filter(Boolean)
         .map(url => ({
+          id: url,
           url,
-          // In a real app, delete URLs must be stored alongside image URLs in Firestore
-          // to be able to delete them later.
           deleteUrl: `placeholder-delete-url-for-${url}` 
         }));
       
@@ -177,7 +168,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     }
   }, [productToEdit]);
   
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       localPreviews.forEach(url => URL.revokeObjectURL(url));
@@ -194,7 +184,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       setSelectedFiles(prev => [...prev, ...uniqueNewFiles]);
       setLocalPreviews(prev => [...prev, ...uniqueNewFiles.map(file => URL.createObjectURL(file))]);
       
-      // If this is the first batch of images, set the first one as main
       if (wasEmpty && uniqueNewFiles.length > 0) {
         setMainImageIndex(0);
       }
@@ -211,40 +200,35 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       const removedUrl = localPreviews[indexToRemove];
       URL.revokeObjectURL(removedUrl);
 
-      setLocalPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
       setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+      setLocalPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
 
-      // Update main image index if the removed image was the main one or before it
       if (mainImageIndex !== null) {
         if (mainImageIndex === indexToRemove) {
-          // If the main image is removed, set the new first image as main, or null if empty
           setMainImageIndex(selectedFiles.length > 1 ? 0 : (uploadedImages.length > 0 ? uploadedImages.length : null));
         } else if (mainImageIndex > indexToRemove) {
-          // If an image before the main one is removed, decrement the main index
           setMainImageIndex(mainImageIndex - 1);
         }
       }
   };
   
-  const removeUploadedImage = async (urlToRemove: string) => {
-    const imageToRemove = uploadedImages.find(img => img.url === urlToRemove);
+  const removeUploadedImage = async (idToRemove: string) => {
+    const imageToRemove = uploadedImages.find(img => img.id === idToRemove);
     if (!imageToRemove) return;
   
-    // Don't attempt to delete placeholders
     if (imageToRemove.deleteUrl.startsWith('placeholder')) {
         toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This image was saved without a deletion link.' });
         return;
     }
 
-    setDeletingUrl(urlToRemove);
+    setDeletingUrl(imageToRemove.url);
     try {
       await deleteFromImgBB(imageToRemove.deleteUrl);
   
       setUploadedImages(prevImages => {
-        const urlIndex = prevImages.findIndex(img => img.url === urlToRemove);
-        const newImages = prevImages.filter(img => img.url !== urlToRemove);
+        const urlIndex = prevImages.findIndex(img => img.id === idToRemove);
+        const newImages = prevImages.filter(img => img.id !== idToRemove);
   
-        // Adjust main image index
         if (mainImageIndex !== null) {
           const totalLocalImages = selectedFiles.length;
           const uploadedIndex = urlIndex + totalLocalImages;
@@ -289,21 +273,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         const file = selectedFiles[i];
         setUploadStatus(`Uploading image ${i + 1} of ${selectedFiles.length}...`);
         const newUpload = await uploadToImgBB(file);
-        newUploadedImages.push(newUpload);
+        newUploadedImages.push({
+            id: `${newUpload.url}-${Math.random().toString(36).substring(2, 9)}`,
+            ...newUpload,
+        });
         setUploadProgress(((i + 1) / selectedFiles.length) * 100);
       }
-      
-      // Filter out any duplicates before combining
-      const uniqueNewUploads = newUploadedImages.filter(
-        (newImg) => !uploadedImages.some((existingImg) => existingImg.url === newImg.url)
-      );
 
-      const combinedUploadedImages = [...uploadedImages, ...uniqueNewUploads];
-      setUploadedImages(combinedUploadedImages);
+      setUploadedImages(prev => [...prev, ...newUploadedImages]);
       
-      // After upload, mainImageIndex should point to the correct image in the combined array
       if (mainImageIndex !== null) {
-          // The main image was in the local previews that just got uploaded
           setMainImageIndex(mainImageIndex + uploadedImages.length);
       }
       
@@ -555,7 +534,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                    {uploadedImages.map((image, index) => {
                                         const totalIndex = index + selectedFiles.length;
                                         return (
-                                            <div key={image.url} className={cn("relative group aspect-square", deletingUrl === image.url && "opacity-50 pointer-events-none")}>
+                                            <div key={image.id} className={cn("relative group aspect-square", deletingUrl === image.url && "opacity-50 pointer-events-none")}>
                                                 {deletingUrl === image.url && (
                                                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md z-20">
                                                             <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -567,7 +546,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                     variant="destructive"
                                                     size="icon"
                                                     className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    onClick={() => removeUploadedImage(image.url)}
+                                                    onClick={() => removeUploadedImage(image.id)}
                                                     disabled={deletingUrl !== null}
                                                 >
                                                     <X className="h-4 w-4" />
@@ -743,3 +722,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
