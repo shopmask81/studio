@@ -115,15 +115,15 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read product information, but restricts creation, updates, and deletion.
+     * @description Allows anyone to read product information, but restricts creation, updates, and deletion to admins.
      * @path /products/{productId}
-     * @allow (get, list) - Any user can read product information.
-     * @deny (create, update, delete) - No user can create, update, or delete product information. Administrative role is required in future versions.
-     * @principle Public read access with restricted write access.
+     * @allow (read) - Any user can read product information.
+     * @allow (write) - Only admins can create, update, or delete product information.
+     * @principle Public read access with admin-only write access.
      */
     match /products/{productId} {
       allow read: if true;
-      allow write: if false; // TODO: Add admin validation
+      allow write: if isAdmin();
     }
 
     /**
@@ -195,6 +195,14 @@ service cloud.firestore {
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the signed-in user has an 'admin' role.
+     * @return {boolean} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
