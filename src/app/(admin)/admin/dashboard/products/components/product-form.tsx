@@ -118,14 +118,14 @@ const formSchema = z.object({
         }
 
     } else {
-        if (data.price === undefined || data.price === null || isNaN(data.price)) {
+        if (data.price === undefined || data.price === null || isNaN(data.price) || data.price <= 0) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Price is required when variants are disabled.',
                 path: ['price'],
             });
         }
-        if (data.stock === undefined || data.stock === null || isNaN(data.stock)) {
+        if (data.stock === undefined || data.stock === null || isNaN(data.stock) || data.stock < 0) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Stock is required when variants are disabled.',
@@ -565,9 +565,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     }
   };
   
-  const isCreateDisabled = uploadedImages.length === 0 || mainImageIndex === null || isUploading || isSubmitting || selectedFiles.length > 0;
-  const isUploadDisabled = isUploading || selectedFiles.length === 0 || mainImageIndex === null || mainImageIndex >= selectedFiles.length;
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -715,7 +712,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                         )}
                         
                         <div className="flex items-center gap-4 mt-4">
-                            <Button type="button" onClick={handleUploadImages} disabled={isUploadDisabled}>
+                            <Button type="button" onClick={handleUploadImages} disabled={isUploading || selectedFiles.length === 0 || mainImageIndex === null || mainImageIndex >= selectedFiles.length}>
                                 {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                 {isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} Image(s)`}
                             </Button>
@@ -1137,3 +1134,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
