@@ -64,12 +64,12 @@ export function OrderFilters({ onFilterChange }: OrderFiltersProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
-                <Select value={status} onValueChange={(v) => setStatus(v as Order['status'] | '')}>
+                <Select value={status} onValueChange={(v) => setStatus(v === 'all' ? '' : v as Order['status'])}>
                     <SelectTrigger>
                         <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Statuses</SelectItem>
+                        <SelectItem value="all">All Statuses</SelectItem>
                         {orderStatuses.map(s => (
                             <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
                         ))}
