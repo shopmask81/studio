@@ -35,7 +35,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Product, VariantDetail } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { Loader2, Upload, X, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -532,6 +532,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             const productRef = doc(firestore, 'products', productToEdit.id);
             const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
             updateDoc(productRef, dataToUpdate).catch(async (serverError) => {
+              console.error("Firestore update error:", serverError);
               const permissionError = new FirestorePermissionError({
                   path: productRef.path,
                   operation: 'update',
@@ -546,6 +547,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             const collectionRef = collection(firestore, 'products');
             const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
             addDoc(collectionRef, dataToCreate).catch(async (serverError) => {
+              console.error("Firestore creation error:", serverError);
               const permissionError = new FirestorePermissionError({
                   path: collectionRef.path,
                   operation: 'create',
