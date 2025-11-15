@@ -859,11 +859,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                             <FormField
                                                                 control={form.control}
                                                                 name={`variants.stock.${key}`}
-                                                                defaultValue={0}
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} className="h-8" />
+                                                                            <Input
+                                                                              type="number"
+                                                                              {...field}
+                                                                              value={field.value ?? ''}
+                                                                              onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
+                                                                              className="h-8"
+                                                                            />
                                                                         </FormControl>
                                                                         <FormMessage />
                                                                     </FormItem>
