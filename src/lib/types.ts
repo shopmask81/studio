@@ -50,27 +50,23 @@ export type OrderItem = {
     name: string;
     quantity: number;
     price: number;
-    mainImage: string;
-    selectedColor?: string;
-    selectedSize?: string;
-}
-
-export type ShippingAddress = {
-    fullName: string;
-    email: string;
-    phone: string;
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
+    imageUrl: string; // Renamed from mainImage
 }
 
 export type Order = {
     id: string;
     userId: string | null;
     items: OrderItem[];
-    totalPrice: number;
-    shippingAddress: ShippingAddress;
+    total: number; // Renamed from totalPrice
+    name: string; // From shippingAddress.fullName
+    email: string; // From shippingAddress.email
+    email_lowercase: string;
+    phone: string; // From shippingAddress.phone
+    street: string; // From shippingAddress
+    city: string; // From shippingAddress
+    zip: string; // Renamed from postalCode
+    country: string; // From shippingAddress
+    affiliateId?: string | null;
     paymentMethod: 'card' | 'paypal' | 'cod';
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
     createdAt: Timestamp;
@@ -104,5 +100,3 @@ export type UserProfile = {
     createdAt: Timestamp;
     emailVerified: boolean;
 };
-
-    

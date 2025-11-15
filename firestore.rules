@@ -110,7 +110,7 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow get: if isOwner(resource.data.userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isOwner(request.resource.data.userId);
       allow update: if isAdmin();
       allow delete: if false; // Deleting orders is generally a bad practice.
     }
@@ -208,5 +208,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

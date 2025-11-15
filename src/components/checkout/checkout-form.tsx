@@ -133,28 +133,26 @@ export function CheckoutForm() {
 
         try {
             await addDoc(collection(firestore, 'orders'), {
-                userId: user?.uid ?? null,
+                userId: user?.uid ?? 'guest',
+                name: values.fullName,
+                email: values.email,
+                email_lowercase: values.email.toLowerCase(),
+                phone: values.phone,
+                street: values.street,
+                city: values.city,
+                zip: values.postalCode,
+                country: values.country,
                 items: cartItems.map(item => ({
                     productId: item.product.id,
                     name: item.product.name,
                     quantity: item.quantity,
                     price: item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price,
-                    mainImage: item.product.mainImage,
-                    selectedColor: item.selectedColor,
-                    selectedSize: item.selectedSize
+                    imageUrl: item.product.mainImage,
                 })),
-                totalPrice: finalTotal,
-                shippingAddress: {
-                    fullName: values.fullName,
-                    email: values.email,
-                    phone: values.phone,
-                    street: values.street,
-                    city: values.city,
-                    postalCode: values.postalCode,
-                    country: values.country,
-                },
+                total: finalTotal,
                 paymentMethod: values.paymentMethod,
                 status: 'pending',
+                affiliateId: null, // Placeholder for future implementation
                 createdAt: serverTimestamp(),
             });
 
@@ -316,5 +314,3 @@ export function CheckoutForm() {
         </Form>
     );
 }
-
-    
