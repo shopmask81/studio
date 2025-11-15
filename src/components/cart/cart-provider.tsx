@@ -11,13 +11,15 @@ import { useTranslation } from '../language/language-provider';
 type AddToCartOptions = {
   selectedColor?: string;
   selectedSize?: string;
+  variantPrice?: number;
+  variantDiscountPrice?: number;
 }
 
 type CartContextType = {
   cartItems: CartItem[];
   addToCart: (product: Product, quantity?: number, options?: AddToCartOptions) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string, options?: AddToCartOptions) => void;
+  updateQuantity: (productId: string, quantity: number, options?: AddToCartOptions) => void;
   clearCart: () => void;
   isCartLoading: boolean;
   cartTotal: number;
@@ -50,12 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (cartColRef) {
           try {
             const snapshot = await getDocs(cartColRef);
-            const firestoreItems: CartItem[] = snapshot.docs.map(d => ({
-              product: d.data().product as Product,
-              quantity: d.data().quantity,
-              selectedColor: d.data().selectedColor,
-              selectedSize: d.data().selectedSize,
-            }));
+            const firestoreItems: CartItem[] = snapshot.docs.map(d => d.data() as CartItem);
             setCartItems(firestoreItems);
           } catch (error) {
             console.error("Failed to load cart from Firestore", error);
@@ -88,8 +85,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = useCallback((product: Product, quantity: number = 1, options?: AddToCartOptions) => {
     setCartItems((prevItems) => {
-      // For variant products, each unique combination is a separate cart item.
-      // For non-variant products, we just check by product ID.
       const findPredicate = (item: CartItem) =>
         item.product.id === product.id &&
         item.selectedColor === options?.selectedColor &&
@@ -107,7 +102,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           product, 
           quantity, 
           selectedColor: options?.selectedColor, 
-          selectedSize: options?.selectedSize 
+          selectedSize: options?.selectedSize,
+          variantPrice: options?.variantPrice,
+          variantDiscountPrice: options?.variantDiscountPrice,
         }];
       }
       
@@ -117,12 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
         const itemData = newItems.find(findPredicate);
         if (itemData) {
-          setDoc(cartItemRef, { 
-            product: itemData.product,
-            quantity: itemData.quantity,
-            selectedColor: itemData.selectedColor,
-            selectedSize: itemData.selectedSize,
-          }, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
+          setDoc(cartItemRef, itemData, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
         }
       } else {
         localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
@@ -198,7 +190,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   
   const cartTotal = useMemo(() => {
     return cartItems.reduce((total, item) => {
-        const price = item.product.discountPrice ?? item.product.price;
+        const price = item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price;
         return total + price * item.quantity;
     }, 0);
   }, [cartItems]);

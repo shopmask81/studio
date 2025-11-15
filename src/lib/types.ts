@@ -1,11 +1,17 @@
 
 import { Timestamp } from 'firebase/firestore';
 
+export type VariantDetail = {
+  stock: number;
+  price: number;
+  discountPrice?: number;
+}
+
 export type ProductVariant = {
   enabled: boolean;
   colors?: string[];
   sizes?: string[];
-  stock?: { [key: string]: number };
+  details?: { [key: string]: VariantDetail };
 }
 
 export type Product = {
@@ -35,6 +41,8 @@ export type CartItem = {
   quantity: number;
   selectedColor?: string;
   selectedSize?: string;
+  variantPrice?: number;
+  variantDiscountPrice?: number;
 };
 
 export type WishlistItem = {
@@ -65,3 +73,4 @@ export type UserProfile = {
     createdAt: Timestamp;
     emailVerified: boolean;
 };
+

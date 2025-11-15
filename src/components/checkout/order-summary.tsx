@@ -21,7 +21,7 @@ export function OrderSummary() {
       <CardContent>
         <div className="space-y-4">
           {cartItems.map((item) => {
-            const price = item.product.discountPrice ?? item.product.price;
+            const price = item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price;
             const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
             const { dir } = t(displayName);
             return (

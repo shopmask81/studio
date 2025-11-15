@@ -57,8 +57,10 @@ function CartDisplay() {
                     </CardHeader>
                     <CardContent className="divide-y">
                         {cartItems.map(item => {
-                            const hasDiscount = item.product.discountPrice && item.product.discountPrice < item.product.price;
-                            const price = hasDiscount ? item.product.discountPrice! : item.product.price;
+                            const price = item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price;
+                            const originalPrice = item.variantPrice ?? item.product.price;
+                            const hasDiscount = price < originalPrice;
+
                             const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
                             const { dir } = t(displayName);
 
@@ -78,7 +80,7 @@ function CartDisplay() {
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
                                                     <p className="text-primary font-semibold">${price.toFixed(2)}</p>
-                                                    <p className="text-muted-foreground line-through">${item.product.price.toFixed(2)}</p>
+                                                    <p className="text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
                                                 </div>
                                             ) : (
                                                 <p className="text-primary">${price.toFixed(2)}</p>

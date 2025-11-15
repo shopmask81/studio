@@ -50,16 +50,35 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const hasColors = hasVariants && product.variants.colors && product.variants.colors.length > 0;
   const hasSizes = hasVariants && product.variants.sizes && product.variants.sizes.length > 0;
 
-  const currentVariantStock = useMemo(() => {
-    if (!hasVariants || !product?.variants?.stock) {
-      return product?.stock ?? null;
-    }
+  const currentVariantKey = useMemo(() => {
+    if (!hasVariants) return null;
     if (hasColors && !selectedColor) return null;
     if (hasSizes && !selectedSize) return null;
+    return [selectedColor, selectedSize].filter(Boolean).join('-') || null;
+  }, [hasVariants, hasColors, hasSizes, selectedColor, selectedSize]);
 
-    const key = [selectedColor, selectedSize].filter(Boolean).join('-');
-    return product.variants.stock[key] ?? 0;
-  }, [product, hasVariants, hasColors, hasSizes, selectedColor, selectedSize]);
+  const currentVariantDetails = useMemo(() => {
+    if (!currentVariantKey || !product?.variants?.details) return null;
+    return product.variants.details[currentVariantKey];
+  }, [currentVariantKey, product?.variants?.details]);
+
+  const currentStock = useMemo(() => {
+    if (!hasVariants) return product?.stock ?? null;
+    return currentVariantDetails?.stock ?? null;
+  }, [product, hasVariants, currentVariantDetails]);
+
+  const currentPrice = useMemo(() => {
+    if (!hasVariants) return product?.price;
+    return currentVariantDetails?.price;
+  }, [product, hasVariants, currentVariantDetails]);
+  
+  const currentDiscountPrice = useMemo(() => {
+    if (!hasVariants) return product?.discountPrice;
+    return currentVariantDetails?.discountPrice;
+  }, [product, hasVariants, currentVariantDetails]);
+
+  const hasDiscount = currentDiscountPrice !== undefined && currentPrice !== undefined && currentDiscountPrice < currentPrice;
+
 
   useEffect(() => {
     // Reset selections when product changes
@@ -106,7 +125,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, 1, { selectedColor, selectedSize });
+    addToCart(product, 1, { 
+      selectedColor, 
+      selectedSize,
+      variantPrice: currentPrice,
+      variantDiscountPrice: currentDiscountPrice
+    });
   };
 
   if (isLoading) {
@@ -135,9 +159,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { dir: nameDir, style: nameStyle } = t(displayName);
   const { dir: descDir, style: descStyle } = t(displayDescription);
 
-  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-
-  const isAddToCartDisabled = currentVariantStock === 0 || (hasVariants && currentVariantStock === null);
+  const isAddToCartDisabled = currentStock === 0 || (hasVariants && currentVariantKey === null);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -215,14 +237,18 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <p className="text-primary font-semibold mb-2">{product.category}</p>
             <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words" dir={nameDir} style={nameStyle}>{displayName}</h1>
 
-            <div className="flex items-baseline gap-3 mb-6">
-                {hasDiscount ? (
-                    <>
-                        <p className="text-4xl font-bold text-primary">${product.discountPrice?.toFixed(2)}</p>
-                        <p className="text-2xl font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
-                    </>
+            <div className="flex items-baseline gap-3 mb-6 min-h-[48px]">
+                {currentPrice !== undefined ? (
+                    hasDiscount ? (
+                        <>
+                            <p className="text-4xl font-bold text-primary">${currentDiscountPrice?.toFixed(2)}</p>
+                            <p className="text-2xl font-medium text-muted-foreground line-through">${currentPrice?.toFixed(2)}</p>
+                        </>
+                    ) : (
+                        <p className="text-4xl font-bold text-primary">${currentPrice.toFixed(2)}</p>
+                    )
                 ) : (
-                    <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                    hasVariants && <p className="text-muted-foreground">Select options to see price</p>
                 )}
             </div>
 
@@ -291,12 +317,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             )}
 
 
-            {currentVariantStock !== null && currentVariantStock <= 10 && currentVariantStock > 0 && (
+            {currentStock !== null && currentStock <= 10 && currentStock > 0 && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
-                    currentVariantStock <= 5 ? "text-red-500" : "text-amber-500"
-                )} {...t('only_left_in_stock', {count: currentVariantStock})}>
-                    {t('only_left_in_stock', { count: currentVariantStock }).text}
+                    currentStock <= 5 ? "text-red-500" : "text-amber-500"
+                )} {...t('only_left_in_stock', {count: currentStock})}>
+                    {t('only_left_in_stock', { count: currentStock }).text}
                 </p>
             )}
 
@@ -308,7 +334,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {currentVariantStock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
+                    {currentStock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
                 </Button>
             </div>
         </div>

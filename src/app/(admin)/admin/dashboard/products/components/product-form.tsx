@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -36,8 +35,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Product } from '@/lib/types';
-import { Loader2, Upload, X, PlusCircle, GripVertical } from 'lucide-react';
+import type { Product, VariantDetail } from '@/lib/types';
+import { Loader2, Upload, X, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -52,13 +51,17 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
-const variantStockSchema = z.record(z.coerce.number().int().min(0, 'Stock must be non-negative.'));
+const variantDetailSchema = z.object({
+    stock: z.coerce.number().int().min(0, 'Stock must be non-negative.'),
+    price: z.coerce.number().positive('Price must be positive.'),
+    discountPrice: z.coerce.number().optional(),
+});
 
 const variantSchema = z.object({
   enabled: z.boolean().default(false),
   colors: z.array(z.object({ value: z.string() })).optional(),
   sizes: z.array(z.object({ value: z.string() })).optional(),
-  stock: variantStockSchema.optional(),
+  details: z.record(variantDetailSchema).optional(),
 });
 
 
@@ -67,7 +70,7 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description is required.'),
   name_ar: z.string().optional(),
   description_ar: z.string().optional(),
-  price: z.coerce.number().positive('Price must be a positive number.'),
+  price: z.coerce.number().positive('Price must be a positive number.').optional(),
   discountPrice: z.coerce.number().optional(),
   stock: z.coerce.number().int().min(0, 'Stock cannot be negative.').optional(),
   category: z.string().min(2, 'Category is required.'),
@@ -76,13 +79,13 @@ const formSchema = z.object({
   featured: z.boolean().default(false),
   variants: variantSchema.optional(),
 }).refine(data => {
-    if (!data.variants?.enabled) {
-        return data.stock !== undefined && data.stock !== null;
+    if (data.variants?.enabled) {
+        return true; // When variants are on, main price/stock are not required
     }
-    return true;
+    return data.price !== undefined && data.price !== null && data.stock !== undefined && data.stock !== null;
 }, {
-    message: 'Stock quantity is required when variants are disabled.',
-    path: ['stock'],
+    message: 'Price and Stock are required when variants are disabled.',
+    path: ['price'], // You can point to one of them
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -145,8 +148,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const [uploadStatus, setUploadStatus] = useState('');
   
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
-  const [bulkStockValue, setBulkStockValue] = useState('');
-
+  
+  const [bulkValues, setBulkValues] = useState({ stock: '', price: '', discountPrice: '' });
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -156,15 +159,15 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     defaultValues: productToEdit
       ? {
           ...productToEdit,
-          price: productToEdit.price,
-          stock: productToEdit.stock,
+          price: productToEdit.price ?? undefined,
+          stock: productToEdit.stock ?? undefined,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
           variants: {
             enabled: productToEdit.variants?.enabled ?? false,
             colors: productToEdit.variants?.colors?.map(c => ({value: c})) ?? [],
             sizes: productToEdit.variants?.sizes?.map(s => ({value: s})) ?? [],
-            stock: productToEdit.variants?.stock ?? {},
+            details: productToEdit.variants?.details ?? {},
           }
         }
       : {
@@ -183,7 +186,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             enabled: false,
             colors: [],
             sizes: [],
-            stock: {}
+            details: {}
           }
         },
   });
@@ -215,24 +218,22 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     );
   }, [watchedColors, watchedSizes]);
 
-    const handleApplyBulkStock = () => {
-    const stockValue = parseInt(bulkStockValue, 10);
-    if (isNaN(stockValue) || stockValue < 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Stock Value',
-        description: 'Please enter a valid non-negative number.',
-      });
-      return;
+  const handleApplyBulkValues = (field: 'stock' | 'price' | 'discountPrice') => {
+    const value = parseFloat(bulkValues[field]);
+    if (isNaN(value) || (field === 'stock' && value < 0)) {
+        toast({
+            variant: 'destructive',
+            title: `Invalid ${field} value`,
+            description: 'Please enter a valid non-negative number.',
+        });
+        return;
     }
-
     variantCombinations.forEach(({ key }) => {
-      form.setValue(`variants.stock.${key}`, stockValue, { shouldValidate: true, shouldDirty: true });
+        form.setValue(`variants.details.${key}.${field}`, value, { shouldValidate: true, shouldDirty: true });
     });
-
     toast({
-      title: 'Stock Applied',
-      description: `Set stock to ${stockValue} for all variants.`,
+        title: `Bulk ${field} applied`,
+        description: `Set ${field} to ${value} for all variants.`,
     });
   };
 
@@ -459,7 +460,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
               enabled: data.variants?.enabled ?? false,
               colors: data.variants?.colors?.map(c => c.value).filter(Boolean) ?? [],
               sizes: data.variants?.sizes?.map(s => s.value).filter(Boolean) ?? [],
-              stock: data.variants?.stock ?? {},
+              details: data.variants?.details ?? {},
             }
         };
 
@@ -714,49 +715,52 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 <CardTitle>Pricing & Inventory</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="discountPrice"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Price (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {!variantsEnabled && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="price"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Price</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="discountPrice"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Discount Price (Optional)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="stock"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Stock Quantity</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="100" {...field} value={field.value ?? ''}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField
-                        control={form.control}
-                        name="stock"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Stock Quantity</FormLabel>
-                            <FormControl>
-                            <Input type="number" placeholder="100" {...field} disabled={variantsEnabled} value={field.value ?? ''}/>
-                            </FormControl>
-                            {variantsEnabled && <FormDescription>Stock is managed per variant below.</FormDescription>}
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
                      <FormField
                         control={form.control}
                         name="sku"
@@ -875,23 +879,39 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                              {/* Variant Stock */}
                             {variantCombinations.length > 0 && (
                                 <div>
-                                    <h3 className="text-lg font-medium mb-2 mt-6">Variant Stock</h3>
+                                    <h3 className="text-lg font-medium mb-2 mt-6">Variant Details</h3>
                                     
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Input
-                                            type="number"
-                                            placeholder="Stock for all"
-                                            value={bulkStockValue}
-                                            onChange={(e) => setBulkStockValue(e.target.value)}
-                                            className="h-9 max-w-[150px]"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={handleApplyBulkStock}
-                                        >
-                                            Apply to all
-                                        </Button>
+                                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                placeholder="Stock"
+                                                value={bulkValues.stock}
+                                                onChange={(e) => setBulkValues(v => ({...v, stock: e.target.value}))}
+                                                className="h-9 max-w-[100px]"
+                                            />
+                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('stock')}>Apply</Button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                placeholder="Price"
+                                                value={bulkValues.price}
+                                                onChange={(e) => setBulkValues(v => ({...v, price: e.target.value}))}
+                                                className="h-9 max-w-[100px]"
+                                            />
+                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('price')}>Apply</Button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                placeholder="Discount Price"
+                                                value={bulkValues.discountPrice}
+                                                onChange={(e) => setBulkValues(v => ({...v, discountPrice: e.target.value}))}
+                                                className="h-9 max-w-[140px]"
+                                            />
+                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('discountPrice')}>Apply</Button>
+                                        </div>
                                     </div>
                                     
                                     <div className="border rounded-lg overflow-hidden">
@@ -899,7 +919,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>Variant</TableHead>
-                                                    <TableHead className="w-[120px]">Stock</TableHead>
+                                                    <TableHead className="w-[100px]">Price</TableHead>
+                                                    <TableHead className="w-[100px]">Discount</TableHead>
+                                                    <TableHead className="w-[100px]">Stock</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -909,20 +931,42 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                             {color && <Badge variant="secondary" className="mr-2">{color}</Badge>}
                                                             {size && <Badge variant="outline">{size}</Badge>}
                                                         </TableCell>
-                                                        <TableCell>
+                                                         <TableCell>
                                                             <FormField
                                                                 control={form.control}
-                                                                name={`variants.stock.${key}`}
+                                                                name={`variants.details.${key}.price`}
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input
-                                                                              type="number"
-                                                                              {...field}
-                                                                              value={field.value ?? ''}
-                                                                              onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-                                                                              className="h-8"
-                                                                            />
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} className="h-8" />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <FormField
+                                                                control={form.control}
+                                                                name={`variants.details.${key}.discountPrice`}
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormControl>
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} className="h-8" />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <FormField
+                                                                control={form.control}
+                                                                name={`variants.details.${key}.stock`}
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormControl>
+                                                                            <Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} className="h-8" />
                                                                         </FormControl>
                                                                         <FormMessage />
                                                                     </FormItem>
@@ -1029,7 +1073,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
-
-    
