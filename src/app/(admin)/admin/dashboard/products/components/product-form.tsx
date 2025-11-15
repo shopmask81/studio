@@ -101,11 +101,18 @@ const formSchema = z.object({
 
         for (const key of combinations) {
             const detail = data.variants.details?.[key];
-            if (!detail || detail.price === undefined || detail.stock === undefined) {
+            if (detail?.price === undefined || detail?.price === null || detail?.price <= 0) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: `Price and stock are required for variant ${key.replace('-', ' / ')}.`,
-                    path: [`variants.details.${key}`],
+                    message: `Price is required for variant ${key.replace('-', ' / ')}.`,
+                    path: [`variants.details.${key}.price`],
+                });
+            }
+             if (detail?.stock === undefined || detail?.stock === null || detail.stock < 0) {
+                 ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Stock is required for variant ${key.replace('-', ' / ')}.`,
+                    path: [`variants.details.${key}.stock`],
                 });
             }
         }
