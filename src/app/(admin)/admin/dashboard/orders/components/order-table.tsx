@@ -117,7 +117,7 @@ export function OrderTable() {
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {order.id}
               </TableCell>
-              <TableCell className="font-medium">{order.shippingAddress.fullName}</TableCell>
+              <TableCell className="font-medium">{order.shippingAddress?.fullName}</TableCell>
               <TableCell className="hidden md:table-cell">
                 {order.createdAt ? format(order.createdAt.toDate(), 'PPP') : 'N/A'}
               </TableCell>
