@@ -45,6 +45,37 @@ export type CartItem = {
   variantDiscountPrice?: number;
 };
 
+export type OrderItem = {
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+    mainImage: string;
+    selectedColor?: string;
+    selectedSize?: string;
+}
+
+export type ShippingAddress = {
+    fullName: string;
+    email: string;
+    phone: string;
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+}
+
+export type Order = {
+    id: string;
+    userId: string | null;
+    items: OrderItem[];
+    totalPrice: number;
+    shippingAddress: ShippingAddress;
+    paymentMethod: 'card' | 'paypal' | 'cod';
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    createdAt: Timestamp;
+}
+
 export type WishlistItem = {
   productId: string;
   productName: string;
@@ -74,3 +105,4 @@ export type UserProfile = {
     emailVerified: boolean;
 };
 
+    

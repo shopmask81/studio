@@ -128,32 +128,34 @@ export function CheckoutForm() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!firestore) return;
 
+        const shippingCost = 5.00;
+        const finalTotal = cartTotal + shippingCost;
+
         try {
             await addDoc(collection(firestore, 'orders'), {
                 userId: user?.uid ?? null,
-                customer: {
-                    fullName: values.fullName,
-                    email: values.email,
-                    phone: values.phone,
-                    address: {
-                        street: values.street,
-                        city: values.city,
-                        postalCode: values.postalCode,
-                        country: values.country,
-                    }
-                },
                 items: cartItems.map(item => ({
                     productId: item.product.id,
                     name: item.product.name,
                     quantity: item.quantity,
-                    price: item.product.discountPrice ?? item.product.price,
+                    price: item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price,
+                    mainImage: item.product.mainImage,
                     selectedColor: item.selectedColor,
                     selectedSize: item.selectedSize
                 })),
-                totalAmount: cartTotal,
+                totalPrice: finalTotal,
+                shippingAddress: {
+                    fullName: values.fullName,
+                    email: values.email,
+                    phone: values.phone,
+                    street: values.street,
+                    city: values.city,
+                    postalCode: values.postalCode,
+                    country: values.country,
+                },
                 paymentMethod: values.paymentMethod,
                 status: 'pending',
-                orderDate: serverTimestamp(),
+                createdAt: serverTimestamp(),
             });
 
             toast({
@@ -161,10 +163,11 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
-            clearCart();
+            await clearCart();
             router.push('/order-confirmation');
 
         } catch (error: any) {
+            console.error("Order submission error:", error);
             toast({
                 variant: 'destructive',
                 title: t('order_failed_title').text,
@@ -313,3 +316,5 @@ export function CheckoutForm() {
         </Form>
     );
 }
+
+    

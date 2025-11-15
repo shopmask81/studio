@@ -100,18 +100,19 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows a user to manage their own orders.
+     * @description Allows a user to create their own orders and admins to manage all orders.
      * @path /orders/{orderId}
-     * @allow (create) - User creates an order with matching userId.
-     * @allow (update, delete) - User updates or deletes their existing order.
-     * @deny (create) - User attempts to create an order with a mismatched userId.
-     * @principle Enforces document ownership for writes based on the userId field.
+     * @allow (create) - Any signed-in user can create an order for themselves.
+     * @allow (get, list) - Admins can read all orders. Users can read their own orders.
+     * @allow (update) - Admins can update any order (e.g., to change status).
+     * @deny (delete) - No one can delete orders for data integrity.
      */
     match /orders/{orderId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if false; // Deleting orders is generally a bad practice.
     }
 
     /**
@@ -207,3 +208,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
