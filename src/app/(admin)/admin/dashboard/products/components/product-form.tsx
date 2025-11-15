@@ -145,6 +145,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const [uploadStatus, setUploadStatus] = useState('');
   
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
+  const [bulkStockValue, setBulkStockValue] = useState('');
+
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -212,6 +214,28 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       sizes.map(size => ({ color, size, key: `${color}-${size}` }))
     );
   }, [watchedColors, watchedSizes]);
+
+    const handleApplyBulkStock = () => {
+    const stockValue = parseInt(bulkStockValue, 10);
+    if (isNaN(stockValue) || stockValue < 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Stock Value',
+        description: 'Please enter a valid non-negative number.',
+      });
+      return;
+    }
+
+    variantCombinations.forEach(({ key }) => {
+      form.setValue(`variants.stock.${key}`, stockValue, { shouldValidate: true, shouldDirty: true });
+    });
+
+    toast({
+      title: 'Stock Applied',
+      description: `Set stock to ${stockValue} for all variants.`,
+    });
+  };
+
 
   useEffect(() => {
     if (productToEdit) {
@@ -346,7 +370,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         setUploadProgress(((i + 1) / selectedFiles.length) * 100);
       }
 
-      setUploadedImages(prev => [...prev, ...newUploadedImages]);
+      setUploadedImages(prev => {
+        const existingUrls = new Set(prev.map(img => img.url));
+        const trulyNewImages = newUploadedImages.filter(img => !existingUrls.has(img.url));
+        return [...prev, ...trulyNewImages];
+      });
       
       if (mainImageIndex !== null) {
           setMainImageIndex(mainImageIndex + uploadedImages.length);
@@ -848,6 +876,24 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             {variantCombinations.length > 0 && (
                                 <div>
                                     <h3 className="text-lg font-medium mb-2 mt-6">Variant Stock</h3>
+                                    
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Input
+                                            type="number"
+                                            placeholder="Stock for all"
+                                            value={bulkStockValue}
+                                            onChange={(e) => setBulkStockValue(e.target.value)}
+                                            className="h-9 max-w-[150px]"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleApplyBulkStock}
+                                        >
+                                            Apply to all
+                                        </Button>
+                                    </div>
+                                    
                                     <div className="border rounded-lg overflow-hidden">
                                         <Table>
                                             <TableHeader>
