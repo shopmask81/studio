@@ -101,14 +101,14 @@ const formSchema = z.object({
 
         for (const key of combinations) {
             const detail = data.variants.details?.[key];
-            if (detail?.price === undefined || detail?.price === null || detail?.price <= 0) {
+            if (detail?.price === undefined || detail?.price === null || isNaN(detail.price) || detail.price <= 0) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Price is required for variant ${key.replace('-', ' / ')}.`,
                     path: [`variants.details.${key}.price`],
                 });
             }
-             if (detail?.stock === undefined || detail?.stock === null || detail.stock < 0) {
+             if (detail?.stock === undefined || detail?.stock === null || isNaN(detail.stock) || detail.stock < 0) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Stock is required for variant ${key.replace('-', ' / ')}.`,
@@ -118,14 +118,14 @@ const formSchema = z.object({
         }
 
     } else {
-        if (data.price === undefined || data.price === null) {
+        if (data.price === undefined || data.price === null || isNaN(data.price)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Price is required when variants are disabled.',
                 path: ['price'],
             });
         }
-        if (data.stock === undefined || data.stock === null) {
+        if (data.stock === undefined || data.stock === null || isNaN(data.stock)) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Stock is required when variants are disabled.',
@@ -993,7 +993,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} className="h-8" />
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-8" />
                                                                         </FormControl>
                                                                         <FormMessage />
                                                                     </FormItem>
@@ -1007,7 +1007,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} className="h-8" />
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-8" />
                                                                         </FormControl>
                                                                         <FormMessage />
                                                                     </FormItem>
@@ -1021,7 +1021,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} className="h-8" />
+                                                                            <Input type="number" {...field} value={field.value ?? ''} className="h-8" />
                                                                         </FormControl>
                                                                         <FormMessage />
                                                                     </FormItem>
@@ -1119,8 +1119,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {productToEdit ? 'Save Changes' : 'Create Product'}
           </Button>
         </div>
@@ -1128,3 +1128,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
