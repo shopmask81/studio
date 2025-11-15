@@ -78,14 +78,54 @@ const formSchema = z.object({
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
   variants: variantSchema.optional(),
-}).refine(data => {
+}).superRefine((data, ctx) => {
     if (data.variants?.enabled) {
-        return true; // When variants are on, main price/stock are not required
+        const colors = data.variants.colors?.map(c => c.value).filter(Boolean) ?? [];
+        const sizes = data.variants.sizes?.map(s => s.value).filter(Boolean) ?? [];
+        
+        let combinations: string[] = [];
+        if (colors.length > 0 && sizes.length === 0) combinations = colors;
+        else if (colors.length === 0 && sizes.length > 0) combinations = sizes;
+        else if (colors.length > 0 && sizes.length > 0) {
+            combinations = colors.flatMap(color => sizes.map(size => `${color}-${size}`));
+        }
+        
+        if (combinations.length > 0 && !data.variants.details) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Variant details are missing.',
+                path: ['variants.details'],
+            });
+            return;
+        }
+
+        for (const key of combinations) {
+            const detail = data.variants.details?.[key];
+            if (!detail || detail.price === undefined || detail.stock === undefined) {
+                 ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Price and stock are required for variant ${key.replace('-', ' / ')}.`,
+                    path: [`variants.details.${key}`],
+                });
+            }
+        }
+
+    } else {
+        if (data.price === undefined || data.price === null) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Price is required when variants are disabled.',
+                path: ['price'],
+            });
+        }
+        if (data.stock === undefined || data.stock === null) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Stock is required when variants are disabled.',
+                path: ['stock'],
+            });
+        }
     }
-    return data.price !== undefined && data.price !== null && data.stock !== undefined && data.stock !== null;
-}, {
-    message: 'Price and Stock are required when variants are disabled.',
-    path: ['price'], // You can point to one of them
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -220,11 +260,19 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const handleApplyBulkValues = (field: 'stock' | 'price' | 'discountPrice') => {
     const value = parseFloat(bulkValues[field]);
-    if (isNaN(value) || (field === 'stock' && value < 0)) {
+    if (isNaN(value)) {
         toast({
             variant: 'destructive',
             title: `Invalid ${field} value`,
-            description: 'Please enter a valid non-negative number.',
+            description: 'Please enter a valid number.',
+        });
+        return;
+    }
+     if (field === 'stock' && value < 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid stock value',
+            description: 'Stock cannot be negative.',
         });
         return;
     }
@@ -1064,7 +1112,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isCreateDisabled}>
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {productToEdit ? 'Save Changes' : 'Create Product'}
           </Button>
