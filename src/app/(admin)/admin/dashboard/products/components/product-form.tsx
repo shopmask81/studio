@@ -69,12 +69,20 @@ const formSchema = z.object({
   description_ar: z.string().optional(),
   price: z.coerce.number().positive('Price must be a positive number.'),
   discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
+  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.').optional(),
   category: z.string().min(2, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
   variants: variantSchema.optional(),
+}).refine(data => {
+    if (!data.variants?.enabled) {
+        return data.stock !== undefined && data.stock !== null;
+    }
+    return true;
+}, {
+    message: 'Stock quantity is required when variants are disabled.',
+    path: ['stock'],
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -975,5 +983,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
 
     
