@@ -266,8 +266,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   }, [watchedColors, watchedSizes]);
 
   const handleApplyBulkValues = (field: 'stock' | 'price' | 'discountPrice') => {
-    const value = parseFloat(bulkValues[field]);
-    if (isNaN(value)) {
+    const value = bulkValues[field]; // Keep as string
+    if (value === '') {
+        toast({
+            variant: 'destructive',
+            title: `Invalid ${field} value`,
+            description: 'Please enter a value to apply.',
+        });
+        return;
+    }
+    const numericValue = parseFloat(value);
+     if (isNaN(numericValue)) {
         toast({
             variant: 'destructive',
             title: `Invalid ${field} value`,
@@ -275,7 +284,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         });
         return;
     }
-     if (field === 'stock' && value < 0) {
+     if (field === 'stock' && numericValue < 0) {
         toast({
             variant: 'destructive',
             title: 'Invalid stock value',
@@ -284,7 +293,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         return;
     }
     variantCombinations.forEach(({ key }) => {
-        form.setValue(`variants.details.${key}.${field}`, value, { shouldValidate: true, shouldDirty: true });
+        form.setValue(`variants.details.${key}.${field}`, numericValue, { shouldValidate: true, shouldDirty: true });
     });
     toast({
         title: `Bulk ${field} applied`,
@@ -1128,5 +1137,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
