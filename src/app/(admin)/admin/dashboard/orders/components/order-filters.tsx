@@ -1,21 +1,21 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Search, X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/lib/types';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export type Filters = {
-    orderId?: string;
-    email?: string;
+    searchQuery?: string;
     status?: Order['status'];
     dateRange?: DateRange;
 }
@@ -27,43 +27,43 @@ interface OrderFiltersProps {
 const orderStatuses: Order['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 export function OrderFilters({ onFilterChange }: OrderFiltersProps) {
-    const [orderId, setOrderId] = useState('');
-    const [email, setEmail] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [status, setStatus] = useState<Order['status'] | ''>('');
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    
+    // Debounce the search query to avoid excessive re-renders while typing
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-    const handleApplyFilters = () => {
+    // This effect calls the parent component's onFilterChange when any filter value changes.
+    useEffect(() => {
         onFilterChange({
-            orderId: orderId || undefined,
-            email: email || undefined,
+            searchQuery: debouncedSearchQuery || undefined,
             status: status || undefined,
             dateRange: dateRange,
         });
-    };
+    }, [debouncedSearchQuery, status, dateRange, onFilterChange]);
+
 
     const handleClearFilters = () => {
-        setOrderId('');
-        setEmail('');
+        setSearchQuery('');
         setStatus('');
         setDateRange(undefined);
-        onFilterChange({});
     };
     
-    const areFiltersActive = orderId || email || status || dateRange;
+    const areFiltersActive = searchQuery || status || dateRange;
 
     return (
         <div className="p-4 bg-card rounded-lg border space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Input
-                    placeholder="Search by Order ID..."
-                    value={orderId}
-                    onChange={(e) => setOrderId(e.target.value)}
-                />
-                <Input
-                    placeholder="Search by customer email..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by ID, name, email, phone, address..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
                 <Select value={status} onValueChange={(v) => setStatus(v === 'all' ? '' : v as Order['status'])}>
                     <SelectTrigger>
                         <SelectValue placeholder="Filter by status" />
@@ -113,11 +113,11 @@ export function OrderFilters({ onFilterChange }: OrderFiltersProps) {
                 {areFiltersActive && (
                     <Button variant="ghost" onClick={handleClearFilters}>
                         <X className="mr-2 h-4 w-4"/>
-                        Clear Filters
+                        Clear All Filters
                     </Button>
                 )}
-                <Button onClick={handleApplyFilters}>Apply Filters</Button>
             </div>
         </div>
     );
 }
+

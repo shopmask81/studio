@@ -19,27 +19,12 @@ export default function AdminOrdersPage() {
 
   const isAdmin = userProfile?.role === 'admin';
 
+  // Server-side query based on status and date.
   const ordersQuery = useMemo(() => {
-    // CRITICAL: Do not build the query until we know the user is an admin.
-    // The useCollection hook will wait if the query is null.
     if (!firestore || !isAdmin) return null;
     
-    const collectionRef = collection(firestore, 'orders');
-    let q = query(collectionRef, orderBy('createdAt', 'desc'));
+    let q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
 
-    if (filters.orderId) {
-        // Firestore doesn't support prefix search, so this requires an exact match
-        // A more complex search might need a third-party service like Algolia
-        try {
-            q = query(q, where('__name__', '==', filters.orderId));
-        } catch (e) {
-            // Handle invalid ID format if necessary
-            return collection(firestore, 'orders'); // Return a base query that finds nothing
-        }
-    }
-    if (filters.email) {
-        q = query(q, where('email_lowercase', '==', filters.email.toLowerCase()));
-    }
     if (filters.status) {
         q = query(q, where('status', '==', filters.status));
     }
@@ -51,12 +36,35 @@ export default function AdminOrdersPage() {
     }
     
     return q;
-  }, [firestore, isAdmin, filters]);
+  }, [firestore, isAdmin, filters.status, filters.dateRange]);
 
-  // isDataLoading is the loading state for the Firestore query itself.
-  const { data: orders, isLoading: isDataLoading, error } = useCollection<Order>(ordersQuery);
+  // Fetch all orders matching the server-side query.
+  const { data: allOrders, isLoading: isDataLoading, error } = useCollection<Order>(ordersQuery);
 
-  // The overall loading state depends on auth AND data loading, but only if a query is active.
+  // Client-side filtering logic for the unified search query.
+  const filteredOrders = useMemo(() => {
+    if (!allOrders) return null;
+    if (!filters.searchQuery) return allOrders; // Return all if search is empty
+
+    const lowerCaseQuery = filters.searchQuery.toLowerCase();
+
+    return allOrders.filter(order => {
+      // Check against multiple fields.
+      return (
+        order.id.toLowerCase().includes(lowerCaseQuery) ||
+        order.name.toLowerCase().includes(lowerCaseQuery) ||
+        order.email.toLowerCase().includes(lowerCaseQuery) ||
+        order.phone.toLowerCase().includes(lowerCaseQuery) ||
+        order.street.toLowerCase().includes(lowerCaseQuery) ||
+        order.city.toLowerCase().includes(lowerCaseQuery) ||
+        order.zip.toLowerCase().includes(lowerCaseQuery) ||
+        order.country.toLowerCase().includes(lowerCaseQuery)
+      );
+    });
+  }, [allOrders, filters.searchQuery]);
+
+
+  // The overall loading state depends on auth AND data loading.
   const isLoading = isAuthLoading || (isAdmin && isDataLoading);
 
   return (
@@ -77,7 +85,7 @@ export default function AdminOrdersPage() {
         </Alert>
       )}
 
-      <OrderTable orders={orders} isLoading={isLoading} />
+      <OrderTable orders={filteredOrders} isLoading={isLoading} />
     </div>
   );
 }
