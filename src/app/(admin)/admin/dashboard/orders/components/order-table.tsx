@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
 
 const statusStyles: { [key: string]: string } = {
     pending: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
@@ -42,7 +43,7 @@ export function OrderTable({
   onSelectionChange, 
   onSelectAll 
 }: OrderTableProps) {
-  const allOnPageSelected = orders ? selectedOrderIds.length === orders.length : false;
+  const allOnPageSelected = orders ? selectedOrderIds.length === orders.length && orders.length > 0 : false;
   const isIndeterminate = orders ? selectedOrderIds.length > 0 && !allOnPageSelected : false;
 
 
@@ -52,6 +53,7 @@ export function OrderTable({
             {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4 p-2">
                     <Skeleton className="h-5 w-5 rounded-sm" />
+                    <Skeleton className="h-10 w-10 rounded-md" />
                     <Skeleton className="h-4 w-[150px]" />
                     <Skeleton className="h-4 flex-1" />
                     <Skeleton className="h-4 flex-1" />
@@ -84,6 +86,7 @@ export function OrderTable({
                   aria-label="Select all orders on this page"
                 />
             </TableHead>
+            <TableHead className="hidden sm:table-cell w-16">Image</TableHead>
             <TableHead>Order ID</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Email</TableHead>
@@ -104,6 +107,15 @@ export function OrderTable({
                     onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
                     aria-label={`Select order ${order.id}`}
                   />
+              </TableCell>
+              <TableCell className="hidden sm:table-cell">
+                <Image
+                    alt={order.items[0]?.name || 'Product Image'}
+                    className="aspect-square rounded-md object-cover"
+                    height="50"
+                    src={order.items[0]?.imageUrl || 'https://placehold.co/50x50'}
+                    width="50"
+                />
               </TableCell>
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {order.id}
