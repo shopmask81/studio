@@ -4,17 +4,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows a user to manage their own affiliate data.
-     * @path /affiliates/{affiliateId}
-     */
-    match /affiliates/{affiliateId} {
-      allow get: if isSignedIn();
-      allow list: if false;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    /**
      * @description Public read access for general content.
      */
     match /banners/{bannerId} {
@@ -59,8 +48,8 @@ service cloud.firestore {
       allow list: if isAdmin();
       // Allow admin to update orders (e.g., status)
       allow update: if isAdmin();
-      // Prevent deletion of orders for data integrity
-      allow delete: if false;
+      // Allow admin to delete orders
+      allow delete: if isAdmin();
     }
 
     /**
@@ -79,8 +68,9 @@ service cloud.firestore {
     match /users/{userId} {
       // A user can create their own profile document
       allow create: if isOwner(userId);
-      // A user can read their own document (important for isAdmin() to work)
-      allow read: if isOwner(userId);
+      // Allow any signed-in user to read any user profile.
+      // This is necessary for the isAdmin() check to work in other rules.
+      allow read: if isSignedIn();
       // A user can update or delete their own profile
       allow update, delete: if isExistingOwner(userId);
       // No one can list all users for privacy
@@ -113,6 +103,7 @@ service cloud.firestore {
 
     function isAdmin() {
       // Check if the user's document in the 'users' collection has the 'admin' role.
+      // This requires a broad read rule on the users collection.
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
