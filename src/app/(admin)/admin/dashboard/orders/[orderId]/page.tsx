@@ -52,12 +52,14 @@ export default function OrderDetailsPage() {
             });
 
             const newImageMap: Record<string, string | null> = {};
+            // Firestore 'in' query supports up to 30 elements in the array
             const productChunks = [];
             for (let i = 0; i < productIdsToFetch.length; i += 30) {
                 productChunks.push(productIdsToFetch.slice(i, i + 30));
             }
 
             for (const chunk of productChunks) {
+                if (chunk.length === 0) continue;
                 const productsRef = collection(firestore, 'products');
                 const q = query(productsRef, where('__name__', 'in', chunk));
                 const querySnapshot = await getDocs(q);
@@ -68,6 +70,13 @@ export default function OrderDetailsPage() {
                 });
             }
             
+            // For any IDs that were fetched but not found in the DB (e.g., deleted products)
+            productIdsToFetch.forEach(id => {
+                if (!newImageMap.hasOwnProperty(id)) {
+                    newImageMap[id] = null;
+                }
+            });
+
             setProductImages(prev => ({...prev, ...newImageMap}));
         };
 

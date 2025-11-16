@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface OrderItemsCardProps {
     items: OrderItem[];
     total: number;
-    productImages: Record<string, string | null>;
+    productImages: Record<string, string | null | undefined>;
 }
 
 export function OrderItemsCard({ items, total, productImages }: OrderItemsCardProps) {
@@ -36,7 +36,7 @@ export function OrderItemsCard({ items, total, productImages }: OrderItemsCardPr
                     <TableBody>
                         {items.map((item) => {
                             const imageUrl = productImages[item.productId];
-                            const isImageLoading = productImages.hasOwnProperty(item.productId) && imageUrl === undefined;
+                            const isImageLoading = !productImages.hasOwnProperty(item.productId);
                             
                             return (
                                 <TableRow key={item.productId}>
