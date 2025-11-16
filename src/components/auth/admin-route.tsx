@@ -11,21 +11,21 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect when loading is complete
+    // Wait for the loading to finish before making a decision.
     if (!isLoading) {
       if (!user) {
-        // If no user, redirect to login
+        // If there's no authenticated user, redirect to login.
         router.push('/login');
       } else if (userProfile?.role !== 'admin') {
-        // If user is not an admin, redirect to homepage
+        // If the user is logged in but is not an admin, redirect to the homepage.
         router.push('/');
       }
     }
   }, [user, userProfile, isLoading, router]);
 
-  // While loading auth state OR if the user profile is not loaded yet, show a full-screen spinner.
-  // This is the key change: it waits for BOTH auth and profile.
-  if (isLoading || !userProfile) {
+  // While AuthProvider is determining auth state and fetching the profile, show a loader.
+  // This is the crucial part that prevents child components from rendering prematurely.
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -33,12 +33,13 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If loading is complete and user is an admin, render the children
-  if (user && userProfile.role === 'admin') {
+  // If loading is complete, and the user is authenticated and has the admin role, render the children.
+  if (user && userProfile?.role === 'admin') {
     return <>{children}</>;
   }
 
-  // If checks fail after loading, show a loader while the redirect initiated by useEffect is in progress.
+  // If checks fail after loading (e.g., role is not admin), show a loader while redirecting.
+  // This prevents a brief flash of content or an empty page.
   return (
     <div className="flex items-center justify-center h-screen bg-background">
       <Loader2 className="h-16 w-16 animate-spin text-primary" />

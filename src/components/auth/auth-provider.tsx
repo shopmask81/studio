@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { getAuthInstance, getFirestoreInstance } from '@/firebase/client';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 interface AuthContextType {
@@ -22,43 +22,49 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const auth = useFirebaseAuth();
+  const firestore = useFirestore();
+
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuthInstance();
-    const firestore = getFirestoreInstance();
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
-        // Fetch user profile from Firestore
+        // Fetch user profile from Firestore and listen for real-time updates
         const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-        try {
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            setUserProfile(userDocSnap.data() as UserProfile);
+        
+        const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setUserProfile(docSnap.data() as UserProfile);
           } else {
-            // Handle case where user exists in Auth but not in Firestore
             setUserProfile(null);
           }
-        } catch (error) {
+           // Mark loading as complete only after profile is fetched/updated
+          setIsLoading(false);
+        }, (error) => {
           console.error("Failed to fetch user profile:", error);
           setUserProfile(null);
-        }
+          setIsLoading(false);
+        });
+
+        // Return the profile listener's unsubscribe function
+        return () => unsubProfile();
+
       } else {
         // No user is signed in
         setUser(null);
         setUserProfile(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
+    // Cleanup auth subscription on unmount
     return () => unsubscribe();
-  }, []);
+  }, [auth, firestore]);
 
   const value = {
     user,

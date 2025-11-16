@@ -4,7 +4,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
-import { useFirestore, useCollection, useAuth } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, Timestamp, writeBatch, doc } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,6 +12,7 @@ import { Terminal, Loader2 } from 'lucide-react';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth/auth-provider';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -26,6 +27,7 @@ export default function AdminOrdersPage() {
 
   // Server-side query based on status and date.
   const ordersQuery = useMemo(() => {
+    // CRITICAL: Do not build the query until we know the user is an admin.
     if (!firestore || !isAdmin) return null;
     
     let q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
@@ -44,6 +46,7 @@ export default function AdminOrdersPage() {
   }, [firestore, isAdmin, filters.status, filters.dateRange]);
 
   // Fetch all orders matching the server-side query.
+  // useCollection will wait if ordersQuery is null.
   const { data: allOrders, isLoading: isDataLoading, error } = useCollection<Order>(ordersQuery);
 
   // Client-side filtering logic for the unified search query.
@@ -69,7 +72,7 @@ export default function AdminOrdersPage() {
   }, [allOrders, filters.searchQuery]);
 
 
-  // The overall loading state depends on auth AND data loading.
+  // The overall loading state depends on auth AND data loading (if the user is an admin).
   const isLoading = isAuthLoading || (isAdmin && isDataLoading);
 
   const handleSelectionChange = (orderId: string, isSelected: boolean) => {
@@ -184,7 +187,7 @@ export default function AdminOrdersPage() {
           />
       )}
 
-      {error && error instanceof FirestorePermissionError && (
+      {error && (
          <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
             <AlertTitle>Permission Denied</AlertTitle>
