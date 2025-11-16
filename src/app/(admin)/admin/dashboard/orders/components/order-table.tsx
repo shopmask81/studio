@@ -32,6 +32,7 @@ interface OrderTableProps {
   orders: Order[] | null;
   isLoading: boolean;
   selectedOrderIds: string[];
+  productImages: Record<string, string | null>;
   onSelectionChange: (orderId: string, isSelected: boolean) => void;
   onSelectAll: (isSelected: boolean) => void;
 }
@@ -39,7 +40,8 @@ interface OrderTableProps {
 export function OrderTable({ 
   orders, 
   isLoading, 
-  selectedOrderIds, 
+  selectedOrderIds,
+  productImages,
   onSelectionChange, 
   onSelectAll 
 }: OrderTableProps) {
@@ -99,50 +101,60 @@ export function OrderTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) && 'selected'}>
-              <TableCell>
-                  <Checkbox 
-                    checked={selectedOrderIds.includes(order.id)}
-                    onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
-                    aria-label={`Select order ${order.id}`}
-                  />
-              </TableCell>
-              <TableCell className="hidden sm:table-cell">
-                <Image
-                    alt={order.items[0]?.name || 'Product Image'}
-                    className="aspect-square rounded-md object-cover"
-                    height="50"
-                    src={order.items[0]?.imageUrl || 'https://placehold.co/50x50'}
-                    width="50"
-                />
-              </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {order.id}
-              </TableCell>
-              <TableCell className="font-medium">{order.name}</TableCell>
-              <TableCell className="font-medium text-muted-foreground">{order.email}</TableCell>
-              <TableCell className="text-right font-medium">
-                ${order.total.toFixed(2)}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge variant="outline" className={cn("capitalize border text-xs", statusStyles[order.status])}>
-                  {order.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                {order.createdAt ? format(order.createdAt.toDate(), 'PPp') : 'N/A'}
-              </TableCell>
-              <TableCell>
-                <Button asChild variant="outline" size="icon">
-                  <Link href={`/admin/dashboard/orders/${order.id}`}>
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">View Details</span>
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((order) => {
+            const firstItemId = order.items?.[0]?.productId;
+            const imageUrl = firstItemId ? productImages[firstItemId] : undefined;
+            const isImageLoading = firstItemId && productImages.hasOwnProperty(firstItemId) && imageUrl === undefined;
+            
+            return (
+              <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) && 'selected'}>
+                <TableCell>
+                    <Checkbox 
+                      checked={selectedOrderIds.includes(order.id)}
+                      onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
+                      aria-label={`Select order ${order.id}`}
+                    />
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                   {isImageLoading ? (
+                        <Skeleton className="h-12 w-12 rounded-md" />
+                    ) : (
+                        <Image
+                            alt={order.items[0]?.name || 'Product Image'}
+                            className="aspect-square rounded-md object-cover"
+                            height="50"
+                            src={imageUrl || 'https://placehold.co/50x50'}
+                            width="50"
+                        />
+                    )}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {order.id}
+                </TableCell>
+                <TableCell className="font-medium">{order.name}</TableCell>
+                <TableCell className="font-medium text-muted-foreground">{order.email}</TableCell>
+                <TableCell className="text-right font-medium">
+                  ${order.total.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Badge variant="outline" className={cn("capitalize border text-xs", statusStyles[order.status])}>
+                    {order.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                  {order.createdAt ? format(order.createdAt.toDate(), 'PPp') : 'N/A'}
+                </TableCell>
+                <TableCell>
+                  <Button asChild variant="outline" size="icon">
+                    <Link href={`/admin/dashboard/orders/${order.id}`}>
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">View Details</span>
+                    </Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>

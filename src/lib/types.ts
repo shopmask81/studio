@@ -50,7 +50,7 @@ export type OrderItem = {
     name: string;
     quantity: number;
     price: number;
-    imageUrl: string; // Renamed from mainImage
+    imageUrl: string;
 }
 
 export type Order = {

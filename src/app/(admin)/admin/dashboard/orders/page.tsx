@@ -1,18 +1,18 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
-import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, Timestamp, writeBatch, doc } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, orderBy, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
+import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2 } from 'lucide-react';
-import { FirestorePermissionError, errorEmitter } from '@/firebase';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -22,6 +22,9 @@ export default function AdminOrdersPage() {
   
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+
+  // State to cache product image URLs
+  const [productImages, setProductImages] = useState<Record<string, string | null>>({});
 
   const isAdmin = userProfile?.role === 'admin';
 
@@ -70,6 +73,59 @@ export default function AdminOrdersPage() {
       );
     });
   }, [allOrders, filters.searchQuery]);
+
+
+  // Effect to fetch product images for the current set of filtered orders
+  useEffect(() => {
+    if (!firestore || !filteredOrders || filteredOrders.length === 0) {
+      return;
+    }
+
+    const fetchProductImages = async () => {
+        // 1. Collect unique product IDs from the first item of each order
+        const productIdsToFetch = [
+          ...new Set(
+            filteredOrders
+              .map(order => order.items?.[0]?.productId)
+              .filter((id): id is string => !!id && !productImages.hasOwnProperty(id))
+          ),
+        ];
+
+        if (productIdsToFetch.length === 0) {
+          return; // All images are already cached
+        }
+
+        // Set initial loading state for new product IDs
+        setProductImages(prev => {
+            const newPlaceholders: Record<string, null> = {};
+            productIdsToFetch.forEach(id => newPlaceholders[id] = null);
+            return {...prev, ...newPlaceholders};
+        });
+
+        // 2. Fetch product documents in batches of 30 (Firestore 'in' query limit)
+        const newImageMap: Record<string, string | null> = {};
+        const productChunks = [];
+        for (let i = 0; i < productIdsToFetch.length; i += 30) {
+          productChunks.push(productIdsToFetch.slice(i, i + 30));
+        }
+
+        for (const chunk of productChunks) {
+            const productsRef = collection(firestore, 'products');
+            const q = query(productsRef, where('__name__', 'in', chunk));
+            const querySnapshot = await getDocs(q);
+
+            querySnapshot.forEach(doc => {
+              const product = doc.data() as Product;
+              newImageMap[doc.id] = product.mainImage || product.images?.[0] || null;
+            });
+        }
+        
+        // 3. Update the image cache state
+        setProductImages(prev => ({...prev, ...newImageMap}));
+    };
+
+    fetchProductImages();
+  }, [filteredOrders, firestore, productImages]);
 
 
   // The overall loading state depends on auth AND data loading (if the user is an admin).
@@ -193,6 +249,7 @@ export default function AdminOrdersPage() {
         selectedOrderIds={selectedOrderIds}
         onSelectionChange={handleSelectionChange}
         onSelectAll={handleSelectAll}
+        productImages={productImages}
       />
     </div>
   );

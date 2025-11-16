@@ -12,6 +12,9 @@ interface OrderItemsCardProps {
 }
 
 export function OrderItemsCard({ items, total }: OrderItemsCardProps) {
+    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const shipping = total - subtotal;
+    
     return (
         <Card>
             <CardHeader>
@@ -49,14 +52,16 @@ export function OrderItemsCard({ items, total }: OrderItemsCardProps) {
                     </TableBody>
                 </Table>
             </CardContent>
-            <CardFooter className="justify-end border-t pt-4">
-                 <div className="flex justify-between w-full max-w-xs">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>$5.00</span>
+             <CardFooter className="flex-col items-end space-y-2 pt-4 border-t">
+                <div className="flex justify-between w-full max-w-xs">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${subtotal.toFixed(2)}</span>
                 </div>
-            </CardFooter>
-            <CardFooter className="justify-end">
-                <div className="flex justify-between font-bold text-lg w-full max-w-xs">
+                <div className="flex justify-between w-full max-w-xs">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span>${shipping >= 0 ? shipping.toFixed(2) : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg w-full max-w-xs pt-2 border-t">
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
                 </div>
