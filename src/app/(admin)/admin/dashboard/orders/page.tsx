@@ -93,76 +93,66 @@ export default function AdminOrdersPage() {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
     
-    const batch = writeBatch(firestore);
-    const dataToUpdate = { status };
-    selectedOrderIds.forEach(orderId => {
-        const orderRef = doc(firestore, 'orders', orderId);
-        batch.update(orderRef, dataToUpdate);
-    });
-
-    batch.commit()
-      .then(() => {
-        toast({
-            title: "Bulk Update Successful",
-            description: `${selectedOrderIds.length} orders have been updated to "${status}".`
-        });
-        setSelectedOrderIds([]); // Clear selection after action
-      })
-      .catch((error) => {
-        console.error("Bulk status update failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Bulk Update Failed",
-            description: "Could not update order statuses. Please check permissions."
-        });
-
-        const permissionError = new FirestorePermissionError({
-          path: 'orders/[MULTIPLE]',
-          operation: 'update',
-          requestResourceData: dataToUpdate,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsBulkActionLoading(false);
+    try {
+      const batch = writeBatch(firestore);
+      const dataToUpdate = { status };
+      selectedOrderIds.forEach(orderId => {
+          const orderRef = doc(firestore, 'orders', orderId);
+          batch.update(orderRef, dataToUpdate);
       });
 
+      await batch.commit();
+
+      toast({
+          title: "Bulk Update Successful",
+          description: `${selectedOrderIds.length} orders have been updated to "${status}".`
+      });
+      setSelectedOrderIds([]); // Clear selection after action
+
+    } catch (error) {
+      console.error("Bulk status update failed:", error);
+      toast({
+          variant: "destructive",
+          title: "Bulk Update Failed",
+          description: "Could not update order statuses. Please check permissions."
+      });
+      // Re-throw the original error to be caught by the global error handler
+      throw error;
+    } finally {
+      setIsBulkActionLoading(false);
+    }
   }, [firestore, selectedOrderIds, toast]);
 
   const handleBulkDelete = useCallback(async () => {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
 
-    const batch = writeBatch(firestore);
-    selectedOrderIds.forEach(orderId => {
-        const orderRef = doc(firestore, 'orders', orderId);
-        batch.delete(orderRef);
-    });
-
-    batch.commit()
-      .then(() => {
-        toast({
-            title: "Bulk Delete Successful",
-            description: `${selectedOrderIds.length} orders have been deleted.`
-        });
-        setSelectedOrderIds([]); // Clear selection after action
-      })
-      .catch((error) => {
-        console.error("Bulk delete failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Bulk Delete Failed",
-            description: "Could not delete orders. Please check permissions."
-        });
-        const permissionError = new FirestorePermissionError({
-          path: 'orders/[MULTIPLE]',
-          operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsBulkActionLoading(false);
+    try {
+      const batch = writeBatch(firestore);
+      selectedOrderIds.forEach(orderId => {
+          const orderRef = doc(firestore, 'orders', orderId);
+          batch.delete(orderRef);
       });
+
+      await batch.commit();
+
+      toast({
+          title: "Bulk Delete Successful",
+          description: `${selectedOrderIds.length} orders have been deleted.`
+      });
+      setSelectedOrderIds([]); // Clear selection after action
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      toast({
+          variant: "destructive",
+          title: "Bulk Delete Failed",
+          description: "Could not delete orders. Please check permissions."
+      });
+      // Re-throw the original error to be caught by the global error handler
+      throw error;
+    } finally {
+      setIsBulkActionLoading(false);
+    }
   }, [firestore, selectedOrderIds, toast]);
 
   return (
