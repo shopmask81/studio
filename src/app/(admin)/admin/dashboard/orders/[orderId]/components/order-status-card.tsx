@@ -34,20 +34,21 @@ export function OrderStatusCard({ order }: OrderStatusCardProps) {
     const [currentStatus, setCurrentStatus] = useState<Order['status']>(order.status);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const handleStatusUpdate = async () => {
+    const handleStatusUpdate = () => {
         if (!firestore || currentStatus === order.status) return;
 
         setIsUpdating(true);
         const orderRef = doc(firestore, 'orders', order.id);
         const dataToUpdate = { status: currentStatus };
 
-        try {
-            await updateDoc(orderRef, dataToUpdate);
+        updateDoc(orderRef, dataToUpdate)
+          .then(() => {
             toast({
                 title: 'Order Status Updated',
                 description: `Order has been marked as ${currentStatus}.`,
             });
-        } catch (error) {
+          })
+          .catch((error) => {
             console.error("Error updating order status:", error);
             setCurrentStatus(order.status); // Revert on failure
             toast({
@@ -61,9 +62,10 @@ export function OrderStatusCard({ order }: OrderStatusCardProps) {
               requestResourceData: dataToUpdate,
             });
             errorEmitter.emit('permission-error', permissionError);
-        } finally {
+          })
+          .finally(() => {
             setIsUpdating(false);
-        }
+          });
     };
     
     return (
