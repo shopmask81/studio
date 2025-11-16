@@ -13,6 +13,8 @@ import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -97,8 +99,8 @@ export default function AdminOrdersPage() {
 
         // Set initial loading state for new product IDs
         setProductImages(prev => {
-            const newPlaceholders: Record<string, null> = {};
-            productIdsToFetch.forEach(id => newPlaceholders[id] = null);
+            const newPlaceholders: Record<string, undefined> = {};
+            productIdsToFetch.forEach(id => newPlaceholders[id] = undefined);
             return {...prev, ...newPlaceholders};
         });
 
@@ -145,71 +147,79 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleBulkStatusChange = useCallback(async (status: Order['status']) => {
+  const handleBulkStatusChange = async (status: Order['status']) => {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
     
-    try {
-      const batch = writeBatch(firestore);
-      const dataToUpdate = { status };
-      selectedOrderIds.forEach(orderId => {
-          const orderRef = doc(firestore, 'orders', orderId);
-          batch.update(orderRef, dataToUpdate);
-      });
+    const batch = writeBatch(firestore);
+    const dataToUpdate = { status };
+    selectedOrderIds.forEach(orderId => {
+        const orderRef = doc(firestore, 'orders', orderId);
+        batch.update(orderRef, dataToUpdate);
+    });
 
-      await batch.commit();
+    batch.commit()
+        .then(() => {
+            toast({
+                title: "Bulk Update Successful",
+                description: `${selectedOrderIds.length} orders have been updated to "${status}".`
+            });
+            setSelectedOrderIds([]); // Clear selection after action
+        })
+        .catch((error) => {
+            console.error("Bulk status update failed:", error);
+            const permissionError = new FirestorePermissionError({
+              path: 'orders/(multiple)',
+              operation: 'update',
+              requestResourceData: dataToUpdate,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Bulk Update Failed",
+                description: "Could not update order statuses. Check permissions."
+            });
+        })
+        .finally(() => {
+            setIsBulkActionLoading(false);
+        });
+  };
 
-      toast({
-          title: "Bulk Update Successful",
-          description: `${selectedOrderIds.length} orders have been updated to "${status}".`
-      });
-      setSelectedOrderIds([]); // Clear selection after action
-
-    } catch (error) {
-      console.error("Bulk status update failed:", error);
-      toast({
-          variant: "destructive",
-          title: "Bulk Update Failed",
-          description: "Could not update order statuses. Please check permissions."
-      });
-      // Re-throw the original error to be caught by the global error handler
-      throw error;
-    } finally {
-      setIsBulkActionLoading(false);
-    }
-  }, [firestore, selectedOrderIds, toast]);
-
-  const handleBulkDelete = useCallback(async () => {
+  const handleBulkDelete = async () => {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
 
-    try {
-      const batch = writeBatch(firestore);
-      selectedOrderIds.forEach(orderId => {
-          const orderRef = doc(firestore, 'orders', orderId);
-          batch.delete(orderRef);
-      });
+    const batch = writeBatch(firestore);
+    selectedOrderIds.forEach(orderId => {
+        const orderRef = doc(firestore, 'orders', orderId);
+        batch.delete(orderRef);
+    });
 
-      await batch.commit();
-
-      toast({
-          title: "Bulk Delete Successful",
-          description: `${selectedOrderIds.length} orders have been deleted.`
-      });
-      setSelectedOrderIds([]); // Clear selection after action
-    } catch (error) {
-      console.error("Bulk delete failed:", error);
-      toast({
-          variant: "destructive",
-          title: "Bulk Delete Failed",
-          description: "Could not delete orders. Please check permissions."
-      });
-      // Re-throw the original error to be caught by the global error handler
-      throw error;
-    } finally {
-      setIsBulkActionLoading(false);
-    }
-  }, [firestore, selectedOrderIds, toast]);
+    batch.commit()
+        .then(() => {
+            toast({
+                title: "Bulk Delete Successful",
+                description: `${selectedOrderIds.length} orders have been deleted.`
+            });
+            setSelectedOrderIds([]); // Clear selection after action
+        })
+        .catch((error) => {
+            console.error("Bulk delete failed:", error);
+            const permissionError = new FirestorePermissionError({
+              path: 'orders/(multiple)',
+              operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Bulk Delete Failed",
+                description: "Could not delete orders. Check permissions."
+            });
+        })
+        .finally(() => {
+            setIsBulkActionLoading(false);
+        });
+  };
 
   return (
     <div className="space-y-6">

@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import { doc, collection, query, where, getDocs } from 'firebase/firestore';
+import type { Order, Product } from '@/lib/types';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -25,6 +25,55 @@ export default function OrderDetailsPage() {
     }, [firestore, orderId]);
 
     const { data: order, isLoading, error } = useDoc<Order>(orderRef);
+    
+    // State to cache product image URLs
+    const [productImages, setProductImages] = useState<Record<string, string | null>>({});
+
+    // Effect to fetch all product images for the items in the order
+    useEffect(() => {
+        if (!firestore || !order || order.items.length === 0) {
+            return;
+        }
+
+        const fetchProductImages = async () => {
+            const productIdsToFetch = [
+                ...new Set(
+                    order.items
+                        .map(item => item.productId)
+                        .filter(id => !productImages.hasOwnProperty(id))
+                ),
+            ];
+
+            if (productIdsToFetch.length === 0) return;
+
+            setProductImages(prev => {
+                const newPlaceholders = Object.fromEntries(productIdsToFetch.map(id => [id, undefined]));
+                return {...prev, ...newPlaceholders};
+            });
+
+            const newImageMap: Record<string, string | null> = {};
+            const productChunks = [];
+            for (let i = 0; i < productIdsToFetch.length; i += 30) {
+                productChunks.push(productIdsToFetch.slice(i, i + 30));
+            }
+
+            for (const chunk of productChunks) {
+                const productsRef = collection(firestore, 'products');
+                const q = query(productsRef, where('__name__', 'in', chunk));
+                const querySnapshot = await getDocs(q);
+
+                querySnapshot.forEach(doc => {
+                    const product = doc.data() as Product;
+                    newImageMap[doc.id] = product.mainImage || product.images?.[0] || null;
+                });
+            }
+            
+            setProductImages(prev => ({...prev, ...newImageMap}));
+        };
+
+        fetchProductImages();
+    }, [order, firestore, productImages]);
+
 
     if (isLoading) {
         return (
@@ -60,7 +109,7 @@ export default function OrderDetailsPage() {
             
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
-                     <OrderItemsCard items={order.items} total={order.total} />
+                     <OrderItemsCard items={order.items} total={order.total} productImages={productImages} />
                 </div>
                 <div className="md:col-span-1 space-y-6">
                     <OrderStatusCard order={order} />

@@ -5,13 +5,15 @@ import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { OrderItem } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface OrderItemsCardProps {
     items: OrderItem[];
     total: number;
+    productImages: Record<string, string | null>;
 }
 
-export function OrderItemsCard({ items, total }: OrderItemsCardProps) {
+export function OrderItemsCard({ items, total, productImages }: OrderItemsCardProps) {
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const shipping = total - subtotal;
     
@@ -32,23 +34,32 @@ export function OrderItemsCard({ items, total }: OrderItemsCardProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {items.map((item) => (
-                            <TableRow key={item.productId}>
-                                <TableCell className="hidden sm:table-cell">
-                                    <Image
-                                        alt={item.name}
-                                        className="aspect-square rounded-md object-cover"
-                                        height="64"
-                                        src={item.imageUrl || 'https://placehold.co/64x64'}
-                                        width="64"
-                                    />
-                                </TableCell>
-                                <TableCell className="font-medium">{item.name}</TableCell>
-                                <TableCell className="text-center">{item.quantity}</TableCell>
-                                <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                                <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))}
+                        {items.map((item) => {
+                            const imageUrl = productImages[item.productId];
+                            const isImageLoading = productImages.hasOwnProperty(item.productId) && imageUrl === undefined;
+                            
+                            return (
+                                <TableRow key={item.productId}>
+                                    <TableCell className="hidden sm:table-cell">
+                                         {isImageLoading ? (
+                                            <Skeleton className="h-16 w-16 rounded-md" />
+                                        ) : (
+                                            <Image
+                                                alt={item.name}
+                                                className="aspect-square rounded-md object-cover"
+                                                height="64"
+                                                src={imageUrl || 'https://placehold.co/64x64'}
+                                                width="64"
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="font-medium">{item.name}</TableCell>
+                                    <TableCell className="text-center">{item.quantity}</TableCell>
+                                    <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                 </Table>
             </CardContent>

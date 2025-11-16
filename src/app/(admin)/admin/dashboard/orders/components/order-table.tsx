@@ -32,7 +32,7 @@ interface OrderTableProps {
   orders: Order[] | null;
   isLoading: boolean;
   selectedOrderIds: string[];
-  productImages: Record<string, string | null>;
+  productImages: Record<string, string | null | undefined>;
   onSelectionChange: (orderId: string, isSelected: boolean) => void;
   onSelectAll: (isSelected: boolean) => void;
 }
