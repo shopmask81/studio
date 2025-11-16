@@ -1,21 +1,27 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, Timestamp, writeBatch, doc } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Loader2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/components/auth/auth-provider';
+import { BulkActionsBar } from './components/bulk-actions-bar';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>({});
   const { userProfile, isLoading: isAuthLoading } = useAuth();
+  
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
   const isAdmin = userProfile?.role === 'admin';
 
@@ -44,7 +50,7 @@ export default function AdminOrdersPage() {
   // Client-side filtering logic for the unified search query.
   const filteredOrders = useMemo(() => {
     if (!allOrders) return null;
-    if (!filters.searchQuery) return allOrders; // Return all if search is empty
+    if (!filters.searchQuery) return allOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
 
@@ -67,6 +73,78 @@ export default function AdminOrdersPage() {
   // The overall loading state depends on auth AND data loading.
   const isLoading = isAuthLoading || (isAdmin && isDataLoading);
 
+  const handleSelectionChange = (orderId: string, isSelected: boolean) => {
+    setSelectedOrderIds(prev => 
+      isSelected ? [...prev, orderId] : prev.filter(id => id !== orderId)
+    );
+  };
+
+  const handleSelectAll = (isSelected: boolean) => {
+    if (isSelected && filteredOrders) {
+      setSelectedOrderIds(filteredOrders.map(o => o.id));
+    } else {
+      setSelectedOrderIds([]);
+    }
+  };
+
+  const handleBulkStatusChange = useCallback(async (status: Order['status']) => {
+    if (!firestore || selectedOrderIds.length === 0) return;
+    setIsBulkActionLoading(true);
+
+    try {
+        const batch = writeBatch(firestore);
+        selectedOrderIds.forEach(orderId => {
+            const orderRef = doc(firestore, 'orders', orderId);
+            batch.update(orderRef, { status });
+        });
+        await batch.commit();
+
+        toast({
+            title: "Bulk Update Successful",
+            description: `${selectedOrderIds.length} orders have been updated to "${status}".`
+        });
+        setSelectedOrderIds([]); // Clear selection after action
+    } catch (error) {
+        console.error("Bulk status update failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Bulk Update Failed",
+            description: "Could not update order statuses. Please check permissions."
+        });
+    } finally {
+        setIsBulkActionLoading(false);
+    }
+  }, [firestore, selectedOrderIds, toast]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!firestore || selectedOrderIds.length === 0) return;
+    setIsBulkActionLoading(true);
+
+    try {
+        const batch = writeBatch(firestore);
+        selectedOrderIds.forEach(orderId => {
+            const orderRef = doc(firestore, 'orders', orderId);
+            batch.delete(orderRef);
+        });
+        await batch.commit();
+
+        toast({
+            title: "Bulk Delete Successful",
+            description: `${selectedOrderIds.length} orders have been deleted.`
+        });
+        setSelectedOrderIds([]); // Clear selection after action
+    } catch (error) {
+        console.error("Bulk delete failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Bulk Delete Failed",
+            description: "Could not delete orders. Please check permissions."
+        });
+    } finally {
+        setIsBulkActionLoading(false);
+    }
+  }, [firestore, selectedOrderIds, toast]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -74,6 +152,20 @@ export default function AdminOrdersPage() {
       </div>
       
       <OrderFilters onFilterChange={setFilters} />
+
+      {isBulkActionLoading && (
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      )}
+
+      {selectedOrderIds.length > 0 && (
+          <BulkActionsBar
+            selectedCount={selectedOrderIds.length}
+            onStatusChange={handleBulkStatusChange}
+            onDelete={handleBulkDelete}
+          />
+      )}
 
       {error && error instanceof FirestorePermissionError && (
          <Alert variant="destructive">
@@ -85,7 +177,13 @@ export default function AdminOrdersPage() {
         </Alert>
       )}
 
-      <OrderTable orders={filteredOrders} isLoading={isLoading} />
+      <OrderTable 
+        orders={filteredOrders} 
+        isLoading={isLoading} 
+        selectedOrderIds={selectedOrderIds}
+        onSelectionChange={handleSelectionChange}
+        onSelectAll={handleSelectAll}
+      />
     </div>
   );
 }

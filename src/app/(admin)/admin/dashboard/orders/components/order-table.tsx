@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const statusStyles: { [key: string]: string } = {
     pending: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
@@ -29,15 +30,28 @@ const statusStyles: { [key: string]: string } = {
 interface OrderTableProps {
   orders: Order[] | null;
   isLoading: boolean;
+  selectedOrderIds: string[];
+  onSelectionChange: (orderId: string, isSelected: boolean) => void;
+  onSelectAll: (isSelected: boolean) => void;
 }
 
-export function OrderTable({ orders, isLoading }: OrderTableProps) {
+export function OrderTable({ 
+  orders, 
+  isLoading, 
+  selectedOrderIds, 
+  onSelectionChange, 
+  onSelectAll 
+}: OrderTableProps) {
+  const allOnPageSelected = orders ? selectedOrderIds.length === orders.length : false;
+  const isIndeterminate = orders ? selectedOrderIds.length > 0 && !allOnPageSelected : false;
+
 
   if (isLoading) {
     return (
         <div className="border rounded-lg p-4 space-y-2">
             {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4 p-2">
+                    <Skeleton className="h-5 w-5 rounded-sm" />
                     <Skeleton className="h-4 w-[150px]" />
                     <Skeleton className="h-4 flex-1" />
                     <Skeleton className="h-4 flex-1" />
@@ -63,6 +77,13 @@ export function OrderTable({ orders, isLoading }: OrderTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">
+                <Checkbox 
+                  checked={allOnPageSelected}
+                  onCheckedChange={(checked) => onSelectAll(!!checked)}
+                  aria-label="Select all orders on this page"
+                />
+            </TableHead>
             <TableHead>Order ID</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Email</TableHead>
@@ -76,7 +97,14 @@ export function OrderTable({ orders, isLoading }: OrderTableProps) {
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
-            <TableRow key={order.id}>
+            <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) && 'selected'}>
+              <TableCell>
+                  <Checkbox 
+                    checked={selectedOrderIds.includes(order.id)}
+                    onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
+                    aria-label={`Select order ${order.id}`}
+                  />
+              </TableCell>
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {order.id}
               </TableCell>
