@@ -49,16 +49,16 @@ export default function AdminOrdersPage() {
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
 
     return allOrders.filter(order => {
-      // Check against multiple fields.
+      // Check against multiple fields, safely handling potentially undefined ones.
       return (
-        order.id.toLowerCase().includes(lowerCaseQuery) ||
-        order.name.toLowerCase().includes(lowerCaseQuery) ||
-        order.email.toLowerCase().includes(lowerCaseQuery) ||
-        order.phone.toLowerCase().includes(lowerCaseQuery) ||
-        order.street.toLowerCase().includes(lowerCaseQuery) ||
-        order.city.toLowerCase().includes(lowerCaseQuery) ||
-        order.zip.toLowerCase().includes(lowerCaseQuery) ||
-        order.country.toLowerCase().includes(lowerCaseQuery)
+        (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
       );
     });
   }, [allOrders, filters.searchQuery]);
