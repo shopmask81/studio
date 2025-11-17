@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -73,7 +72,7 @@ export default function AdminBannersPage() {
     setIsSubmitting(true);
     try {
       if (bannerToEdit) {
-        await updateBanner(firestore, bannerToEdit.id, values, image);
+        await updateBanner(firestore, bannerToEdit.id, values, image, bannerToEdit.deleteUrl);
         toast({ title: 'Banner Updated', description: `Banner "${values.title}" has been successfully updated.` });
       } else {
         const newOrder = banners ? banners.length : 0;

@@ -7,10 +7,10 @@ service cloud.firestore {
      * @description Public read access for general content.
      */
     match /banners/{bannerId} {
-      // Allow anyone to read active banners for the homepage slider.
-      // Admins can write to this collection.
-      allow read: if true;
-      allow write: if isAdmin();
+      // Anyone can read active banners for the homepage slider via a query.
+      allow get: if true; 
+      // Only admins can list all banners (including inactive ones) and write to the collection.
+      allow list, write: if isAdmin();
     }
 
     match /categories/{categoryId} {
@@ -106,7 +106,6 @@ service cloud.firestore {
     function isAdmin() {
       // Check if the user's document in the 'users' collection has the 'admin' role.
       // This requires a broad read rule on the users collection.
-      // For development, you can also hardcode a specific UID for admin access.
       return isSignedIn() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
         request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2'

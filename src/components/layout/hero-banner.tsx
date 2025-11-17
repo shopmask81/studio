@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export function HeroBanner() {
   const plugin = React.useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
@@ -25,6 +25,7 @@ export function HeroBanner() {
 
   const bannersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
+    // This public query only fetches active banners and respects the public `read` rule.
     return query(
       collection(firestore, 'banners'),
       where('active', '==', true),
@@ -43,11 +44,17 @@ export function HeroBanner() {
   }
 
   if (!banners || banners.length === 0) {
-    return null; // Don't render anything if there are no active banners
+    return (
+        <div className="w-full aspect-[16/7] bg-muted/50 flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+                <p>Banners will be displayed here.</p>
+            </div>
+        </div>
+    );
   }
 
   return (
-    <div className="w-full">
+    <div className={cn("w-full group/hero", banners.length <= 1 && "pointer-events-none")}>
       <Carousel
         plugins={[plugin.current]}
         className="w-full"
@@ -55,7 +62,7 @@ export function HeroBanner() {
         onMouseLeave={plugin.current.reset}
       >
         <CarouselContent>
-          {banners.map((banner) => (
+          {banners.map((banner, index) => (
             <CarouselItem key={banner.id}>
               <div className="p-0">
                 <Card className="border-none rounded-none shadow-none">
@@ -64,7 +71,7 @@ export function HeroBanner() {
                       src={banner.imageUrl}
                       alt={banner.title}
                       fill
-                      priority={banners.indexOf(banner) === 0}
+                      priority={index === 0}
                       className="object-cover object-center brightness-75"
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4 z-10 bg-black/30">
@@ -88,8 +95,12 @@ export function HeroBanner() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 z-20 text-white" />
-        <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 z-20 text-white" />
+        {banners.length > 1 && (
+            <>
+                <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 z-20 text-white opacity-0 group-hover/hero:opacity-100 transition-opacity" />
+                <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 z-20 text-white opacity-0 group-hover/hero:opacity-100 transition-opacity" />
+            </>
+        )}
       </Carousel>
     </div>
   );

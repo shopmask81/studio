@@ -1,4 +1,3 @@
-
 import {
   Firestore,
   collection,
@@ -17,7 +16,11 @@ type BannerData = Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'ima
 
 // This is a simplified upload function. In a real app, you'd use Firebase Storage.
 async function uploadImage(imageFile: File): Promise<{ url: string, delete_url: string }> {
-  const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
+  const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+  if (!apiKey) {
+    throw new Error('ImgBB API key is not configured.');
+  }
+
   const formData = new FormData();
   formData.append('image', imageFile);
 
@@ -39,6 +42,7 @@ async function uploadImage(imageFile: File): Promise<{ url: string, delete_url: 
 }
 
 async function deleteImage(deleteUrl: string) {
+    // We use a server-side proxy to avoid exposing the deletion mechanism to the client
     try {
         const response = await fetch('/api/delete-image', {
             method: 'POST',
@@ -46,7 +50,7 @@ async function deleteImage(deleteUrl: string) {
             body: JSON.stringify({ deleteUrl }),
         });
         if (!response.ok) {
-            console.warn(`Failed to delete image from ImgBB. URL: ${deleteUrl}`);
+            console.warn(`Failed to delete image from ImgBB via proxy. URL: ${deleteUrl}`);
         }
     } catch (error) {
         console.error('Error in proxy call to delete image:', error);
@@ -88,16 +92,21 @@ export async function addBanner(
 export async function updateBanner(
   firestore: Firestore,
   bannerId: string,
-  values: Partial<BannerData> & { active?: boolean },
-  newImageFile?: File | string,
+  values: Partial<BannerData & { active?: boolean }>,
+  newImageFileOrUrl?: File | string,
+  oldDeleteUrl?: string
 ): Promise<void> {
   const bannerRef = doc(firestore, 'banners', bannerId);
   const dataToUpdate: any = { ...values, updatedAt: serverTimestamp() };
 
-  if (newImageFile && typeof newImageFile !== 'string') {
-      const { url, delete_url } = await uploadImage(newImageFile);
+  if (newImageFileOrUrl && typeof newImageFileOrUrl !== 'string') {
+      const { url, delete_url } = await uploadImage(newImageFileOrUrl);
       dataToUpdate.imageUrl = url;
       dataToUpdate.deleteUrl = delete_url;
+      // If a new image is uploaded, delete the old one.
+      if (oldDeleteUrl) {
+        await deleteImage(oldDeleteUrl);
+      }
   }
   
   try {
@@ -146,7 +155,9 @@ export async function updateBannerOrder(
   try {
     await batch.commit();
   } catch (serverError) {
+    // This is a complex operation to represent in a single permission error,
+    // so we log it and throw a generic error for the UI.
     console.error("Batch update error:", serverError);
-    throw new Error('Failed to update banner order.');
+    throw new Error('Failed to update banner order. You may not have permission for one or more banners.');
   }
 }

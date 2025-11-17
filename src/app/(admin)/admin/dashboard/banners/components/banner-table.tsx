@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -134,14 +133,14 @@ function DndBannerTable({
     )
 }
 
-
 export function BannerTable(props: BannerTableProps) {
-  const [isClient, setIsClient] = useState(false)
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-  
+    // `useEffect` runs only on the client, so this will be true after the component mounts.
+    setIsClient(true);
+  }, []);
+
   if (props.banners.length === 0) {
     return (
       <div className="text-center p-8 text-muted-foreground border rounded-lg">
@@ -151,11 +150,12 @@ export function BannerTable(props: BannerTableProps) {
   }
 
   // Render the drag-and-drop table only on the client side.
+  // This helps prevent hydration errors with libraries like react-beautiful-dnd.
   if (isClient) {
     return <DndBannerTable {...props} />;
   }
 
-  // You can return a static table or a skeleton loader for the server render / pre-hydration
+  // Fallback for SSR: a non-interactive table.
   return (
       <div className="border rounded-lg overflow-hidden">
           <Table>
