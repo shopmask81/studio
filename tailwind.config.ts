@@ -83,7 +83,7 @@ export default {
         'accent-glow': '0 0 10px rgba(112, 184, 158, 0.4)',
       },
       textShadow: {
-        glow: '0 0 6px rgba(112, 184, 158, 0.3)',
+        glow: '0 0 10px rgba(255, 255, 255, 0.7)',
       },
       keyframes: {
         'accordion-down': {
