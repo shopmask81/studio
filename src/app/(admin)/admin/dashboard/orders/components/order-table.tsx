@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Order } from '@/lib/types';
@@ -45,8 +46,6 @@ export function OrderTable({
   onSelectAll 
 }: OrderTableProps) {
   const allOnPageSelected = orders ? selectedOrderIds.length === orders.length && orders.length > 0 : false;
-  const isIndeterminate = orders ? selectedOrderIds.length > 0 && !allOnPageSelected : false;
-
 
   if (isLoading) {
     return (
@@ -76,11 +75,11 @@ export function OrderTable({
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className="w-12 px-4">
                 <Checkbox 
                   checked={allOnPageSelected}
                   onCheckedChange={(checked) => onSelectAll(!!checked)}
@@ -92,8 +91,8 @@ export function OrderTable({
             <TableHead className="hidden lg:table-cell min-w-[200px]">Email</TableHead>
             <TableHead className="w-[100px] text-right">Total</TableHead>
             <TableHead className="w-[120px] text-center">Status</TableHead>
-            <TableHead className="hidden md:table-cell w-[150px]">Date</TableHead>
-            <TableHead className="w-12">
+            <TableHead className="hidden md:table-cell w-[180px]">Date</TableHead>
+            <TableHead className="w-12 text-right px-4">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>
@@ -106,7 +105,7 @@ export function OrderTable({
             
             return (
               <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) && 'selected'}>
-                <TableCell>
+                <TableCell className="px-4">
                     <Checkbox 
                       checked={selectedOrderIds.includes(order.id)}
                       onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
@@ -116,21 +115,23 @@ export function OrderTable({
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {isImageLoading ? (
-                          <Skeleton className="h-12 w-12 rounded-md" />
+                          <Skeleton className="h-10 w-10 rounded-md" />
                       ) : (
                           <Image
                               alt={order.items[0]?.name || 'Product Image'}
                               className="aspect-square rounded-md object-cover"
-                              height="50"
-                              src={imageUrl || 'https://placehold.co/50x50'}
-                              width="50"
+                              height="40"
+                              src={imageUrl || 'https://placehold.co/40x40'}
+                              width="40"
                           />
                       )}
-                      <span className="font-mono text-xs text-muted-foreground truncate">{order.id}</span>
+                      <div className="flex-1 overflow-hidden">
+                        <span className="font-mono text-xs text-muted-foreground truncate block">{order.id}</span>
+                      </div>
                   </div>
                 </TableCell>
                 <TableCell className="font-medium truncate">{order.name}</TableCell>
-                <TableCell className="hidden lg:table-cell font-medium text-muted-foreground truncate">{order.email}</TableCell>
+                <TableCell className="hidden lg:table-cell text-muted-foreground truncate">{order.email}</TableCell>
                 <TableCell className="text-right font-medium">
                   ${order.total.toFixed(2)}
                 </TableCell>
@@ -142,7 +143,7 @@ export function OrderTable({
                 <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                   {order.createdAt ? format(order.createdAt.toDate(), 'PPp') : 'N/A'}
                 </TableCell>
-                <TableCell>
+                <TableCell className="px-4 text-right">
                   <Button asChild variant="outline" size="icon">
                     <Link href={`/admin/dashboard/orders/${order.id}`}>
                       <Eye className="h-4 w-4" />
