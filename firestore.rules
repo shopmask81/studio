@@ -104,7 +104,11 @@ service cloud.firestore {
     function isAdmin() {
       // Check if the user's document in the 'users' collection has the 'admin' role.
       // This requires a broad read rule on the users collection.
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // For development, you can also hardcode a specific UID for admin access.
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2'
+      );
     }
   }
 }
