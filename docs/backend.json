@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Address": {
@@ -89,37 +90,64 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Banner",
       "type": "object",
-      "description": "Represents a banner advertisement.",
+      "description": "Represents a promotional banner for the homepage slider.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the banner."
         },
+        "title": {
+          "type": "string",
+          "description": "The main headline text displayed on the banner."
+        },
+        "description": {
+          "type": "string",
+          "description": "The sub-text or description displayed on the banner."
+        },
         "imageUrl": {
           "type": "string",
           "description": "URL of the banner image."
+        },
+        "deleteUrl": {
+            "type": "string",
+            "description": "URL provided by ImgBB to delete the image."
         },
         "targetUrl": {
           "type": "string",
           "description": "URL to redirect to when the banner is clicked."
         },
-        "startDate": {
+        "cta": {
           "type": "string",
-          "description": "Date when the banner becomes active.",
-          "format": "date-time"
+          "description": "The text for the call-to-action button (e.g., 'Shop Now')."
         },
-        "endDate": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the banner is currently active and should be displayed."
+        },
+        "order": {
+          "type": "number",
+          "description": "A number used for sorting the banners. Lower numbers appear first."
+        },
+        "createdAt": {
           "type": "string",
-          "description": "Date when the banner expires.",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "Timestamp of when the banner was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last update."
         }
       },
       "required": [
         "id",
+        "title",
         "imageUrl",
-        "targetUrl",
-        "startDate",
-        "endDate"
+        "deleteUrl",
+        "active",
+        "order",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Category": {
@@ -492,7 +520,7 @@
           "schema": {
             "$ref": "#/backend/entities/Banner"
           },
-          "description": "Stores banner advertisement data. Each banner is uniquely identified by bannerId.",
+          "description": "Stores promotional banner data for the homepage slider. Banners can be activated, deactivated, and ordered by admins.",
           "params": [
             {
               "name": "bannerId",

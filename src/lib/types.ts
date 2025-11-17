@@ -45,6 +45,20 @@ export type Category = {
     updatedAt: Timestamp;
 };
 
+export type Banner = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  deleteUrl: string;
+  targetUrl?: string;
+  cta?: string;
+  active: boolean;
+  order: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export type CartItem = {
   product: Product;
   quantity: number;

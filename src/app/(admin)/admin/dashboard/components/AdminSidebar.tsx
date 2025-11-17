@@ -12,6 +12,7 @@ import {
     Settings,
     Theater,
     ChevronLeft,
+    ImageIcon,
 } from "lucide-react";
 import { 
     Sidebar, 
@@ -32,6 +33,7 @@ const sidebarNavItems = [
     { href: '/admin/dashboard/products', label: 'Products', icon: ShoppingBag },
     { href: '/admin/dashboard/categories', label: 'Categories', icon: Tags },
     { href: '/admin/dashboard/orders', label: 'Orders', icon: ClipboardList },
+    { href: '/admin/dashboard/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/dashboard/users', label: 'Users', icon: Users },
 ];
 
