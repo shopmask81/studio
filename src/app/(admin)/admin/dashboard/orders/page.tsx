@@ -50,8 +50,10 @@ export default function AdminOrdersPage() {
 
   // Effect to fetch data once when filters are applied
   useEffect(() => {
-    if (!isFirestoreFilterActive || !firestore || !isAdmin) {
-      if (fetchedOrders) setFetchedOrders(null);
+    if (!firestore || !isAdmin) {
+      if (isFirestoreFilterActive) {
+        setFetchedOrders(null);
+      }
       return;
     }
   
@@ -60,12 +62,12 @@ export default function AdminOrdersPage() {
       // Base query.
       let q = query(collection(firestore, 'orders'));
   
-      // Apply date range filter on Firestore as it is often more selective
+      // Prioritize date range filter on Firestore if it exists
       if (filters.dateRange?.from) {
           q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
-      }
-      if (filters.dateRange?.to) {
-          q = query(q, where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.to)));
+           if (filters.dateRange.to) {
+              q = query(q, where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.to)));
+          }
       }
   
       try {
@@ -79,9 +81,9 @@ export default function AdminOrdersPage() {
   
         // Always sort on the client-side to avoid needing composite indexes for sorting
         orders.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis() ?? 0;
-          const timeB = b.createdAt?.toMillis() ?? 0;
-          return timeB - timeA;
+            const timeA = a.createdAt?.toMillis() ?? 0;
+            const timeB = b.createdAt?.toMillis() ?? 0;
+            return timeB - timeA;
         });
   
         setFetchedOrders(orders);
@@ -98,8 +100,12 @@ export default function AdminOrdersPage() {
       }
     };
     
-    fetchFilteredData();
-  }, [isFirestoreFilterActive, filters, firestore, isAdmin, toast]);
+    if (isFirestoreFilterActive) {
+        fetchFilteredData();
+    } else if (fetchedOrders) {
+        setFetchedOrders(null);
+    }
+  }, [isFirestoreFilterActive, filters, firestore, isAdmin, toast, fetchedOrders]);
 
 
   // Determine which data source to use and apply client-side search
@@ -109,16 +115,22 @@ export default function AdminOrdersPage() {
     if (!filters.searchQuery) return sourceData;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
-    return sourceData.filter(order =>
-        (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
-      );
+    const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
+
+    return sourceData.filter((order, index) => {
+        const orderNumber = index + 1;
+        const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
+
+        return matchesOrderNumber ||
+            (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery);
+      });
   }, [liveOrders, fetchedOrders, isFirestoreFilterActive, filters.searchQuery]);
 
 
@@ -255,7 +267,6 @@ export default function AdminOrdersPage() {
 
   const handleExportSelected = () => {
     if (selectedOrders.length > 0) {
-      setIsExportingSelected(true);
       setOrdersToExport(selectedOrders);
     }
   };
@@ -295,6 +306,7 @@ export default function AdminOrdersPage() {
           onGenerationEnd={() => {
             setOrdersToExport([]);
             setIsExportingSelected(false);
+            setSelectedOrderIds([]);
           }}
         />
       )}
@@ -325,3 +337,4 @@ export default function AdminOrdersPage() {
     
 
     
+
