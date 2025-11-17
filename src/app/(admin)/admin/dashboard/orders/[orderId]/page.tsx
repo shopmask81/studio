@@ -27,7 +27,7 @@ export default function OrderDetailsPage() {
     const { data: order, isLoading, error } = useDoc<Order>(orderRef);
     
     // State to cache product image URLs
-    const [productImages, setProductImages] = useState<Record<string, string | null>>({});
+    const [productImages, setProductImages] = useState<Record<string, string | null | undefined>>({});
 
     // Effect to fetch all product images for the items in the order
     useEffect(() => {
