@@ -7,8 +7,9 @@ service cloud.firestore {
      * @description Public read access for general content.
      */
     match /banners/{bannerId} {
-      allow get: if true;
-      allow list: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2');
+      // Allow anyone to read active banners for the homepage slider.
+      // Admins can write to this collection.
+      allow read: if true;
       allow write: if isAdmin();
     }
 
