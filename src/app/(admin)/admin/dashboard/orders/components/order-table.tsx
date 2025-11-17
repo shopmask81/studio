@@ -88,8 +88,7 @@ export function OrderTable({
                   aria-label="Select all orders on this page"
                 />
             </TableHead>
-            <TableHead className="hidden sm:table-cell w-16">Image</TableHead>
-            <TableHead>Order ID</TableHead>
+            <TableHead>Order</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Email</TableHead>
             <TableHead className="text-right">Total</TableHead>
@@ -115,21 +114,21 @@ export function OrderTable({
                       aria-label={`Select order ${order.id}`}
                     />
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                   {isImageLoading ? (
-                        <Skeleton className="h-12 w-12 rounded-md" />
-                    ) : (
-                        <Image
-                            alt={order.items[0]?.name || 'Product Image'}
-                            className="aspect-square rounded-md object-cover"
-                            height="50"
-                            src={imageUrl || 'https://placehold.co/50x50'}
-                            width="50"
-                        />
-                    )}
-                </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {order.id}
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    {isImageLoading ? (
+                          <Skeleton className="h-12 w-12 rounded-md" />
+                      ) : (
+                          <Image
+                              alt={order.items[0]?.name || 'Product Image'}
+                              className="aspect-square rounded-md object-cover"
+                              height="50"
+                              src={imageUrl || 'https://placehold.co/50x50'}
+                              width="50"
+                          />
+                      )}
+                      <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
+                  </div>
                 </TableCell>
                 <TableCell className="font-medium">{order.name}</TableCell>
                 <TableCell className="font-medium text-muted-foreground">{order.email}</TableCell>
