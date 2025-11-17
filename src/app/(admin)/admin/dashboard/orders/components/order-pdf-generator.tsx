@@ -107,7 +107,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
   }, [firestore]);
 
 
-  const generatePdf = useCallback(async (ordersToExport: Order[]) => {
+  const generatePdfFromTemplates = useCallback(async (ordersToExport: Order[]) => {
     if (ordersToExport.length === 0 || !document) return;
 
     setProgressMessage('Generating PDF...');
@@ -166,16 +166,6 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
     setProgressMessage('');
   }, [onGenerationEnd]);
   
-  // This is the new effect that will handle the final PDF rendering step.
-  useEffect(() => {
-      // This will only run after productImages state has been updated and the component has re-rendered.
-      if (isGenerating && Object.keys(productImages).length > 0) {
-        generatePdf(orders);
-      }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productImages, isGenerating, orders]); // We intentionally leave generatePdf out to avoid re-triggering.
-
-
   const startPdfGeneration = useCallback(async (ordersToExport: Order[]) => {
     if (ordersToExport.length === 0 || isGenerating) return;
     
@@ -183,25 +173,38 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
     onGenerationStart?.();
     setProgressMessage(`Preparing ${ordersToExport.length} orders...`);
     
-    // Step 1: Preload images and set them into state. This will trigger the useEffect above.
+    // Step 1: Preload images and set them into state. This will trigger the useEffect below.
     const loadedImages = await preloadAllImages(ordersToExport);
     setProductImages(loadedImages);
   }, [isGenerating, onGenerationStart, preloadAllImages]);
 
+  // This is the new effect that will handle the final PDF rendering step.
+  useEffect(() => {
+      // This will only run after productImages state has been updated and the component has re-rendered.
+      if (isGenerating && Object.keys(productImages).length > 0) {
+        // We use a timeout to give React a moment to render the images in the DOM
+        const timer = setTimeout(() => {
+          generatePdfFromTemplates(orders);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productImages, isGenerating, orders]);
+
 
   // Effect for auto-triggering the export for the 'selected' variant
   useEffect(() => {
-    if (variant === 'selected' && orders.length > 0) {
+    if (variant === 'selected' && orders.length > 0 && !isGenerating) {
       startPdfGeneration(orders);
     }
-  }, [variant, orders, startPdfGeneration]);
+  }, [variant, orders, startPdfGeneration, isGenerating]);
 
 
   const isButtonDisabled = isGenerating || orders.length === 0 || isParentLoading;
   
   // This component now handles rendering the hidden templates for BOTH export types.
   // It's always in the DOM if there are orders to potentially export.
-  if (variant === 'all' || variant === 'selected') {
+  if (variant === 'all' || (variant === 'selected' && isGenerating)) {
     return (
       <>
         {variant === 'all' && (

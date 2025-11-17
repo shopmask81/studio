@@ -23,6 +23,8 @@ export default function AdminOrdersPage() {
   
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [isExportingSelected, setIsExportingSelected] = useState(false);
+
 
   // State for one-time fetched data when filters are active
   const [fetchedOrders, setFetchedOrders] = useState<Order[] | null>(null);
@@ -253,6 +255,7 @@ export default function AdminOrdersPage() {
 
   const handleExportSelected = () => {
     if (selectedOrders.length > 0) {
+      setIsExportingSelected(true);
       setOrdersToExport(selectedOrders);
     }
   };
@@ -280,6 +283,7 @@ export default function AdminOrdersPage() {
             onStatusChange={handleBulkStatusChange}
             onDelete={handleBulkDelete}
             onExport={handleExportSelected}
+            isExporting={isExportingSelected}
           />
       )}
       
@@ -287,7 +291,11 @@ export default function AdminOrdersPage() {
         <OrderPDFGenerator 
           orders={ordersToExport} 
           variant="selected"
-          onGenerationEnd={() => setOrdersToExport([])}
+          onGenerationStart={() => setIsExportingSelected(true)}
+          onGenerationEnd={() => {
+            setOrdersToExport([]);
+            setIsExportingSelected(false);
+          }}
         />
       )}
 

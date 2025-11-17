@@ -22,18 +22,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Order } from '@/lib/types';
-import { ChevronDown, Download, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, Loader2, Trash2 } from 'lucide-react';
 
 interface BulkActionsBarProps {
   selectedOrders: Order[];
   onStatusChange: (status: Order['status']) => void;
   onDelete: () => void;
   onExport: () => void;
+  isExporting: boolean;
 }
 
 const orderStatuses: Order['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
-export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExport }: BulkActionsBarProps) {
+export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExport, isExporting }: BulkActionsBarProps) {
   const selectedCount = selectedOrders.length;
   return (
     <div className="border bg-card rounded-lg p-3 flex items-center justify-between shadow-sm sticky top-16 z-20">
@@ -41,13 +42,17 @@ export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExp
         <span className="font-bold text-primary">{selectedCount}</span> order(s) selected
       </p>
       <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={onExport}>
-            <Download className="mr-2 h-4 w-4" />
+        <Button variant="outline" onClick={onExport} disabled={isExporting}>
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
             Export PDF
         </Button>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" disabled={isExporting}>
                     Change Status
                     <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
@@ -65,7 +70,7 @@ export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExp
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive">
+            <Button variant="destructive" disabled={isExporting}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
             </Button>
