@@ -248,13 +248,13 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                         <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order: #{orderNumber}</h3>
                          <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 'bold' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${order.total.toFixed(2)}</p>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</p>
                 </div>
                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', fontWeight: 'bold' }}>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
                     <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm')}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {order.createdAt ? format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm') : 'N/A'}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{fontWeight: 'bold', color: '#4F5B62'}}>Status:</span>
                         <div style={{
@@ -286,5 +286,7 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
         </div>
     );
 }
+
+    
 
     
