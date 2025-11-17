@@ -23,7 +23,7 @@ import { MoreHorizontal, Edit, Trash2, GripVertical, Loader2 } from 'lucide-reac
 import type { Banner } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useEffect, useState } from 'react';
 
 interface BannerTableProps {
@@ -72,7 +72,12 @@ function DndBannerTable({
               </TableRow>
             </TableHeader>
             <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="banners" isDropDisabled={false} isCombineEnabled={false}>
+                <Droppable
+                  droppableId="banners"
+                  isDropDisabled={false}
+                  isCombineEnabled={false}
+                  ignoreContainerClipping={true}
+                >
                     {(provided) => (
                         <TableBody ref={provided.innerRef} {...provided.droppableProps}>
                             {banners.map((banner, index) => (
