@@ -119,7 +119,8 @@ export default function AdminOrdersPage() {
     const lowerCaseQuery = filters.searchQuery.toLowerCase().trim();
     if (!lowerCaseQuery) return sourceOrders;
 
-    return sourceOrders.filter((order) => {
+    return sourceOrders.filter((order, index) => {
+        // First, check text fields
         const matchesTextFields = (
             (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
@@ -131,9 +132,10 @@ export default function AdminOrdersPage() {
             (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.status?.toLowerCase() ?? '').includes(lowerCaseQuery)
         );
-
+        
         if (matchesTextFields) return true;
 
+        // Second, check item fields
         const matchesItems = order.items.some(item => 
             (item.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (item.productId?.toLowerCase() ?? '').includes(lowerCaseQuery)
@@ -141,16 +143,16 @@ export default function AdminOrdersPage() {
         
         if (matchesItems) return true;
 
-        // Logic to extract a number if searching for "order #X"
+        // Third, check for a numeric match against the order's visual index
         const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
         if (!isNaN(numericQuery)) {
-            const orderIndex = sourceOrders.indexOf(order);
-            const orderNumber = orderIndex + 1;
+            const orderNumber = index + 1; // The visual order number is index + 1
             if (orderNumber === numericQuery) {
                 return true;
             }
         }
         
+        // If none of the above matched, exclude the order
         return false;
     });
   }, [sourceOrders, filters.searchQuery]);
@@ -361,3 +363,5 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+    
