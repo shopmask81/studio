@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,10 +23,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, UploadCloud, X } from 'lucide-react';
+import { Loader2, UploadCloud, X, AlertTriangle } from 'lucide-react';
 import type { Banner } from '@/lib/types';
 import Image from 'next/image';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const formSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -44,6 +46,9 @@ interface BannerFormProps {
   isSubmitting: boolean;
 }
 
+const MIN_WIDTH = 1920;
+const MIN_HEIGHT = 800;
+
 export function BannerForm({
   isOpen,
   onOpenChange,
@@ -53,6 +58,8 @@ export function BannerForm({
 }: BannerFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
+
 
   const form = useForm<BannerFormValues>({
     resolver: zodResolver(formSchema),
@@ -79,6 +86,7 @@ export function BannerForm({
         setImagePreview(null);
       }
       setSelectedFile(null);
+      setImageWarning(null);
     }
   }, [isOpen, bannerToEdit, form]);
 
@@ -88,7 +96,18 @@ export function BannerForm({
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const result = reader.result as string;
+        setImagePreview(result);
+
+        const img = document.createElement('img');
+        img.onload = () => {
+          if (img.width < MIN_WIDTH || img.height < MIN_HEIGHT) {
+            setImageWarning(`Image is ${img.width}x${img.height}px. Recommended size is at least ${MIN_WIDTH}x${MIN_HEIGHT}px for best quality.`);
+          } else {
+            setImageWarning(null);
+          }
+        };
+        img.src = result;
       };
       reader.readAsDataURL(file);
     }
@@ -106,6 +125,7 @@ export function BannerForm({
   const clearImage = () => {
     setImagePreview(null);
     setSelectedFile(null);
+    setImageWarning(null);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   }
@@ -146,6 +166,18 @@ export function BannerForm({
                     </div>
                     <input id="image-upload" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
                   </label>
+                )}
+                 <div className="text-xs text-muted-foreground italic mt-2 space-y-1">
+                    <p>Recommended size: 1920×800px (16:9 or 21:9 aspect ratio).</p>
+                    <p>Minimum mobile safe area: 1080×1080px (center of the image).</p>
+                </div>
+                 {imageWarning && (
+                    <Alert variant="destructive" className="flex items-start gap-3">
+                        <AlertTriangle className="h-4 w-4 mt-0.5"/>
+                        <AlertDescription className="text-xs">
+                        {imageWarning}
+                        </AlertDescription>
+                    </Alert>
                 )}
                  {form.formState.errors.root && (
                   <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
