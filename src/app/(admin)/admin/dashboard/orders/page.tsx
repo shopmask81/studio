@@ -23,45 +23,79 @@ export default function AdminOrdersPage() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
+  // State for one-time fetched data when filters are active
+  const [fetchedOrders, setFetchedOrders] = useState<Order[] | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+
   // State to cache product image URLs
   const [productImages, setProductImages] = useState<Record<string, string | null>>({});
 
   const isAdmin = userProfile?.role === 'admin';
+  const isFirestoreFilterActive = !!(filters.status || filters.dateRange?.from || filters.dateRange?.to);
 
-  // Server-side query based on status and date.
-  const ordersQuery = useMemo(() => {
-    // CRITICAL: Do not build the query until we know the user is an admin.
-    if (!firestore || !isAdmin) return null;
+  // Real-time query for the default, unfiltered view
+  const liveOrdersQuery = useMemo(() => {
+    // Only run this query if user is an admin AND no filters are active
+    if (!firestore || !isAdmin || isFirestoreFilterActive) return null;
     
-    let q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+  }, [firestore, isAdmin, isFirestoreFilterActive]);
 
-    if (filters.status) {
-        q = query(q, where('status', '==', filters.status));
+  // Fetch all orders matching the real-time query.
+  // This hook will pause if liveOrdersQuery is null.
+  const { data: liveOrders, isLoading: isRealtimeLoading, error: realtimeError } = useCollection<Order>(liveOrdersQuery);
+
+  // Effect to fetch data once when filters are applied
+  useEffect(() => {
+    if (!isFirestoreFilterActive || !firestore || !isAdmin) {
+      // If filters are cleared, clear fetched data to fall back to live data
+      if (fetchedOrders) setFetchedOrders(null);
+      return;
     }
-    if (filters.dateRange?.from) {
-        q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
-    }
-    if (filters.dateRange?.to) {
-        q = query(q, where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.to)));
-    }
+
+    const fetchFilteredData = async () => {
+      setIsFetching(true);
+      let q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+
+      if (filters.status) {
+          q = query(q, where('status', '==', filters.status));
+      }
+      if (filters.dateRange?.from) {
+          q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
+      }
+      if (filters.dateRange?.to) {
+          q = query(q, where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.to)));
+      }
+
+      try {
+        const querySnapshot = await getDocs(q);
+        const orders = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+        setFetchedOrders(orders);
+      } catch (e) {
+        console.error("Failed to fetch filtered orders:", e);
+        setFetchedOrders([]); // Set to empty on error
+        toast({
+          variant: 'destructive',
+          title: "Filter Error",
+          description: "Could not fetch orders. Please check permissions."
+        })
+      } finally {
+        setIsFetching(false);
+      }
+    };
     
-    return q;
-  }, [firestore, isAdmin, filters.status, filters.dateRange]);
+    fetchFilteredData();
+  }, [isFirestoreFilterActive, filters, firestore, isAdmin, toast]);
 
-  // Fetch all orders matching the server-side query.
-  // useCollection will wait if ordersQuery is null.
-  const { data: allOrders, isLoading: isDataLoading, error } = useCollection<Order>(ordersQuery);
 
-  // Client-side filtering logic for the unified search query.
-  const filteredOrders = useMemo(() => {
-    if (!allOrders) return [];
-    if (!filters.searchQuery) return allOrders;
+  // Determine which data source to use and apply client-side search
+  const finalOrders = useMemo(() => {
+    const sourceData = isFirestoreFilterActive ? fetchedOrders : liveOrders;
+    if (!sourceData) return [];
+    if (!filters.searchQuery) return sourceData;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
-
-    return allOrders.filter(order => {
-      // Check against multiple fields, safely handling potentially undefined ones.
-      return (
+    return sourceData.filter(order =>
         (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
         (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
         (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
@@ -71,38 +105,32 @@ export default function AdminOrdersPage() {
         (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
         (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
       );
-    });
-  }, [allOrders, filters.searchQuery]);
+  }, [liveOrders, fetchedOrders, isFirestoreFilterActive, filters.searchQuery]);
 
 
-  // Effect to fetch product images for the current set of filtered orders
+  // Effect to fetch product images for the current set of final orders
   useEffect(() => {
-    if (!firestore || !filteredOrders || filteredOrders.length === 0) {
+    if (!firestore || !finalOrders || finalOrders.length === 0) {
       return;
     }
 
     const fetchProductImages = async () => {
-        // 1. Collect unique product IDs from the first item of each order
         const productIdsToFetch = [
           ...new Set(
-            filteredOrders
+            finalOrders
               .map(order => order.items?.[0]?.productId)
               .filter((id): id is string => !!id && !productImages.hasOwnProperty(id))
           ),
         ];
 
-        if (productIdsToFetch.length === 0) {
-          return; // All images are already cached
-        }
+        if (productIdsToFetch.length === 0) return;
 
-        // Set initial loading state for new product IDs
         setProductImages(prev => {
             const newPlaceholders: Record<string, undefined> = {};
             productIdsToFetch.forEach(id => newPlaceholders[id] = undefined);
             return {...prev, ...newPlaceholders};
         });
 
-        // 2. Fetch product documents in batches of 30 (Firestore 'in' query limit)
         const newImageMap: Record<string, string | null> = {};
         const productChunks = [];
         for (let i = 0; i < productIdsToFetch.length; i += 30) {
@@ -120,20 +148,19 @@ export default function AdminOrdersPage() {
             });
         }
         
-        // 3. Update the image cache state
         setProductImages(prev => ({...prev, ...newImageMap}));
     };
 
     fetchProductImages();
-  }, [filteredOrders, firestore, productImages]);
+  }, [finalOrders, firestore, productImages]);
 
 
-  // The overall loading state depends on auth AND data loading (if the user is an admin).
-  const isLoading = isAuthLoading || (isAdmin && isDataLoading);
+  const isLoading = isAuthLoading || (isAdmin && (isRealtimeLoading && !isFirestoreFilterActive) || isFetching);
+  const error = realtimeError; // Only show errors from the real-time listener
 
   const selectedOrders = useMemo(() => {
-    return filteredOrders.filter(order => selectedOrderIds.includes(order.id));
-  }, [filteredOrders, selectedOrderIds]);
+    return finalOrders.filter(order => selectedOrderIds.includes(order.id));
+  }, [finalOrders, selectedOrderIds]);
 
   const handleSelectionChange = (orderId: string, isSelected: boolean) => {
     setSelectedOrderIds(prev => 
@@ -142,8 +169,8 @@ export default function AdminOrdersPage() {
   };
 
   const handleSelectAll = (isSelected: boolean) => {
-    if (isSelected && filteredOrders) {
-      setSelectedOrderIds(filteredOrders.map(o => o.id));
+    if (isSelected && finalOrders) {
+      setSelectedOrderIds(finalOrders.map(o => o.id));
     } else {
       setSelectedOrderIds([]);
     }
@@ -166,7 +193,7 @@ export default function AdminOrdersPage() {
             title: "Bulk Update Successful",
             description: `${selectedOrderIds.length} orders have been updated to "${status}".`
         });
-        setSelectedOrderIds([]); // Clear selection after action
+        setSelectedOrderIds([]);
     } catch(error) {
         console.error("Bulk status update failed:", error);
         toast({
@@ -216,8 +243,6 @@ export default function AdminOrdersPage() {
   const triggerExport = (orders: Order[]) => {
       setOrdersToExport(orders);
       setIsExporting(true);
-      // The actual generation is handled inside the generator component
-      // which we expect to be rendered now. We will trigger it via a hidden button.
       setTimeout(() => {
           const triggerButton = document.getElementById('hidden-pdf-trigger') as HTMLButtonElement | null;
           triggerButton?.click();
@@ -226,14 +251,12 @@ export default function AdminOrdersPage() {
       }, 100);
   };
   
-
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
-         {filteredOrders && filteredOrders.length > 0 && (
-            <OrderPDFGenerator orders={filteredOrders} isLoading={isLoading} />
+         {finalOrders && finalOrders.length > 0 && (
+            <OrderPDFGenerator orders={finalOrders} isLoading={isLoading} />
         )}
       </div>
       
@@ -256,7 +279,6 @@ export default function AdminOrdersPage() {
       
       {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" onExport={triggerExport} />}
 
-
       {error && !isLoading && (
          <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
@@ -268,7 +290,7 @@ export default function AdminOrdersPage() {
       )}
 
       <OrderTable 
-        orders={filteredOrders} 
+        orders={finalOrders} 
         isLoading={isLoading} 
         selectedOrderIds={selectedOrderIds}
         onSelectionChange={handleSelectionChange}
