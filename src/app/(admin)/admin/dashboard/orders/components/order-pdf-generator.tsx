@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,11 +21,11 @@ interface OrderPDFGeneratorProps {
 type ProductImageMap = Record<string, string | null>;
 
 const statusStyles: { [key in Order['status']]: { color: string; backgroundColor: string; } } = {
-    pending: { color: '#e8d787', backgroundColor: '#2c2b1f' },
-    processing: { color: '#7fd3b9', backgroundColor: '#1c2622' },
-    shipped: { color: '#c0a0e0', backgroundColor: '#241f2c' }, // Retaining a purplish theme
-    delivered: { color: '#8fe58c', backgroundColor: '#1d281d' },
-    cancelled: { color: '#e58c8c', backgroundColor: '#291d1d' },
+    pending: { color: '#8A6D00', backgroundColor: '#FFF6CC' },
+    processing: { color: '#0D7F62', backgroundColor: '#DFF7F0' },
+    shipped: { color: '#005B8A', backgroundColor: '#D6F0FF' }, // Using a light blue for shipped
+    delivered: { color: '#3C7A11', backgroundColor: '#E4F6DA' },
+    cancelled: { color: '#9E1A1A', backgroundColor: '#FDE2E2' },
 };
 
 
@@ -135,11 +136,11 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         if (!cardElement) continue;
 
         const canvas = await html2canvas(cardElement, {
-            scale: 3, // Increase scale for sharper text and images
+            scale: 3,
             useCORS: true,
-            backgroundColor: null, // Use transparent background for capture
+            backgroundColor: '#FFFFFF' // White background for the page
         });
-        const imgData = canvas.toDataURL('image/png', 1.0); // Use high quality PNG
+        const imgData = canvas.toDataURL('image/png', 1.0);
         
         pdf.addImage(imgData, 'PNG', margin, yPos, cardWidth, cardHeight, undefined, 'FAST');
         yPos += cardHeight + spacing;
@@ -147,7 +148,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         const isLastCardOnPage = (i + 1) % cardsPerPage === 0 || (i + 1) === ordersToExport.length;
         if (isLastCardOnPage) {
             pdf.setFontSize(8);
-            pdf.setTextColor('#3f4a45');
+            pdf.setTextColor('#7A868C');
             const exportTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm');
             pdf.text(`Exported on: ${exportTimestamp}`, pdfWidth / 2, pdfHeight - margin / 2, { align: 'center' });
         }
@@ -172,8 +173,6 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
     }
   }
   
-  // The selected variant renders the hidden cards for capture but does not render a visible button.
-  // The visible button is in the BulkActionsBar.
   if (variant === 'selected') {
     return (
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px' }}>
@@ -198,7 +197,6 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         {isGenerating ? progressMessage : isParentLoading ? 'Loading Orders...' : `Export All (${orders.length})`}
       </Button>
 
-      {/* Hidden container for rendering cards for PDF generation */}
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px' }}>
         {orders.map(order => (
           <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} productImages={productImages} />
@@ -215,7 +213,7 @@ const shorten = (text: string, words = 5) => {
 }
 
 function PdfCardTemplate({ order, productImages }: { order: Order, productImages: ProductImageMap }) {
-    const statusStyle = statusStyles[order.status] || { color: '#e7ece9', backgroundColor: '#1f2b26' };
+    const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
     return (
         <div 
@@ -227,30 +225,29 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
                 display: 'flex', 
                 flexDirection: 'column',
                 fontFamily: 'Helvetica, Arial, sans-serif',
-                backgroundColor: '#0f1612',
-                color: '#e7ece9',
-                border: '1px solid #1a2420',
+                backgroundColor: '#F7F9FA',
+                color: '#3A464B',
+                border: '1px solid #E2E8EA',
                 borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
                 padding: '16px',
             }}
         >
-            {/* Top Section: Order Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #1f2b26', paddingBottom: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #E8EEEE', paddingBottom: '12px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                        <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#d2b48c' }}>Order #{order.id.substring(0, 12)}...</h3>
-                         <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Customer:</span> {order.name}</p>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order #{order.id.substring(0, 12)}...</h3>
+                         <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#d2b48c' }}>Total: ${order.total.toFixed(2)}</p>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${order.total.toFixed(2)}</p>
                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', color: '#e7ece9' }}>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Email:</span> {order.email}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Phone:</span> {order.phone}</p>
-                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd')}</p>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', color: '#3A464B' }}>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Email:</span> {order.email}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
+                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{fontWeight: 600, color: '#d2b48c'}}>Status:</span>
+                        <span style={{fontWeight: 600, color: '#4F5B62'}}>Status:</span>
                         <div style={{
                             padding: '2px 8px',
                             fontSize: '10px',
@@ -264,19 +261,19 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
                 </div>
             </div>
 
-            {/* Bottom Section: Items */}
             <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '8px' }}>
                 {order.items.map(item => (
                     <div key={item.productId + (item.imageUrl || '')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
-                        <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#2c3a34', border: '1px solid #2c3a34' }}>
+                        <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', backgroundColor: '#E2E8EA', border: '1px solid #D5DDDF' }}>
                             {productImages[item.productId] && <img src={productImages[item.productId]!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         </div>
-                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 500, color: '#e7ece9' }}>{shorten(item.name, 5)}</p>
-                        <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>Qty: {item.quantity}</p>
-                        <p style={{ fontSize: '12px', fontWeight: 600, margin: 0, minWidth: '55px', textAlign: 'right', color: '#e7ece9' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 500, color: '#3A464B' }}>{shorten(item.name, 5)}</p>
+                        <p style={{ fontSize: '11px', color: '#4F5B62', margin: 0 }}>Qty: {item.quantity}</p>
+                        <p style={{ fontSize: '12px', fontWeight: 600, margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                 ))}
             </div>
         </div>
     );
 }
+
