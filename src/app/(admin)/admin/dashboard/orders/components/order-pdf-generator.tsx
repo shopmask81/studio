@@ -238,17 +238,17 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order: #{orderNumber}</h3>
-                         <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Customer:</span> {order.name}</p>
+                         <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 'bold' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
                     <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${order.total.toFixed(2)}</p>
                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', color: '#3A464B' }}>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Email:</span> {order.email}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
-                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm')}</p>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', fontWeight: 'bold' }}>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
+                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{fontWeight: 600, color: '#4F5B62'}}>Status:</span>
+                        <span style={{fontWeight: 'bold', color: '#4F5B62'}}>Status:</span>
                         <div style={{
                             padding: '2px 8px',
                             fontSize: '10px',
@@ -262,15 +262,15 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                 </div>
             </div>
 
-            <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '8px' }}>
+            <div style={{ flexGrow: 1, overflowY: 'auto', padding: '8px', backgroundColor: '#E8F8EC', borderRadius: '8px' }}>
                 {order.items.map(item => (
                     <div key={item.productId + (item.imageUrl || '')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
                         <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', backgroundColor: '#E2E8EA', border: '1px solid #D5DDDF' }}>
                             {productImages[item.productId] && <img src={productImages[item.productId]!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         </div>
-                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 500, color: '#3A464B' }}>{shorten(item.name, 5)}</p>
-                        <p style={{ fontSize: '11px', color: '#4F5B62', margin: 0 }}>Qty: {item.quantity}</p>
-                        <p style={{ fontSize: '12px', fontWeight: 600, margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 'bold', color: '#3A464B' }}>{shorten(item.name, 5)}</p>
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#4F5B62', margin: 0 }}><span style={{fontSize: '14px', fontWeight: 'bold'}}>Qty:</span> {item.quantity}</p>
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                 ))}
             </div>
@@ -278,3 +278,5 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
     );
 }
 
+
+    
