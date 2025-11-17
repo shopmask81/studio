@@ -116,17 +116,10 @@ export default function AdminOrdersPage() {
     if (!sourceOrders) return null;
     if (!filters.searchQuery) return sourceOrders;
 
-    const lowerCaseQuery = filters.searchQuery.toLowerCase();
-    
-    return sourceOrders.filter((order, index) => {
-        const orderNumber = index + 1;
-        // Logic to extract a number if searching for "order #X"
-        const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
+    const lowerCaseQuery = filters.searchQuery.toLowerCase().trim();
+    if (!lowerCaseQuery) return sourceOrders;
 
-        // Check if the numeric part of the query matches the order number
-        const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
-
-        // Check other text fields
+    return sourceOrders.filter((order) => {
         const matchesTextFields = (
             (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
@@ -135,10 +128,30 @@ export default function AdminOrdersPage() {
             (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
+            (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.status?.toLowerCase() ?? '').includes(lowerCaseQuery)
         );
 
-        return matchesOrderNumber || matchesTextFields;
+        if (matchesTextFields) return true;
+
+        const matchesItems = order.items.some(item => 
+            (item.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (item.productId?.toLowerCase() ?? '').includes(lowerCaseQuery)
+        );
+        
+        if (matchesItems) return true;
+
+        // Logic to extract a number if searching for "order #X"
+        const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(numericQuery)) {
+            const orderIndex = sourceOrders.indexOf(order);
+            const orderNumber = orderIndex + 1;
+            if (orderNumber === numericQuery) {
+                return true;
+            }
+        }
+        
+        return false;
     });
   }, [sourceOrders, filters.searchQuery]);
 
