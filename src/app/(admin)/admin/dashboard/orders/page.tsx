@@ -67,7 +67,13 @@ export default function AdminOrdersPage() {
     // Apply search query filter
     const searchQuery = filters.searchQuery?.toLowerCase().trim();
     if (searchQuery) {
-        orders = orders.filter(order => {
+        orders = orders.filter((order, index) => {
+            // Check for order number search (e.g., "1", "#1", "order 1")
+            const numericQuery = searchQuery.replace(/[^0-9]/g, '');
+            if (numericQuery && parseInt(numericQuery, 10) === index + 1) {
+                return true;
+            }
+            
             // Safely stringify and check each field
             const check = (field: any) => String(field ?? '').toLowerCase().includes(searchQuery);
 
