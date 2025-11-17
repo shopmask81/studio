@@ -52,7 +52,7 @@ function DndBannerTable({
     };
 
     return (
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-hidden relative">
             {isUpdating && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -72,7 +72,7 @@ function DndBannerTable({
               </TableRow>
             </TableHeader>
             <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="banners">
+                <Droppable droppableId="banners" isDropDisabled={false}>
                     {(provided) => (
                         <TableBody ref={provided.innerRef} {...provided.droppableProps}>
                             {banners.map((banner, index) => (
@@ -150,5 +150,44 @@ export function BannerTable(props: BannerTableProps) {
     );
   }
 
-  return isClient ? <DndBannerTable {...props} /> : null;
+  // Render the drag-and-drop table only on the client side.
+  if (isClient) {
+    return <DndBannerTable {...props} />;
+  }
+
+  // You can return a static table or a skeleton loader for the server render / pre-hydration
+  return (
+      <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-48">Image</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead className="w-24 text-center">Active</TableHead>
+                <TableHead className="hidden md:table-cell w-48">Created At</TableHead>
+                <TableHead className="w-16">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+                {props.banners.map(banner => (
+                    <TableRow key={banner.id}>
+                        <TableCell><GripVertical className="h-5 w-5 text-muted-foreground"/></TableCell>
+                        <TableCell>
+                            <div className="relative aspect-video w-full max-w-40 rounded-md overflow-hidden">
+                                <Image src={banner.imageUrl} alt={banner.title} fill className="object-cover" />
+                            </div>
+                        </TableCell>
+                        <TableCell>{banner.title}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+      </div>
+  );
 }
