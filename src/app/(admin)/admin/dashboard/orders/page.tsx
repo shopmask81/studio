@@ -83,6 +83,9 @@ export default function AdminOrdersPage() {
         if (filters.status) {
           orders = orders.filter(order => order.status === filters.status);
         }
+
+        // Always sort on the client-side to avoid needing composite indexes for sorting
+        orders.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
   
         setFetchedOrders(orders);
       } catch (e) {
@@ -108,48 +111,24 @@ export default function AdminOrdersPage() {
     return isAnyFilterActive ? fetchedOrders : liveOrders;
   }, [isAnyFilterActive, fetchedOrders, liveOrders]);
 
-  // Create a stable numbering map based on the full dataset
-  const orderNumberMap = useMemo(() => {
-    const map = new Map<string, number>();
-    if (!sourceOrders) return map;
-
-    [...sourceOrders]
-      .sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() ?? 0;
-        const timeB = b.createdAt?.toMillis() ?? 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return a.id.localeCompare(b.id); // Fallback sort
-      })
-      .forEach((order, index) => {
-        map.set(order.id, index + 1);
-      });
-      
-    return map;
-  }, [sourceOrders]);
-
   // Apply client-side search to the currently active data source
   const finalOrders = useMemo(() => {
-    if (!sourceOrders) return [];
+    if (!sourceOrders) return null;
     if (!filters.searchQuery) return sourceOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
-    const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
 
-    return sourceOrders.filter((order) => {
-        const orderNumber = orderNumberMap.get(order.id);
-        const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
-
-        return matchesOrderNumber ||
-            (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-            (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery);
-      });
-  }, [sourceOrders, filters.searchQuery, orderNumberMap]);
+    return sourceOrders.filter((order) => 
+        (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+        (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
+      );
+  }, [sourceOrders, filters.searchQuery]);
 
 
   // Effect to fetch product images for the current set of final orders
@@ -203,6 +182,7 @@ export default function AdminOrdersPage() {
   const error = realtimeError; // Only show errors from the real-time listener
 
   const selectedOrders = useMemo(() => {
+    if (!finalOrders) return [];
     return finalOrders.filter(order => selectedOrderIds.includes(order.id));
   }, [finalOrders, selectedOrderIds]);
 
@@ -345,7 +325,6 @@ export default function AdminOrdersPage() {
         onSelectionChange={handleSelectionChange}
         onSelectAll={handleSelectAll}
         productImages={productImages}
-        orderNumberMap={orderNumberMap}
       />
     </div>
   );

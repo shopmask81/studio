@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Order } from '@/lib/types';
@@ -35,7 +34,6 @@ interface OrderTableProps {
   productImages: Record<string, string | null | undefined>;
   onSelectionChange: (orderId: string, isSelected: boolean) => void;
   onSelectAll: (isSelected: boolean) => void;
-  orderNumberMap: Map<string, number>;
 }
 
 export function OrderTable({ 
@@ -45,7 +43,6 @@ export function OrderTable({
   productImages,
   onSelectionChange, 
   onSelectAll,
-  orderNumberMap
 }: OrderTableProps) {
   const allOnPageSelected = orders ? selectedOrderIds.length === orders.length && orders.length > 0 : false;
 
@@ -100,11 +97,10 @@ export function OrderTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => {
+          {orders.map((order, index) => {
             const firstItemId = order.items?.[0]?.productId;
             const imageUrl = firstItemId ? productImages[firstItemId] : undefined;
             const isImageLoading = firstItemId && productImages.hasOwnProperty(firstItemId) && imageUrl === undefined;
-            const orderNumber = orderNumberMap.get(order.id);
             
             return (
               <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) && 'selected'}>
@@ -129,9 +125,7 @@ export function OrderTable({
                           />
                       )}
                       <div className="flex-1 overflow-hidden">
-                        {orderNumber !== undefined && (
-                            <span className="font-medium text-sm">Order: #{orderNumber}</span>
-                        )}
+                        <span className="font-medium text-sm">Order: #{index + 1}</span>
                         <span className="font-mono text-xs text-muted-foreground truncate block">{order.id}</span>
                       </div>
                   </div>
