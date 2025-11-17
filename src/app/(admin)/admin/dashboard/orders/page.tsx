@@ -55,8 +55,10 @@ export default function AdminOrdersPage() {
 
     const fetchFilteredData = async () => {
       setIsFetching(true);
-      let q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+      // Start with the base collection reference
+      let q = query(collection(firestore, 'orders'));
 
+      // Apply filters
       if (filters.status) {
           q = query(q, where('status', '==', filters.status));
       }
@@ -70,6 +72,10 @@ export default function AdminOrdersPage() {
       try {
         const querySnapshot = await getDocs(q);
         const orders = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+        
+        // Sort on the client-side to avoid needing a composite index
+        orders.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
         setFetchedOrders(orders);
       } catch (e) {
         console.error("Failed to fetch filtered orders:", e);
