@@ -19,13 +19,14 @@ interface OrderPDFGeneratorProps {
 
 type ProductImageMap = Record<string, string | null>;
 
-const statusStyles: { [key: string]: { color: string; backgroundColor: string; } } = {
-    pending: { color: '#854d0e', backgroundColor: '#fefce8' }, // amber-800, yellow-50
-    processing: { color: '#1e40af', backgroundColor: '#eff6ff' }, // blue-800, blue-50
-    shipped: { color: '#5b21b6', backgroundColor: '#f5f3ff' }, // violet-800, violet-50
-    delivered: { color: '#15803d', backgroundColor: '#f0fdf4' }, // green-800, green-50
-    cancelled: { color: '#991b1b', backgroundColor: '#fef2f2' }, // red-800, red-50
+const statusStyles: { [key in Order['status']]: { color: string; backgroundColor: string; } } = {
+    pending: { color: '#e8d787', backgroundColor: '#2c2b1f' },
+    processing: { color: '#7fd3b9', backgroundColor: '#1c2622' },
+    shipped: { color: '#c0a0e0', backgroundColor: '#241f2c' }, // Retaining a purplish theme
+    delivered: { color: '#8fe58c', backgroundColor: '#1d281d' },
+    cancelled: { color: '#e58c8c', backgroundColor: '#291d1d' },
 };
+
 
 // Fetches an image via the proxy and returns its Base64 representation.
 async function fetchImageAsBase64(url: string): Promise<string> {
@@ -119,35 +120,38 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
     const spacing = 10;
     let yPos = margin;
 
-    const exportTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm');
-
     for (let i = 0; i < ordersToExport.length; i++) {
         const order = ordersToExport[i];
         setProgressMessage(`Processing order ${i + 1} of ${ordersToExport.length}...`);
 
-        if (i > 0 && i % cardsPerPage === 0) {
+        const isNewPage = i > 0 && i % cardsPerPage === 0;
+
+        if (isNewPage) {
             pdf.addPage();
             yPos = margin;
-        }
-
-        if (i % cardsPerPage === 0) {
-            pdf.setFontSize(8);
-            pdf.setTextColor(150);
-            pdf.text(`Exported on: ${exportTimestamp}`, pdfWidth / 2, margin / 2, { align: 'center' });
         }
 
         const cardElement = document.getElementById(`pdf-card-${order.id}`);
         if (!cardElement) continue;
 
         const canvas = await html2canvas(cardElement, {
-            scale: 2.5, // Increase scale for sharper text and images
+            scale: 3, // Increase scale for sharper text and images
             useCORS: true,
-            backgroundColor: '#ffffff'
+            backgroundColor: null, // Use transparent background for capture
         });
         const imgData = canvas.toDataURL('image/png', 1.0); // Use high quality PNG
         
         pdf.addImage(imgData, 'PNG', margin, yPos, cardWidth, cardHeight, undefined, 'FAST');
         yPos += cardHeight + spacing;
+
+        const isLastCardOnPage = (i + 1) % cardsPerPage === 0 || (i + 1) === ordersToExport.length;
+        if (isLastCardOnPage) {
+            pdf.setFontSize(8);
+            pdf.setTextColor('#3f4a45');
+            const exportTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm');
+            pdf.text(`Exported on: ${exportTimestamp}`, pdfWidth / 2, pdfHeight - margin / 2, { align: 'center' });
+        }
+
     }
 
     setProgressMessage('Saving PDF...');
@@ -205,11 +209,13 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
 }
 
 const shorten = (text: string, words = 5) => {
-    return text.split(' ').slice(0, words).join(' ') + (text.split(' ').length > words ? '...' : '');
+    if (!text) return '';
+    const splitText = text.split(' ');
+    return splitText.slice(0, words).join(' ') + (splitText.length > words ? '...' : '');
 }
 
 function PdfCardTemplate({ order, productImages }: { order: Order, productImages: ProductImageMap }) {
-    const statusStyle = statusStyles[order.status] || { color: '#333', backgroundColor: '#eee' };
+    const statusStyle = statusStyles[order.status] || { color: '#e7ece9', backgroundColor: '#1f2b26' };
     
     return (
         <div 
@@ -221,28 +227,30 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
                 display: 'flex', 
                 flexDirection: 'column',
                 fontFamily: 'Helvetica, Arial, sans-serif',
-                backgroundColor: '#ffffff',
-                color: '#111111',
-                border: '1px solid #e3e3e3',
+                backgroundColor: '#0f1612',
+                color: '#e7ece9',
+                border: '1px solid #1a2420',
                 borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                 padding: '16px',
             }}
         >
             {/* Top Section: Order Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #e3e3e3', paddingBottom: '12px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0 }}>Order #{order.id.substring(0, 12)}...</h3>
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Total: ${order.total.toFixed(2)}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #1f2b26', paddingBottom: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#d2b48c' }}>Order #{order.id.substring(0, 12)}...</h3>
+                         <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Customer:</span> {order.name}</p>
+                    </div>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#d2b48c' }}>Total: ${order.total.toFixed(2)}</p>
                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '11px', color: '#555555' }}>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#333'}}>Customer:</span> {order.name}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#333'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#333'}}>Email:</span> {order.email}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#333'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd')}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#333'}}>Phone:</span> {order.phone}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{fontWeight: 600, color: '#333'}}>Status:</span>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', color: '#e7ece9' }}>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Email:</span> {order.email}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Phone:</span> {order.phone}</p>
+                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#d2b48c'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd')}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{fontWeight: 600, color: '#d2b48c'}}>Status:</span>
                         <div style={{
                             padding: '2px 8px',
                             fontSize: '10px',
@@ -259,13 +267,13 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
             {/* Bottom Section: Items */}
             <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '8px' }}>
                 {order.items.map(item => (
-                    <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
-                        <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#eeeeee', border: '1px solid #e0e0e0' }}>
+                    <div key={item.productId + (item.imageUrl || '')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                        <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#2c3a34', border: '1px solid #2c3a34' }}>
                             {productImages[item.productId] && <img src={productImages[item.productId]!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         </div>
-                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 500 }}>{shorten(item.name, 5)}</p>
-                        <p style={{ fontSize: '11px', color: '#666', margin: 0 }}>Qty: {item.quantity}</p>
-                        <p style={{ fontSize: '12px', fontWeight: 600, margin: 0, minWidth: '55px', textAlign: 'right' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 500, color: '#e7ece9' }}>{shorten(item.name, 5)}</p>
+                        <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>Qty: {item.quantity}</p>
+                        <p style={{ fontSize: '12px', fontWeight: 600, margin: 0, minWidth: '55px', textAlign: 'right', color: '#e7ece9' }}>${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                 ))}
             </div>
