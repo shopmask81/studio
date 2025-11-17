@@ -32,7 +32,7 @@ export default function AdminOrdersPage() {
   const [isFetching, setIsFetching] = useState(false);
 
   // State to cache product image URLs
-  const [productImages, setProductImages] = useState<Record<string, string | null>>({});
+  const [productImages, setProductImages] = useState<Record<string, string | null | undefined>>({});
 
   const isAdmin = userProfile?.role === 'admin';
   const isAnyFilterActive = !!(filters.status || filters.dateRange?.from || filters.searchQuery);
@@ -124,12 +124,10 @@ export default function AdminOrdersPage() {
         const orderNumber = index + 1;
 
         // Check if the numeric part of the query matches the order number
-        if (!isNaN(numericQuery) && orderNumber === numericQuery) {
-            return true;
-        }
+        const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
 
         // Check other text fields
-        return (
+        const matchesTextFields = (
             (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
@@ -139,6 +137,8 @@ export default function AdminOrdersPage() {
             (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
         );
+
+        return matchesOrderNumber || matchesTextFields;
     });
   }, [sourceOrders, filters.searchQuery]);
 
@@ -183,6 +183,13 @@ export default function AdminOrdersPage() {
             });
         }
         
+        // For any IDs that were fetched but not found in the DB (e.g., deleted products)
+        productIdsToFetch.forEach(id => {
+            if (!newImageMap.hasOwnProperty(id)) {
+                newImageMap[id] = null; // Mark as fetched but not found
+            }
+        });
+
         setProductImages(prev => ({...prev, ...newImageMap}));
     };
 
@@ -237,7 +244,7 @@ export default function AdminOrdersPage() {
             title: "Bulk Update Failed",
             description: "Could not update order statuses. Check permissions."
         });
-        throw error;
+        // Note: No need to throw here, toast provides user feedback.
     } finally {
         setIsBulkActionLoading(false);
     }
@@ -267,7 +274,7 @@ export default function AdminOrdersPage() {
             title: "Bulk Delete Failed",
             description: "Could not delete orders. Check permissions."
         });
-        throw error;
+        // Note: No need to throw here, toast provides user feedback.
     } finally {
         setIsBulkActionLoading(false);
     }
