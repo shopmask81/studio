@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -71,7 +72,7 @@ function DndBannerTable({
               </TableRow>
             </TableHeader>
             <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="banners" isDropDisabled={false}>
+                <Droppable droppableId="banners" isDropDisabled={false} isCombineEnabled={false}>
                     {(provided) => (
                         <TableBody ref={provided.innerRef} {...provided.droppableProps}>
                             {banners.map((banner, index) => (
