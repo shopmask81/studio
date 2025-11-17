@@ -26,7 +26,6 @@ export function OrderItemsCard({ items, total, productImages }: OrderItemsCardPr
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="hidden sm:table-cell">Image</TableHead>
                             <TableHead>Product</TableHead>
                             <TableHead className="text-center">Quantity</TableHead>
                             <TableHead className="text-right">Price</TableHead>
@@ -40,20 +39,24 @@ export function OrderItemsCard({ items, total, productImages }: OrderItemsCardPr
                             
                             return (
                                 <TableRow key={item.productId}>
-                                    <TableCell className="hidden sm:table-cell">
-                                         {isImageLoading ? (
-                                            <Skeleton className="h-16 w-16 rounded-md" />
-                                        ) : (
-                                            <Image
-                                                alt={item.name}
-                                                className="aspect-square rounded-md object-cover"
-                                                height="64"
-                                                src={imageUrl || 'https://placehold.co/64x64'}
-                                                width="64"
-                                            />
-                                        )}
+                                    <TableCell>
+                                        <div className="flex items-center gap-4">
+                                             {isImageLoading ? (
+                                                <Skeleton className="h-16 w-16 rounded-md flex-shrink-0" />
+                                            ) : (
+                                                <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                                                    <Image
+                                                        alt={item.name}
+                                                        className="object-cover"
+                                                        fill
+                                                        src={imageUrl || 'https://placehold.co/64x64'}
+                                                        sizes="64px"
+                                                    />
+                                                </div>
+                                            )}
+                                            <span className="font-medium">{item.name}</span>
+                                        </div>
                                     </TableCell>
-                                    <TableCell className="font-medium">{item.name}</TableCell>
                                     <TableCell className="text-center">{item.quantity}</TableCell>
                                     <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                                     <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
