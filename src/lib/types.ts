@@ -36,6 +36,15 @@ export type Product = {
   imageHint?: string;
 };
 
+export type Category = {
+    id: string;
+    name: string;
+    name_lowercase: string;
+    slug: string;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+};
+
 export type CartItem = {
   product: Product;
   quantity: number;
