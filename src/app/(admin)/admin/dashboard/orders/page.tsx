@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -8,15 +7,12 @@ import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Loader2, Download } from 'lucide-react';
+import { Terminal, Loader2 } from 'lucide-react';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { OrderPDFGenerator } from './components/order-pdf-generator';
-import { Button } from '@/components/ui/button';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -58,7 +54,7 @@ export default function AdminOrdersPage() {
 
   // Client-side filtering logic for the unified search query.
   const filteredOrders = useMemo(() => {
-    if (!allOrders) return null;
+    if (!allOrders) return [];
     if (!filters.searchQuery) return allOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
@@ -135,6 +131,10 @@ export default function AdminOrdersPage() {
   // The overall loading state depends on auth AND data loading (if the user is an admin).
   const isLoading = isAuthLoading || (isAdmin && isDataLoading);
 
+  const selectedOrders = useMemo(() => {
+    return filteredOrders.filter(order => selectedOrderIds.includes(order.id));
+  }, [filteredOrders, selectedOrderIds]);
+
   const handleSelectionChange = (orderId: string, isSelected: boolean) => {
     setSelectedOrderIds(prev => 
       isSelected ? [...prev, orderId] : prev.filter(id => id !== orderId)
@@ -174,7 +174,6 @@ export default function AdminOrdersPage() {
             title: "Bulk Update Failed",
             description: "Could not update order statuses. Check permissions."
         });
-        // Re-throw the error to be caught by a global error handler if it exists
         throw error;
     } finally {
         setIsBulkActionLoading(false);
@@ -205,19 +204,39 @@ export default function AdminOrdersPage() {
             title: "Bulk Delete Failed",
             description: "Could not delete orders. Check permissions."
         });
-        // Re-throw for global error handlers
         throw error;
     } finally {
         setIsBulkActionLoading(false);
     }
   };
+  
+  const [isExporting, setIsExporting] = useState(false);
+  const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
+
+  const triggerExport = (orders: Order[]) => {
+      setOrdersToExport(orders);
+      setIsExporting(true);
+  };
+  
+  useEffect(() => {
+      if (isExporting) {
+          // This will trigger the PDF generation in the OrderPDFGenerator component
+          // A small timeout allows the state to update and the component to render
+          const timer = setTimeout(() => {
+              // The actual generation is handled inside the generator component
+              // which we expect to be rendered now.
+          }, 100);
+          return () => clearTimeout(timer);
+      }
+  }, [isExporting]);
+
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
          {filteredOrders && filteredOrders.length > 0 && (
-            <OrderPDFGenerator orders={filteredOrders} />
+            <OrderPDFGenerator orders={filteredOrders} isLoading={isLoading} />
         )}
       </div>
       
@@ -231,11 +250,15 @@ export default function AdminOrdersPage() {
 
       {selectedOrderIds.length > 0 && (
           <BulkActionsBar
-            selectedCount={selectedOrderIds.length}
+            selectedOrders={selectedOrders}
             onStatusChange={handleBulkStatusChange}
             onDelete={handleBulkDelete}
+            onExport={triggerExport}
           />
       )}
+      
+      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" />}
+
 
       {error && (
          <Alert variant="destructive">

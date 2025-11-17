@@ -1,16 +1,5 @@
-
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,26 +10,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { ChevronDown, Trash2 } from 'lucide-react';
+} from "@/components/ui/alert-dialog";
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Order } from '@/lib/types';
+import { ChevronDown, Download, Trash2 } from 'lucide-react';
 
 interface BulkActionsBarProps {
-  selectedCount: number;
+  selectedOrders: Order[];
   onStatusChange: (status: Order['status']) => void;
   onDelete: () => void;
+  onExport: (orders: Order[]) => void;
 }
 
 const orderStatuses: Order['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
-export function BulkActionsBar({ selectedCount, onStatusChange, onDelete }: BulkActionsBarProps) {
-  
+export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExport }: BulkActionsBarProps) {
+  const selectedCount = selectedOrders.length;
   return (
     <div className="border bg-card rounded-lg p-3 flex items-center justify-between shadow-sm sticky top-16 z-20">
       <p className="text-sm font-medium">
         <span className="font-bold text-primary">{selectedCount}</span> order(s) selected
       </p>
       <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => onExport(selectedOrders)}>
+            <Download className="mr-2 h-4 w-4" />
+            Export PDF
+        </Button>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline">
