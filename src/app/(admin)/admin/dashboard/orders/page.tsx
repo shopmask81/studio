@@ -216,19 +216,16 @@ export default function AdminOrdersPage() {
   const triggerExport = (orders: Order[]) => {
       setOrdersToExport(orders);
       setIsExporting(true);
+      // The actual generation is handled inside the generator component
+      // which we expect to be rendered now. We will trigger it via a hidden button.
+      setTimeout(() => {
+          const triggerButton = document.getElementById('hidden-pdf-trigger') as HTMLButtonElement | null;
+          triggerButton?.click();
+          setIsExporting(false);
+          setOrdersToExport([]);
+      }, 100);
   };
   
-  useEffect(() => {
-      if (isExporting) {
-          // This will trigger the PDF generation in the OrderPDFGenerator component
-          // A small timeout allows the state to update and the component to render
-          const timer = setTimeout(() => {
-              // The actual generation is handled inside the generator component
-              // which we expect to be rendered now.
-          }, 100);
-          return () => clearTimeout(timer);
-      }
-  }, [isExporting]);
 
 
   return (
@@ -257,7 +254,7 @@ export default function AdminOrdersPage() {
           />
       )}
       
-      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" />}
+      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" onExport={triggerExport} />}
 
 
       {error && (
