@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface OrderPDFGeneratorProps {
   orders: Order[];
   variant?: 'all' | 'selected';
   isLoading?: boolean;
+  onGenerationStart?: () => void;
+  onGenerationEnd?: () => void;
 }
 
 type ProductImageMap = Record<string, string | null>;
@@ -49,7 +51,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     }
 }
 
-export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParentLoading }: OrderPDFGeneratorProps) {
+export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParentLoading, onGenerationStart, onGenerationEnd }: OrderPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
   const firestore = useFirestore();
@@ -105,10 +107,11 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
   }, [firestore]);
 
 
-  const generatePdf = async (ordersToExport: Order[]) => {
+  const generatePdf = useCallback(async (ordersToExport: Order[]) => {
     if (ordersToExport.length === 0) return;
     
     setIsGenerating(true);
+    onGenerationStart?.();
     setProgressMessage(`Preparing ${ordersToExport.length} orders...`);
     
     // Preload everything
@@ -176,20 +179,28 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
     const timestamp = format(new Date(), 'yyyyMMdd_HHmmss');
     pdf.save(`orders-export-${timestamp}.pdf`);
     setIsGenerating(false);
+    onGenerationEnd?.();
     setProgressMessage('');
-  };
+  }, [firestore, preloadAllImages, onGenerationStart, onGenerationEnd]);
+
+
+  // Effect for auto-triggering the export for the 'selected' variant
+  useEffect(() => {
+    if (variant === 'selected' && orders.length > 0) {
+      generatePdf(orders);
+    }
+  }, [variant, orders, generatePdf]);
+
 
   const isButtonDisabled = isGenerating || orders.length === 0 || isParentLoading;
   
   if (variant === 'selected') {
+    // This variant renders nothing visible but holds the templates for PDF generation
     return (
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
         {orders.map((order, index) => (
           <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
         ))}
-        {isGenerating && (
-            <button id="hidden-pdf-trigger" onClick={() => generatePdf(orders)}></button>
-        )}
       </div>
     );
   }
@@ -286,6 +297,8 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
         </div>
     );
 }
+
+    
 
     
 

@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
+import { collection, query, where, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2 } from 'lucide-react';
@@ -32,15 +32,15 @@ export default function AdminOrdersPage() {
   const [productImages, setProductImages] = useState<Record<string, string | null>>({});
 
   const isAdmin = userProfile?.role === 'admin';
-  const isFirestoreFilterActive = !!(filters.status || filters.dateRange?.from || filters.dateRange?.to);
+  const isFirestoreFilterActive = !!(filters.status || filters.dateRange?.from);
 
   // Real-time query for the default, unfiltered view
   const liveOrdersQuery = useMemo(() => {
-    // Only run this query if user is an admin AND no filters are active
-    if (!firestore || !isAdmin || isFirestoreFilterActive) return null;
+    // Only run this query if user is an admin AND no filters are active AND auth has loaded
+    if (!firestore || !isAdmin || isFirestoreFilterActive || isAuthLoading) return null;
     
-    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
-  }, [firestore, isAdmin, isFirestoreFilterActive]);
+    return query(collection(firestore, 'orders'));
+  }, [firestore, isAdmin, isFirestoreFilterActive, isAuthLoading]);
 
   // Fetch all orders matching the real-time query.
   // This hook will pause if liveOrdersQuery is null.
@@ -55,9 +55,10 @@ export default function AdminOrdersPage() {
   
     const fetchFilteredData = async () => {
       setIsFetching(true);
+      // Base query.
       let q = query(collection(firestore, 'orders'));
   
-      // Prioritize date range filter on Firestore as it is often more selective
+      // Apply date range filter on Firestore as it is often more selective
       if (filters.dateRange?.from) {
           q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
       }
@@ -248,24 +249,12 @@ export default function AdminOrdersPage() {
     }
   };
   
-  const [isExporting, setIsExporting] = useState(false);
   const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
 
-  const triggerExport = (orders: Order[]) => {
-      setOrdersToExport(orders);
-      setIsExporting(true);
-      // Use a timeout to allow React to update state before triggering the click
-      setTimeout(() => {
-          const triggerButton = document.getElementById('hidden-pdf-trigger') as HTMLButtonElement | null;
-          if (triggerButton) {
-              triggerButton.click();
-          }
-          // Reset state after a delay to ensure the export process completes
-          setTimeout(() => {
-              setIsExporting(false);
-              setOrdersToExport([]);
-          }, 500);
-      }, 100);
+  const handleExportSelected = () => {
+    if (selectedOrders.length > 0) {
+      setOrdersToExport(selectedOrders);
+    }
   };
   
   return (
@@ -290,11 +279,18 @@ export default function AdminOrdersPage() {
             selectedOrders={selectedOrders}
             onStatusChange={handleBulkStatusChange}
             onDelete={handleBulkDelete}
-            onExport={() => triggerExport(selectedOrders)}
+            onExport={handleExportSelected}
           />
       )}
       
-      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" />}
+      {ordersToExport.length > 0 && (
+        <OrderPDFGenerator 
+          orders={ordersToExport} 
+          variant="selected"
+          onGenerationEnd={() => setOrdersToExport([])}
+        />
+      )}
+
 
       {error && !isLoading && (
          <Alert variant="destructive">
@@ -317,5 +313,7 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+    
 
     
