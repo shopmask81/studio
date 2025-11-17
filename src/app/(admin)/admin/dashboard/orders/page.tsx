@@ -117,17 +117,29 @@ export default function AdminOrdersPage() {
     if (!filters.searchQuery) return sourceOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
+    // Logic to extract a number if searching for "order #X"
+    const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
 
-    return sourceOrders.filter((order) => 
-        (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
-        (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
-      );
+    return sourceOrders.filter((order, index) => {
+        const orderNumber = index + 1;
+
+        // Check if the numeric part of the query matches the order number
+        if (!isNaN(numericQuery) && orderNumber === numericQuery) {
+            return true;
+        }
+
+        // Check other text fields
+        return (
+            (order.id?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.name?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.email?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.phone?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.street?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.city?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
+            (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery)
+        );
+    });
   }, [sourceOrders, filters.searchQuery]);
 
 
