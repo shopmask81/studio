@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Order } from '@/lib/types';
@@ -88,13 +87,13 @@ export function OrderTable({
                   aria-label="Select all orders on this page"
                 />
             </TableHead>
-            <TableHead>Order</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-            <TableHead className="hidden md:table-cell">Date</TableHead>
-            <TableHead>
+            <TableHead className="min-w-[200px]">Order</TableHead>
+            <TableHead className="min-w-[150px]">Customer</TableHead>
+            <TableHead className="hidden lg:table-cell min-w-[200px]">Email</TableHead>
+            <TableHead className="w-[100px] text-right">Total</TableHead>
+            <TableHead className="w-[120px] text-center">Status</TableHead>
+            <TableHead className="hidden md:table-cell w-[150px]">Date</TableHead>
+            <TableHead className="w-12">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>
@@ -127,11 +126,11 @@ export function OrderTable({
                               width="50"
                           />
                       )}
-                      <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
+                      <span className="font-mono text-xs text-muted-foreground truncate">{order.id}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{order.name}</TableCell>
-                <TableCell className="font-medium text-muted-foreground">{order.email}</TableCell>
+                <TableCell className="font-medium truncate">{order.name}</TableCell>
+                <TableCell className="hidden lg:table-cell font-medium text-muted-foreground truncate">{order.email}</TableCell>
                 <TableCell className="text-right font-medium">
                   ${order.total.toFixed(2)}
                 </TableCell>
