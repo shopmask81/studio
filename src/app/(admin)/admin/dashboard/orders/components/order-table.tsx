@@ -98,7 +98,7 @@ export function OrderTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => {
+          {orders.map((order, index) => {
             const firstItemId = order.items?.[0]?.productId;
             const imageUrl = firstItemId ? productImages[firstItemId] : undefined;
             const isImageLoading = firstItemId && productImages.hasOwnProperty(firstItemId) && imageUrl === undefined;
@@ -126,6 +126,7 @@ export function OrderTable({
                           />
                       )}
                       <div className="flex-1 overflow-hidden">
+                        <span className="font-medium text-sm">Order: #{index + 1}</span>
                         <span className="font-mono text-xs text-muted-foreground truncate block">{order.id}</span>
                       </div>
                   </div>
