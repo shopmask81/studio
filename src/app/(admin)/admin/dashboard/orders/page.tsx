@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
+import { collection, query, where, Timestamp, writeBatch, doc, getDocs, orderBy } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2 } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function AdminOrdersPage() {
     // Only run this query if user is an admin AND no filters are active AND auth has loaded
     if (!firestore || !isAdmin || isAnyFilterActive || isAuthLoading) return null;
     
-    return query(collection(firestore, 'orders'));
+    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
   }, [firestore, isAdmin, isAnyFilterActive, isAuthLoading]);
 
   // Fetch all orders matching the real-time query.
@@ -117,11 +117,11 @@ export default function AdminOrdersPage() {
     if (!filters.searchQuery) return sourceOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
-    // Logic to extract a number if searching for "order #X"
-    const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
-
+    
     return sourceOrders.filter((order, index) => {
         const orderNumber = index + 1;
+        // Logic to extract a number if searching for "order #X"
+        const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
 
         // Check if the numeric part of the query matches the order number
         const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
