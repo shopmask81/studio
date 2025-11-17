@@ -37,17 +37,16 @@ export default function OrderDetailsPage() {
 
         const fetchProductImages = async () => {
             const productIdsToFetch = [
-                ...new Set(
-                    order.items
-                        .map(item => item.productId)
-                        .filter(id => !productImages.hasOwnProperty(id))
-                ),
+                ...new Set(order.items.map(item => item.productId))
             ];
 
             if (productIdsToFetch.length === 0) return;
 
+            // Set initial loading state for all product IDs in this order
             setProductImages(prev => {
-                const newPlaceholders = Object.fromEntries(productIdsToFetch.map(id => [id, undefined]));
+                const newPlaceholders = Object.fromEntries(
+                    productIdsToFetch.map(id => [id, prev[id] === undefined ? undefined : prev[id]])
+                );
                 return {...prev, ...newPlaceholders};
             });
 
@@ -73,7 +72,7 @@ export default function OrderDetailsPage() {
             // For any IDs that were fetched but not found in the DB (e.g., deleted products)
             productIdsToFetch.forEach(id => {
                 if (!newImageMap.hasOwnProperty(id)) {
-                    newImageMap[id] = null;
+                    newImageMap[id] = null; // Mark as fetched but not found
                 }
             });
 
@@ -81,7 +80,7 @@ export default function OrderDetailsPage() {
         };
 
         fetchProductImages();
-    }, [order, firestore, productImages]);
+    }, [order, firestore]);
 
 
     if (isLoading) {
