@@ -23,6 +23,7 @@ export default function AdminOrdersPage() {
   
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
   const [isExportingSelected, setIsExportingSelected] = useState(false);
 
 
@@ -34,15 +35,15 @@ export default function AdminOrdersPage() {
   const [productImages, setProductImages] = useState<Record<string, string | null>>({});
 
   const isAdmin = userProfile?.role === 'admin';
-  const isFirestoreFilterActive = !!(filters.status || filters.dateRange?.from);
+  const isAnyFilterActive = !!(filters.status || filters.dateRange?.from || filters.searchQuery);
 
   // Real-time query for the default, unfiltered view
   const liveOrdersQuery = useMemo(() => {
     // Only run this query if user is an admin AND no filters are active AND auth has loaded
-    if (!firestore || !isAdmin || isFirestoreFilterActive || isAuthLoading) return null;
+    if (!firestore || !isAdmin || isAnyFilterActive || isAuthLoading) return null;
     
     return query(collection(firestore, 'orders'));
-  }, [firestore, isAdmin, isFirestoreFilterActive, isAuthLoading]);
+  }, [firestore, isAdmin, isAnyFilterActive, isAuthLoading]);
 
   // Fetch all orders matching the real-time query.
   // This hook will pause if liveOrdersQuery is null.
@@ -51,18 +52,22 @@ export default function AdminOrdersPage() {
   // Effect to fetch data once when filters are applied
   useEffect(() => {
     if (!firestore || !isAdmin) {
-      if (isFirestoreFilterActive) {
+      if (isAnyFilterActive) {
         setFetchedOrders(null);
       }
       return;
     }
   
     const fetchFilteredData = async () => {
+      if (!isAnyFilterActive) {
+          if (fetchedOrders) setFetchedOrders(null); // Clear fetched data if filters are cleared
+          return;
+      }
+
       setIsFetching(true);
-      // Base query.
       let q = query(collection(firestore, 'orders'));
   
-      // Prioritize date range filter on Firestore if it exists
+      // Prioritize date range filter on Firestore if it exists as it is most selective
       if (filters.dateRange?.from) {
           q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
            if (filters.dateRange.to) {
@@ -79,13 +84,6 @@ export default function AdminOrdersPage() {
           orders = orders.filter(order => order.status === filters.status);
         }
   
-        // Always sort on the client-side to avoid needing composite indexes for sorting
-        orders.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis() ?? 0;
-            const timeB = b.createdAt?.toMillis() ?? 0;
-            return timeB - timeA;
-        });
-  
         setFetchedOrders(orders);
       } catch (e) {
         console.error("Failed to fetch filtered orders:", e);
@@ -93,32 +91,52 @@ export default function AdminOrdersPage() {
         toast({
           variant: 'destructive',
           title: "Filter Error",
-          description: "Could not fetch orders. A composite index might be required for this query."
+          description: "Could not fetch orders with the current combination. A composite index might be required."
         })
       } finally {
         setIsFetching(false);
       }
     };
     
-    if (isFirestoreFilterActive) {
-        fetchFilteredData();
-    } else if (fetchedOrders) {
-        setFetchedOrders(null);
-    }
-  }, [isFirestoreFilterActive, filters, firestore, isAdmin, toast, fetchedOrders]);
+    fetchFilteredData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.status, filters.dateRange, firestore, isAdmin, toast]);
 
 
-  // Determine which data source to use and apply client-side search
+  // Determine which data source to use (live or fetched)
+  const sourceOrders = useMemo(() => {
+    return isAnyFilterActive ? fetchedOrders : liveOrders;
+  }, [isAnyFilterActive, fetchedOrders, liveOrders]);
+
+  // Create a stable numbering map based on the full dataset
+  const orderNumberMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!sourceOrders) return map;
+
+    [...sourceOrders]
+      .sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() ?? 0;
+        const timeB = b.createdAt?.toMillis() ?? 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return a.id.localeCompare(b.id); // Fallback sort
+      })
+      .forEach((order, index) => {
+        map.set(order.id, index + 1);
+      });
+      
+    return map;
+  }, [sourceOrders]);
+
+  // Apply client-side search to the currently active data source
   const finalOrders = useMemo(() => {
-    const sourceData = isFirestoreFilterActive ? fetchedOrders : liveOrders;
-    if (!sourceData) return [];
-    if (!filters.searchQuery) return sourceData;
+    if (!sourceOrders) return [];
+    if (!filters.searchQuery) return sourceOrders;
 
     const lowerCaseQuery = filters.searchQuery.toLowerCase();
     const numericQuery = parseInt(lowerCaseQuery.replace(/[^0-9]/g, ''), 10);
 
-    return sourceData.filter((order, index) => {
-        const orderNumber = index + 1;
+    return sourceOrders.filter((order) => {
+        const orderNumber = orderNumberMap.get(order.id);
         const matchesOrderNumber = !isNaN(numericQuery) && orderNumber === numericQuery;
 
         return matchesOrderNumber ||
@@ -131,7 +149,7 @@ export default function AdminOrdersPage() {
             (order.zip?.toLowerCase() ?? '').includes(lowerCaseQuery) ||
             (order.country?.toLowerCase() ?? '').includes(lowerCaseQuery);
       });
-  }, [liveOrders, fetchedOrders, isFirestoreFilterActive, filters.searchQuery]);
+  }, [sourceOrders, filters.searchQuery, orderNumberMap]);
 
 
   // Effect to fetch product images for the current set of final orders
@@ -181,7 +199,7 @@ export default function AdminOrdersPage() {
   }, [finalOrders, firestore, productImages]);
 
 
-  const isLoading = isAuthLoading || (isAdmin && (isRealtimeLoading && !isFirestoreFilterActive) || isFetching);
+  const isLoading = isAuthLoading || (isAdmin && (isRealtimeLoading && !isAnyFilterActive) || isFetching);
   const error = realtimeError; // Only show errors from the real-time listener
 
   const selectedOrders = useMemo(() => {
@@ -262,8 +280,6 @@ export default function AdminOrdersPage() {
         setIsBulkActionLoading(false);
     }
   };
-  
-  const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
 
   const handleExportSelected = () => {
     if (selectedOrders.length > 0) {
@@ -329,12 +345,8 @@ export default function AdminOrdersPage() {
         onSelectionChange={handleSelectionChange}
         onSelectAll={handleSelectAll}
         productImages={productImages}
+        orderNumberMap={orderNumberMap}
       />
     </div>
   );
 }
-
-    
-
-    
-
