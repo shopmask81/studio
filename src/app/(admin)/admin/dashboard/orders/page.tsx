@@ -257,7 +257,7 @@ export default function AdminOrdersPage() {
       {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" onExport={triggerExport} />}
 
 
-      {error && (
+      {error && !isLoading && (
          <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
             <AlertTitle>Permission Denied</AlertTitle>
