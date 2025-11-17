@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
@@ -22,8 +22,8 @@ type ProductImageMap = Record<string, string | null>;
 
 const statusStyles: { [key in Order['status']]: { color: string; backgroundColor: string; } } = {
     pending: { color: '#8A6D00', backgroundColor: '#FFF6CC' },
-    processing: { color: '#005B8A', backgroundColor: '#D6F0FF' },
-    shipped: { color: '#0D7F62', backgroundColor: '#DFF7F0' },
+    processing: { color: '#0D7F62', backgroundColor: '#DFF7F0' },
+    shipped: { color: '#0D7F62', backgroundColor: '#DFF7F0' }, // Using processing color for shipped
     delivered: { color: '#3C7A11', backgroundColor: '#E4F6DA' },
     cancelled: { color: '#9E1A1A', backgroundColor: '#FDE2E2' },
 };
@@ -55,54 +55,55 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
   const [progressMessage, setProgressMessage] = useState('');
   const firestore = useFirestore();
   const [productImages, setProductImages] = useState<ProductImageMap>({});
-
-  const productIdsToFetch = useMemo(() => {
-    return [
-      ...new Set(
-        orders.flatMap(order => order.items.map(item => item.productId))
-      )
-    ];
-  }, [orders]);
-
-  useEffect(() => {
-    if (!firestore || productIdsToFetch.length === 0) return;
-
-    const fetchAllProductImages = async () => {
-      const idsNotInCache = productIdsToFetch.filter(id => !productImages[id]);
-      if (idsNotInCache.length === 0) return;
-
-      setProgressMessage(`Fetching ${idsNotInCache.length} product images...`);
-      const newImageMap: ProductImageMap = {};
+  
+  const preloadAllImages = useCallback(async (ordersToExport: Order[]): Promise<ProductImageMap> => {
+      if (!firestore) return {};
+      
+      setProgressMessage('Loading product data...');
+      // 1. Get all unique product IDs
+      const allProductIds = [...new Set(ordersToExport.flatMap(order => order.items.map(item => item.productId)))];
+      
+      // 2. Fetch product documents to get image URLs
+      const productUrlMap: Record<string, string | null> = {};
       const productChunks = [];
-      for (let i = 0; i < idsNotInCache.length; i += 30) {
-        productChunks.push(idsNotInCache.slice(i, i + 30));
-      }
-
-      for (const chunk of productChunks) {
-        const productsRef = collection(firestore, 'products');
-        const q = query(productsRef, where('__name__', 'in', chunk));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach(doc => {
-          const product = doc.data() as Product;
-          newImageMap[doc.id] = product.mainImage || product.images?.[0] || null;
-        });
+      for (let i = 0; i < allProductIds.length; i += 30) {
+        productChunks.push(allProductIds.slice(i, i + 30));
       }
       
-      const base64ImageMap: ProductImageMap = {};
-      await Promise.all(Object.entries(newImageMap).map(async ([id, url]) => {
-        if (url) {
-            base64ImageMap[id] = await fetchImageAsBase64(url);
-        } else {
-            base64ImageMap[id] = null;
-        }
+      await Promise.all(productChunks.map(async chunk => {
+          if (chunk.length === 0) return;
+          const productsRef = collection(firestore, 'products');
+          const q = query(productsRef, where('__name__', 'in', chunk));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach(doc => {
+              const product = doc.data() as Product;
+              productUrlMap[doc.id] = product.mainImage || product.images?.[0] || null;
+          });
       }));
 
-      setProductImages(prev => ({ ...prev, ...base64ImageMap }));
-      setProgressMessage('');
-    };
+      // 3. Fetch all unique image URLs and convert to Base64
+      setProgressMessage('Loading images...');
+      const uniqueImageUrls = [...new Set(Object.values(productUrlMap).filter((url): url is string => !!url))];
+      const base64UrlMap: Record<string, string> = {};
+      
+      await Promise.all(uniqueImageUrls.map(async url => {
+          base64UrlMap[url] = await fetchImageAsBase64(url);
+      }));
+      
+      // 4. Create the final map from productId to base64 image
+      const finalImageMap: ProductImageMap = {};
+      for (const productId in productUrlMap) {
+          const url = productUrlMap[productId];
+          if (url && base64UrlMap[url]) {
+              finalImageMap[productId] = base64UrlMap[url];
+          } else {
+              finalImageMap[productId] = null;
+          }
+      }
 
-    fetchAllProductImages();
-  }, [firestore, productIdsToFetch, productImages]);
+      return finalImageMap;
+
+  }, [firestore]);
 
 
   const generatePdf = async (ordersToExport: Order[]) => {
@@ -111,6 +112,15 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
     setIsGenerating(true);
     setProgressMessage(`Preparing ${ordersToExport.length} orders...`);
     
+    // Preload everything
+    const loadedImages = await preloadAllImages(ordersToExport);
+    setProductImages(loadedImages); // Set state for the hidden components to render with images
+
+    // Allow a tick for React to re-render the hidden components with the base64 images
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    setProgressMessage('Generating PDF...');
+
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -122,7 +132,6 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
     for (let i = 0; i < ordersToExport.length; i++) {
         const order = ordersToExport[i];
         const orderIndex = i + 1;
-        setProgressMessage(`Processing order ${orderIndex} of ${ordersToExport.length}...`);
 
         // --- DYNAMIC HEIGHT CALCULATION ---
         const headerHeight = 130; // Fixed height for the top section of the card
@@ -134,7 +143,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         console.log(`PDF Export Debug: OrderID=${order.id}, Items=${order.items.length}, ComputedHeight=${cardHeight}`);
 
         // Check if card fits on the current page, if not, add a new page
-        if (yPos + cardHeight > pdfHeight - margin) {
+        if (yPos > margin && yPos + cardHeight > pdfHeight - margin) {
             pdf.addPage();
             yPos = margin;
         }
@@ -152,13 +161,12 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         pdf.addImage(imgData, 'PNG', margin, yPos, cardWidth, cardHeight, undefined, 'FAST');
         yPos += cardHeight + spacing;
         
-        // Add footer at the bottom of the current page if it's the last card that fits
         const isLastOrder = i + 1 === ordersToExport.length;
         const nextCardHeightEstimate = (ordersToExport[i+1]?.items.length || 0) * itemRowHeight + headerHeight + footerPadding;
         const willNextCardFit = yPos + nextCardHeightEstimate <= pdfHeight - margin;
 
         if (isLastOrder || !willNextCardFit) {
-             pdf.setFontSize(8);
+            pdf.setFontSize(8);
             pdf.setTextColor('#7A868C');
             const exportTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm');
             pdf.text(`Exported on: ${exportTimestamp}`, pdfWidth / 2, pdfHeight - margin / 2, { align: 'center' });
@@ -172,8 +180,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
     setProgressMessage('');
   };
 
-  const allImagesLoaded = productIdsToFetch.every(id => productImages.hasOwnProperty(id));
-  const isButtonDisabled = isGenerating || !allImagesLoaded || orders.length === 0 || isParentLoading;
+  const isButtonDisabled = isGenerating || orders.length === 0 || isParentLoading;
   
   const handleExport = () => {
     if (onExport) {
@@ -207,6 +214,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
         {isGenerating ? progressMessage : isParentLoading ? 'Loading Orders...' : `Export All (${orders.length})`}
       </Button>
 
+      {/* Render hidden cards for PDF generation */}
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
         {orders.map((order, index) => (
           <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
@@ -247,11 +255,11 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order: #{orderNumber}</h3>
-                         <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Customer:</span> {order.name}</p>
+                         <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 'bold' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
                     <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${order.total.toFixed(2)}</p>
                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px' }}>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', fontWeight: 'bold' }}>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
                     <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
@@ -287,3 +295,5 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
         </div>
     );
 }
+
+    
