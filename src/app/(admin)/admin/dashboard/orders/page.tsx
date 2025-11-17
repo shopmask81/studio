@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -249,11 +250,17 @@ export default function AdminOrdersPage() {
   const triggerExport = (orders: Order[]) => {
       setOrdersToExport(orders);
       setIsExporting(true);
+      // Use a timeout to allow React to update state before triggering the click
       setTimeout(() => {
           const triggerButton = document.getElementById('hidden-pdf-trigger') as HTMLButtonElement | null;
-          triggerButton?.click();
-          setIsExporting(false);
-          setOrdersToExport([]);
+          if (triggerButton) {
+              triggerButton.click();
+          }
+          // Reset state after a delay to ensure the export process completes
+          setTimeout(() => {
+              setIsExporting(false);
+              setOrdersToExport([]);
+          }, 500);
       }, 100);
   };
   
@@ -279,11 +286,11 @@ export default function AdminOrdersPage() {
             selectedOrders={selectedOrders}
             onStatusChange={handleBulkStatusChange}
             onDelete={handleBulkDelete}
-            onExport={triggerExport}
+            onExport={() => triggerExport(selectedOrders)}
           />
       )}
       
-      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" onExport={triggerExport} />}
+      {isExporting && <OrderPDFGenerator orders={ordersToExport} variant="selected" />}
 
       {error && !isLoading && (
          <Alert variant="destructive">

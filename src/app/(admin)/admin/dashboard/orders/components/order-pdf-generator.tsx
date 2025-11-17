@@ -14,7 +14,6 @@ import { format } from 'date-fns';
 interface OrderPDFGeneratorProps {
   orders: Order[];
   variant?: 'all' | 'selected';
-  onExport?: (orders: Order[]) => void;
   isLoading?: boolean;
 }
 
@@ -50,7 +49,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     }
 }
 
-export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading: isParentLoading }: OrderPDFGeneratorProps) {
+export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParentLoading }: OrderPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
   const firestore = useFirestore();
@@ -181,14 +180,6 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
   };
 
   const isButtonDisabled = isGenerating || orders.length === 0 || isParentLoading;
-  
-  const handleExport = () => {
-    if (onExport) {
-        onExport(orders);
-    } else {
-        generatePdf(orders);
-    }
-  }
   
   if (variant === 'selected') {
     return (

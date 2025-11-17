@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -27,7 +28,7 @@ interface BulkActionsBarProps {
   selectedOrders: Order[];
   onStatusChange: (status: Order['status']) => void;
   onDelete: () => void;
-  onExport: (orders: Order[]) => void;
+  onExport: () => void;
 }
 
 const orderStatuses: Order['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
@@ -40,7 +41,7 @@ export function BulkActionsBar({ selectedOrders, onStatusChange, onDelete, onExp
         <span className="font-bold text-primary">{selectedCount}</span> order(s) selected
       </p>
       <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => onExport(selectedOrders)}>
+        <Button variant="outline" onClick={onExport}>
             <Download className="mr-2 h-4 w-4" />
             Export PDF
         </Button>
