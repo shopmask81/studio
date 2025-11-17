@@ -48,42 +48,42 @@ export default function AdminOrdersPage() {
   // Effect to fetch data once when filters are applied
   useEffect(() => {
     if (!isFirestoreFilterActive || !firestore || !isAdmin) {
-      // If filters are cleared, clear fetched data to fall back to live data
       if (fetchedOrders) setFetchedOrders(null);
       return;
     }
-
+  
     const fetchFilteredData = async () => {
       setIsFetching(true);
-      // Start with the base collection reference
       let q = query(collection(firestore, 'orders'));
-
-      // Apply filters
-      if (filters.status) {
-          q = query(q, where('status', '==', filters.status));
-      }
+  
+      // Prioritize date range filter on Firestore as it is often more selective
       if (filters.dateRange?.from) {
           q = query(q, where('createdAt', '>=', Timestamp.fromDate(filters.dateRange.from)));
       }
       if (filters.dateRange?.to) {
           q = query(q, where('createdAt', '<=', Timestamp.fromDate(filters.dateRange.to)));
       }
-
+  
       try {
         const querySnapshot = await getDocs(q);
-        const orders = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-        
-        // Sort on the client-side to avoid needing a composite index
+        let orders = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+  
+        // Apply the status filter on the client-side if it exists
+        if (filters.status) {
+          orders = orders.filter(order => order.status === filters.status);
+        }
+  
+        // Always sort on the client-side to avoid needing composite indexes for sorting
         orders.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
+  
         setFetchedOrders(orders);
       } catch (e) {
         console.error("Failed to fetch filtered orders:", e);
-        setFetchedOrders([]); // Set to empty on error
+        setFetchedOrders([]);
         toast({
           variant: 'destructive',
           title: "Filter Error",
-          description: "Could not fetch orders. Please check permissions."
+          description: "Could not fetch orders. A composite index might be required for this query."
         })
       } finally {
         setIsFetching(false);
