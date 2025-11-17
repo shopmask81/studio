@@ -1,3 +1,4 @@
+
 import {
   Firestore,
   collection,
@@ -16,7 +17,7 @@ type BannerData = Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'ima
 
 // This is a simplified upload function. In a real app, you'd use Firebase Storage.
 async function uploadImage(imageFile: File): Promise<{ url: string, delete_url: string }> {
-  const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+  const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
   if (!apiKey) {
     throw new Error('ImgBB API key is not configured.');
   }
