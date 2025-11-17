@@ -112,9 +112,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (user && firestore) {
         const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
-        const itemData = newItems.find(findPredicate);
-        if (itemData) {
-          setDoc(cartItemRef, itemData, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
+        const itemToSave = newItems.find(findPredicate);
+        if (itemToSave) {
+          // Convert undefined to null for Firestore compatibility
+          const firestoreSafeItem = {
+            ...itemToSave,
+            selectedColor: itemToSave.selectedColor ?? null,
+            selectedSize: itemToSave.selectedSize ?? null,
+            variantPrice: itemToSave.variantPrice ?? null,
+            variantDiscountPrice: itemToSave.variantDiscountPrice ?? null,
+          };
+          setDoc(cartItemRef, firestoreSafeItem, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
         }
       } else {
         localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
