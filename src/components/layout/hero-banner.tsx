@@ -4,8 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Autoplay from 'embla-carousel-autoplay';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import type { Banner } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -18,22 +17,38 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
+import { getActiveBanners } from '@/firebase/queries/getBanners';
+import { useToast } from '@/hooks/use-toast';
 
 export function HeroBanner() {
   const plugin = React.useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
   const firestore = useFirestore();
+  const { toast } = useToast();
 
-  const bannersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // This public query only fetches active banners and respects the public `read` rule.
-    return query(
-      collection(firestore, 'banners'),
-      where('active', '==', true),
-      orderBy('order', 'asc')
-    );
-  }, [firestore]);
+  const [banners, setBanners] = React.useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const { data: banners, isLoading } = useCollection<Banner>(bannersQuery);
+  React.useEffect(() => {
+    const fetchBanners = async () => {
+      if (!firestore) return;
+      setIsLoading(true);
+      try {
+        const fetchedBanners = await getActiveBanners(firestore);
+        setBanners(fetchedBanners);
+      } catch (error) {
+        console.error("Failed to fetch active banners:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Could not load banners',
+          description: (error as Error).message,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, [firestore, toast]);
 
   if (isLoading) {
     return (

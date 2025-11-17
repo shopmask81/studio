@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { useFirestore } from '@/firebase';
 import type { Banner } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
@@ -25,10 +24,14 @@ import {
 } from './services/banner-service';
 import { BannerTable } from './components/banner-table';
 import { BannerForm } from './components/banner-form';
+import { getAllBanners } from '@/firebase/queries/getBanners';
 
 export default function AdminBannersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [bannerToEdit, setBannerToEdit] = useState<Banner | null>(null);
@@ -40,12 +43,29 @@ export default function AdminBannersPage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const bannersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'banners'), orderBy('order', 'asc'));
+  const fetchBanners = async () => {
+    if (!firestore) return;
+    setIsLoading(true);
+    try {
+      const fetchedBanners = await getAllBanners(firestore);
+      setBanners(fetchedBanners);
+    } catch (error) {
+      console.error("Failed to fetch banners:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load banners',
+        description: (error as Error).message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBanners();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore]);
 
-  const { data: banners, isLoading } = useCollection<Banner>(bannersQuery);
 
   const handleAddNew = () => {
     setBannerToEdit(null);
@@ -80,6 +100,7 @@ export default function AdminBannersPage() {
         toast({ title: 'Banner Created', description: `Banner "${values.title}" has been successfully created.` });
       }
       setIsFormOpen(false);
+      fetchBanners(); // Refetch after submitting
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Operation Failed', description: error.message });
     } finally {
@@ -94,6 +115,7 @@ export default function AdminBannersPage() {
       await deleteBanner(firestore, bannerToDelete);
       toast({ title: 'Banner Deleted', description: `Banner "${bannerToDelete.title}" has been deleted.` });
       closeDeleteDialog();
+      fetchBanners(); // Refetch after deleting
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
     } finally {
@@ -106,6 +128,8 @@ export default function AdminBannersPage() {
     setIsUpdating(true);
     try {
         await updateBanner(firestore, banner.id, { active });
+        // Optimistically update UI
+        setBanners(prev => prev.map(b => b.id === banner.id ? { ...b, active } : b));
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     } finally {
@@ -115,11 +139,13 @@ export default function AdminBannersPage() {
 
   const handleOrderChange = async (reorderedBanners: Banner[]) => {
     if (!firestore) return;
+    setBanners(reorderedBanners); // Optimistically update UI
     setIsUpdating(true);
     try {
         await updateBannerOrder(firestore, reorderedBanners);
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Order Update Failed', description: error.message });
+        fetchBanners(); // Revert on failure
     } finally {
         setIsUpdating(false);
     }
