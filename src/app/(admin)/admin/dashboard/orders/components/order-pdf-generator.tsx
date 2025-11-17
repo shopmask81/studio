@@ -108,18 +108,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
 
 
   const generatePdf = useCallback(async (ordersToExport: Order[]) => {
-    if (ordersToExport.length === 0) return;
-    
-    setIsGenerating(true);
-    onGenerationStart?.();
-    setProgressMessage(`Preparing ${ordersToExport.length} orders...`);
-    
-    // Preload everything
-    const loadedImages = await preloadAllImages(ordersToExport);
-    setProductImages(loadedImages); // Set state for the hidden components to render with images
-
-    // Allow a tick for React to re-render the hidden components with the base64 images
-    await new Promise(resolve => setTimeout(resolve, 100));
+    if (ordersToExport.length === 0 || !document) return;
 
     setProgressMessage('Generating PDF...');
 
@@ -133,18 +122,15 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
 
     for (let i = 0; i < ordersToExport.length; i++) {
         const order = ordersToExport[i];
-        const orderIndex = i + 1;
 
-        // --- DYNAMIC HEIGHT CALCULATION ---
-        const headerHeight = 130; // Fixed height for the top section of the card
-        const itemRowHeight = 54; // Height for one item row in the PDF
+        const headerHeight = 130;
+        const itemRowHeight = 54; 
         const itemsHeight = order.items.length * itemRowHeight;
         const footerPadding = 16;
         const cardHeight = headerHeight + itemsHeight + footerPadding;
         
         console.log(`PDF Export Debug: OrderID=${order.id}, Items=${order.items.length}, ComputedHeight=${cardHeight}`);
 
-        // Check if card fits on the current page, if not, add a new page
         if (yPos > margin && yPos + cardHeight > pdfHeight - margin) {
             pdf.addPage();
             yPos = margin;
@@ -156,7 +142,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
         const canvas = await html2canvas(cardElement, {
             scale: 3,
             useCORS: true,
-            backgroundColor: null, // Transparent background for the capture
+            backgroundColor: null,
         });
         const imgData = canvas.toDataURL('image/png');
         
@@ -164,10 +150,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
         yPos += cardHeight + spacing;
         
         const isLastOrder = i + 1 === ordersToExport.length;
-        const nextCardHeightEstimate = (ordersToExport[i+1]?.items.length || 0) * itemRowHeight + headerHeight + footerPadding;
-        const willNextCardFit = yPos + nextCardHeightEstimate <= pdfHeight - margin;
-
-        if (isLastOrder || !willNextCardFit) {
+        if (isLastOrder || yPos + 100 > pdfHeight - margin) { // Add footer if last order or near end of page
             pdf.setFontSize(8);
             pdf.setTextColor('#7A868C');
             const exportTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm');
@@ -181,49 +164,70 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
     setIsGenerating(false);
     onGenerationEnd?.();
     setProgressMessage('');
-  }, [firestore, preloadAllImages, onGenerationStart, onGenerationEnd]);
+  }, [onGenerationEnd]);
+  
+  // This is the new effect that will handle the final PDF rendering step.
+  useEffect(() => {
+      // This will only run after productImages state has been updated and the component has re-rendered.
+      if (isGenerating && Object.keys(productImages).length > 0) {
+        generatePdf(orders);
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productImages, isGenerating, orders]); // We intentionally leave generatePdf out to avoid re-triggering.
+
+
+  const startPdfGeneration = useCallback(async (ordersToExport: Order[]) => {
+    if (ordersToExport.length === 0 || isGenerating) return;
+    
+    setIsGenerating(true);
+    onGenerationStart?.();
+    setProgressMessage(`Preparing ${ordersToExport.length} orders...`);
+    
+    // Step 1: Preload images and set them into state. This will trigger the useEffect above.
+    const loadedImages = await preloadAllImages(ordersToExport);
+    setProductImages(loadedImages);
+  }, [isGenerating, onGenerationStart, preloadAllImages]);
 
 
   // Effect for auto-triggering the export for the 'selected' variant
   useEffect(() => {
     if (variant === 'selected' && orders.length > 0) {
-      generatePdf(orders);
+      startPdfGeneration(orders);
     }
-  }, [variant, orders, generatePdf]);
+  }, [variant, orders, startPdfGeneration]);
 
 
   const isButtonDisabled = isGenerating || orders.length === 0 || isParentLoading;
   
-  if (variant === 'selected') {
-    // This variant renders nothing visible but holds the templates for PDF generation
+  // This component now handles rendering the hidden templates for BOTH export types.
+  // It's always in the DOM if there are orders to potentially export.
+  if (variant === 'all' || variant === 'selected') {
     return (
-      <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
-        {orders.map((order, index) => (
-          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
-        ))}
-      </div>
+      <>
+        {variant === 'all' && (
+           <Button onClick={() => startPdfGeneration(orders)} disabled={isButtonDisabled}>
+            {isGenerating || isParentLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isGenerating ? progressMessage : isParentLoading ? 'Loading Orders...' : `Export All (${orders.length})`}
+          </Button>
+        )}
+
+        {/* This div is crucial. It holds the templates that html2canvas will capture.
+            It's positioned off-screen. It renders the cards for the orders that are
+            currently being processed for PDF generation. */}
+        <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
+          {orders.map((order, index) => (
+            <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
+          ))}
+        </div>
+      </>
     );
   }
 
-  return (
-    <>
-      <Button onClick={() => generatePdf(orders)} disabled={isButtonDisabled}>
-        {isGenerating || isParentLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Download className="mr-2 h-4 w-4" />
-        )}
-        {isGenerating ? progressMessage : isParentLoading ? 'Loading Orders...' : `Export All (${orders.length})`}
-      </Button>
-
-      {/* Render hidden cards for PDF generation */}
-      <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
-        {orders.map((order, index) => (
-          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
-        ))}
-      </div>
-    </>
-  );
+  return null;
 }
 
 const shorten = (text: string, words = 5) => {
@@ -297,11 +301,5 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
         </div>
     );
 }
-
-    
-
-    
-
-    
 
     
