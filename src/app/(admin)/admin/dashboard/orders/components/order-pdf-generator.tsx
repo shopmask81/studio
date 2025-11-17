@@ -23,7 +23,7 @@ type ProductImageMap = Record<string, string | null>;
 const statusStyles: { [key in Order['status']]: { color: string; backgroundColor: string; } } = {
     pending: { color: '#8A6D00', backgroundColor: '#FFF6CC' },
     processing: { color: '#0D7F62', backgroundColor: '#DFF7F0' },
-    shipped: { color: '#005B8A', backgroundColor: '#D6F0FF' }, // Using a light blue for shipped
+    shipped: { color: '#005B8A', backgroundColor: '#D6F0FF' },
     delivered: { color: '#3C7A11', backgroundColor: '#E4F6DA' },
     cancelled: { color: '#9E1A1A', backgroundColor: '#FDE2E2' },
 };
@@ -123,7 +123,8 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
 
     for (let i = 0; i < ordersToExport.length; i++) {
         const order = ordersToExport[i];
-        setProgressMessage(`Processing order ${i + 1} of ${ordersToExport.length}...`);
+        const orderIndex = i + 1;
+        setProgressMessage(`Processing order ${orderIndex} of ${ordersToExport.length}...`);
 
         const isNewPage = i > 0 && i % cardsPerPage === 0;
 
@@ -176,8 +177,8 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
   if (variant === 'selected') {
     return (
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px' }}>
-        {orders.map(order => (
-          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} productImages={productImages} />
+        {orders.map((order, index) => (
+          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
         ))}
         {isGenerating && (
             <button id="hidden-pdf-trigger" onClick={() => generatePdf(orders)}></button>
@@ -198,8 +199,8 @@ export function OrderPDFGenerator({ orders, variant = 'all', onExport, isLoading
       </Button>
 
       <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px' }}>
-        {orders.map(order => (
-          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} productImages={productImages} />
+        {orders.map((order, index) => (
+          <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
         ))}
       </div>
     </>
@@ -212,7 +213,7 @@ const shorten = (text: string, words = 5) => {
     return splitText.slice(0, words).join(' ') + (splitText.length > words ? '...' : '');
 }
 
-function PdfCardTemplate({ order, productImages }: { order: Order, productImages: ProductImageMap }) {
+function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, orderNumber: number, productImages: ProductImageMap }) {
     const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
     return (
@@ -236,7 +237,7 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #E8EEEE', paddingBottom: '12px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                        <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order #{order.id.substring(0, 12)}...</h3>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order: #{orderNumber}</h3>
                          <p style={{ margin: '4px 0 0', fontSize: '12px' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
                     <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${order.total.toFixed(2)}</p>
@@ -245,7 +246,7 @@ function PdfCardTemplate({ order, productImages }: { order: Order, productImages
                     <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Email:</span> {order.email}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
                     <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd')}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 600, color: '#4F5B62'}}>Date:</span> {format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{fontWeight: 600, color: '#4F5B62'}}>Status:</span>
                         <div style={{
