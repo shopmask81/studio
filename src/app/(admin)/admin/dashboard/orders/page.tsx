@@ -8,13 +8,15 @@ import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, Timestamp, writeBatch, doc, getDocs } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Loader2 } from 'lucide-react';
+import { Terminal, Loader2, Download } from 'lucide-react';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { OrderPDFGenerator } from './components/order-pdf-generator';
+import { Button } from '@/components/ui/button';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -158,31 +160,25 @@ export default function AdminOrdersPage() {
         batch.update(orderRef, dataToUpdate);
     });
 
-    batch.commit()
-        .then(() => {
-            toast({
-                title: "Bulk Update Successful",
-                description: `${selectedOrderIds.length} orders have been updated to "${status}".`
-            });
-            setSelectedOrderIds([]); // Clear selection after action
-        })
-        .catch((error) => {
-            console.error("Bulk status update failed:", error);
-            const permissionError = new FirestorePermissionError({
-              path: 'orders/(multiple)',
-              operation: 'update',
-              requestResourceData: dataToUpdate,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: "destructive",
-                title: "Bulk Update Failed",
-                description: "Could not update order statuses. Check permissions."
-            });
-        })
-        .finally(() => {
-            setIsBulkActionLoading(false);
+    try {
+        await batch.commit();
+        toast({
+            title: "Bulk Update Successful",
+            description: `${selectedOrderIds.length} orders have been updated to "${status}".`
         });
+        setSelectedOrderIds([]); // Clear selection after action
+    } catch(error) {
+        console.error("Bulk status update failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Bulk Update Failed",
+            description: "Could not update order statuses. Check permissions."
+        });
+        // Re-throw the error to be caught by a global error handler if it exists
+        throw error;
+    } finally {
+        setIsBulkActionLoading(false);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -195,36 +191,34 @@ export default function AdminOrdersPage() {
         batch.delete(orderRef);
     });
 
-    batch.commit()
-        .then(() => {
-            toast({
-                title: "Bulk Delete Successful",
-                description: `${selectedOrderIds.length} orders have been deleted.`
-            });
-            setSelectedOrderIds([]); // Clear selection after action
-        })
-        .catch((error) => {
-            console.error("Bulk delete failed:", error);
-            const permissionError = new FirestorePermissionError({
-              path: 'orders/(multiple)',
-              operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: "destructive",
-                title: "Bulk Delete Failed",
-                description: "Could not delete orders. Check permissions."
-            });
-        })
-        .finally(() => {
-            setIsBulkActionLoading(false);
+     try {
+        await batch.commit();
+        toast({
+            title: "Bulk Delete Successful",
+            description: `${selectedOrderIds.length} orders have been deleted.`
         });
+        setSelectedOrderIds([]);
+    } catch (error) {
+        console.error("Bulk delete failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Bulk Delete Failed",
+            description: "Could not delete orders. Check permissions."
+        });
+        // Re-throw for global error handlers
+        throw error;
+    } finally {
+        setIsBulkActionLoading(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
+         {filteredOrders && filteredOrders.length > 0 && (
+            <OrderPDFGenerator orders={filteredOrders} />
+        )}
       </div>
       
       <OrderFilters onFilterChange={setFilters} />
