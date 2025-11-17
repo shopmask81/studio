@@ -133,7 +133,7 @@ export function OrderTable({
                 <TableCell className="font-medium truncate">{order.name}</TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground truncate">{order.email}</TableCell>
                 <TableCell className="text-right font-medium">
-                  ${order.total.toFixed(2)}
+                  ${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge variant="outline" className={cn("capitalize border text-xs", statusStyles[order.status])}>
