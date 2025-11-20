@@ -48,13 +48,13 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Label } from '@/components/ui/label';
 
 type UploadedImage = {
   id: string;
@@ -273,8 +273,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
   const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
   
-  // This function contains the logic to generate variants based on the current color/size options
-  const generateVariants = () => {
+  const generateVariants = useCallback(() => {
     const currentVariants = form.getValues('variants') || [];
     const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
     const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
@@ -304,25 +303,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     );
     
     replaceVariants(newVariants);
-  };
+  }, [form, replaceVariants]);
   
-  // This effect ensures that variants are regenerated whenever colors or sizes are added/removed.
   useEffect(() => {
     if(variantsEnabled) {
       generateVariants();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedColors, watchedSizes]);
-
-  // This effect handles the side-effect of toggling the variants switch.
-  useEffect(() => {
-    if (variantsEnabled) {
-      generateVariants();
-    } else {
-      replaceVariants([]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variantsEnabled]);
+  }, [watchedColors, watchedSizes, variantsEnabled]);
 
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
@@ -859,7 +847,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked);
+                                                // The logic to generate/clear variants is now in a useEffect
+                                                // that watches for changes on `variantsEnabled`.
+                                            }}
                                         />
                                     </FormControl>
                                 </FormItem>
@@ -912,12 +904,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     </FormItem>
                                 )}/>
                             </div>
-                             {(watchedBasePrice > 0 && watchedBaseDiscountPrice && watchedBaseDiscountPrice > 0) && (
+                             {(typeof watchedBasePrice === 'number' && watchedBasePrice > 0 && typeof watchedBaseDiscountPrice === 'number' && watchedBaseDiscountPrice > 0) && (
                                 <div className="mt-2 p-3 rounded-md bg-muted text-sm space-y-1">
                                     <p className="font-semibold text-muted-foreground">Preview</p>
                                     <div className="flex items-baseline gap-2">
-                                        <p className="text-muted-foreground line-through">${watchedBasePrice.toFixed(2)}</p>
-                                        <p className="text-green-600 dark:text-green-500 font-semibold text-lg">${watchedBaseDiscountPrice.toFixed(2)}</p>
+                                        <p className="text-muted-foreground line-through">${typeof watchedBasePrice === 'number' ? watchedBasePrice.toFixed(2) : '0.00'}</p>
+                                        <p className="text-green-600 dark:text-green-500 font-semibold text-lg">${typeof watchedBaseDiscountPrice === 'number' ? watchedBaseDiscountPrice.toFixed(2) : '0.00'}</p>
                                     </div>
                                 </div>
                             )}
