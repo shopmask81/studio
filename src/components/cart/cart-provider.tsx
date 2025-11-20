@@ -105,7 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         newItems = [...prevItems, { 
           product, 
           quantity, 
-          variant: variant ? { color: variant.color, size: variant.size } : undefined,
+          variant: variant ? { color: variant.color, size: variant.size } : null,
         }];
       }
       
