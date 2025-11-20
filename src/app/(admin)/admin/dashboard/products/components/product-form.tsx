@@ -312,7 +312,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       generateVariants();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedColors, watchedSizes, variantsEnabled]);
+  }, [watchedColors, watchedSizes]);
+
+  // This effect handles the side-effect of toggling the variants switch.
+  useEffect(() => {
+    if (variantsEnabled) {
+      generateVariants();
+    } else {
+      replaceVariants([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variantsEnabled]);
 
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
@@ -849,14 +859,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked);
-                                                if (checked) {
-                                                  generateVariants();
-                                                } else {
-                                                  replaceVariants([]);
-                                                }
-                                            }}
+                                            onCheckedChange={field.onChange}
                                         />
                                     </FormControl>
                                 </FormItem>
