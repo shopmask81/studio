@@ -278,6 +278,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
     const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
     
+    if (!form.getValues('variantsEnabled')) {
+      replaceVariants([]);
+      return;
+    }
+
     if (colors.length === 0 && sizes.length === 0) {
       replaceVariants([]);
       return;
@@ -308,10 +313,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   useEffect(() => {
     if (variantsEnabled) {
       generateVariants();
-    } else {
-      replaceVariants([]);
     }
-  }, [watchedColors, watchedSizes, variantsEnabled, generateVariants, replaceVariants]);
+  }, [watchedColors, watchedSizes, variantsEnabled, generateVariants]);
 
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
@@ -848,7 +851,10 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                            onCheckedChange={(checked) => {
+                                              field.onChange(checked);
+                                              // This logic now correctly triggers the useEffect
+                                            }}
                                         />
                                     </FormControl>
                                 </FormItem>
