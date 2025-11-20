@@ -54,20 +54,22 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
+// Zod schema for individual variant details (price, stock)
 const variantDetailSchema = z.object({
-    stock: z.coerce.number().int().min(0, 'Stock must be non-negative.'),
     price: z.coerce.number().positive('Price must be positive.'),
+    stock: z.coerce.number().int().min(0, 'Stock must be non-negative.'),
     discountPrice: z.coerce.number().optional(),
 });
 
+// Zod schema for the entire variants structure
 const variantSchema = z.object({
   enabled: z.boolean().default(false),
-  colors: z.array(z.object({ value: z.string() })).optional(),
-  sizes: z.array(z.object({ value: z.string() })).optional(),
-  details: z.record(variantDetailSchema).optional(),
+  colors: z.array(z.object({ value: z.string().min(1, 'Color name cannot be empty.') })).default([]),
+  sizes: z.array(z.object({ value: z.string().min(1, 'Size name cannot be empty.') })).default([]),
+  details: z.record(z.string(), variantDetailSchema).optional(),
 });
 
-
+// Main form schema with superRefine for conditional validation
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
@@ -80,12 +82,25 @@ const formSchema = z.object({
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
-  variants: variantSchema.optional(),
+  variants: variantSchema,
 }).superRefine((data, ctx) => {
-    if (data.variants?.enabled) {
+    // This function provides custom validation logic that depends on multiple fields.
+    if (data.variants.enabled) {
+        // If variants are enabled, we validate the generated combinations.
         const colors = data.variants.colors?.map(c => c.value).filter(Boolean) ?? [];
         const sizes = data.variants.sizes?.map(s => s.value).filter(Boolean) ?? [];
         
+        // At least one color or one size must be provided if variants are enabled.
+        if (colors.length === 0 && sizes.length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Add at least one color or size to create variants.',
+                path: ['variants.colors'],
+            });
+            return;
+        }
+
+        // Generate the keys for all possible variant combinations.
         let combinations: string[] = [];
         if (colors.length > 0 && sizes.length === 0) combinations = colors;
         else if (colors.length === 0 && sizes.length > 0) combinations = sizes;
@@ -93,18 +108,10 @@ const formSchema = z.object({
             combinations = colors.flatMap(color => sizes.map(size => `${color}-${size}`));
         }
         
-        if (combinations.length > 0 && !data.variants.details) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Variant details are missing.',
-                path: ['variants.details'],
-            });
-            return;
-        }
-
+        // Check that details (price/stock) exist and are valid for each combination.
         for (const key of combinations) {
             const detail = data.variants.details?.[key];
-            if (detail?.price === undefined || detail?.price === null || isNaN(detail.price) || detail.price <= 0) {
+            if (!detail || detail.price === undefined || detail.price === null || isNaN(detail.price) || detail.price <= 0) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Price is required for variant ${key.replace('-', ' / ')}.`,
@@ -121,6 +128,7 @@ const formSchema = z.object({
         }
 
     } else {
+        // If variants are disabled, the base price and stock fields are required.
         if (data.price === undefined || data.price === null || isNaN(data.price) || data.price <= 0) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -214,6 +222,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
+    // This comprehensive defaultValues structure is key to preventing uncontrolled input errors.
     defaultValues: productToEdit
       ? {
           ...productToEdit,
@@ -221,6 +230,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           stock: productToEdit.stock ?? undefined,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
+          // Ensure variants structure is always present and correctly typed.
           variants: {
             enabled: productToEdit.variants?.enabled ?? false,
             colors: productToEdit.variants?.colors?.map(c => ({value: c})) ?? [],
@@ -249,6 +259,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         },
   });
 
+  // react-hook-form's useFieldArray provides a stable way to manage dynamic form fields.
   const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
     control: form.control,
     name: "variants.colors"
@@ -259,57 +270,45 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     name: "variants.sizes"
   });
   
+  // Watch for changes in variant-related fields to dynamically update the UI.
   const variantsEnabled = form.watch('variants.enabled');
   const watchedColors = form.watch('variants.colors');
   const watchedSizes = form.watch('variants.sizes');
 
+  // useMemo hook to calculate the Cartesian product of colors and sizes.
+  // This memoizes the result, preventing re-calculation on every render.
   const variantCombinations = useMemo(() => {
     const colors = watchedColors?.map(c => c.value).filter(Boolean) ?? [];
     const sizes = watchedSizes?.map(s => s.value).filter(Boolean) ?? [];
 
-    if (colors.length === 0 && sizes.length === 0) return [];
+    if (!variantsEnabled || (colors.length === 0 && sizes.length === 0)) return [];
     if (colors.length > 0 && sizes.length === 0) return colors.map(c => ({ color: c, size: null, key: c }));
     if (colors.length === 0 && sizes.length > 0) return sizes.map(s => ({ color: null, size: s, key: s }));
 
+    // The Cartesian product logic.
     return colors.flatMap(color =>
       sizes.map(size => ({ color, size, key: `${color}-${size}` }))
     );
-  }, [watchedColors, watchedSizes]);
+  }, [watchedColors, watchedSizes, variantsEnabled]);
 
+  // Function to apply a value (stock, price, etc.) to all generated variants at once.
   const handleApplyBulkValues = (field: 'stock' | 'price' | 'discountPrice') => {
-    const value = bulkValues[field]; // Keep as string
+    const value = bulkValues[field]; // Keep as string for the input
     if (value === '') {
-        toast({
-            variant: 'destructive',
-            title: `Invalid ${field} value`,
-            description: 'Please enter a value to apply.',
-        });
+        toast({ variant: 'destructive', title: `Invalid value`, description: 'Please enter a value to apply.'});
         return;
     }
     const numericValue = parseFloat(value);
-     if (isNaN(numericValue)) {
-        toast({
-            variant: 'destructive',
-            title: `Invalid ${field} value`,
-            description: 'Please enter a valid number.',
-        });
+     if (isNaN(numericValue) || (field !== 'stock' && numericValue <= 0) || (field === 'stock' && numericValue < 0)) {
+        toast({ variant: 'destructive', title: `Invalid ${field} value`, description: 'Please enter a valid, non-negative number.' });
         return;
     }
-     if (field === 'stock' && numericValue < 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid stock value',
-            description: 'Stock cannot be negative.',
-        });
-        return;
-    }
+
+    // Iterate over combinations and set the value for each in the form state.
     variantCombinations.forEach(({ key }) => {
         form.setValue(`variants.details.${key}.${field}`, numericValue, { shouldValidate: true, shouldDirty: true });
     });
-    toast({
-        title: `Bulk ${field} applied`,
-        description: `Set ${field} to ${value} for all variants.`,
-    });
+    toast({ title: `Bulk value applied`, description: `Set ${field} to ${value} for all variants.` });
   };
 
 
@@ -527,10 +526,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         const mainImage = uploadedImages[mainImageIndex].url;
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
+        // Sanitize the variants data before sending it to Firestore.
         const productData = {
             ...data,
             mainImage: mainImage,
             images: additionalImages,
+            // Safely map arrays, ensuring they exist.
             variants: {
               enabled: data.variants?.enabled ?? false,
               colors: Array.isArray(data.variants?.colors) ? data.variants.colors.map(c => c.value).filter(Boolean) : [],
@@ -864,7 +865,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormControl>
                             </FormItem>
@@ -873,7 +874,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
                     {variantsEnabled && (
                         <div className="space-y-6 pt-6">
-                            {/* Colors */}
+                            {/* Colors Section */}
                             <div>
                                 <h3 className="text-lg font-medium mb-2">Colors</h3>
                                 <div className="space-y-2">
@@ -887,6 +888,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                         <FormControl>
                                                             <Input placeholder="e.g. Red, Blue, Green" {...field} />
                                                         </FormControl>
+                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
@@ -908,7 +910,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 </Button>
                             </div>
 
-                            {/* Sizes */}
+                            {/* Sizes Section */}
                             <div>
                                 <h3 className="text-lg font-medium mb-2">Sizes</h3>
                                 <div className="space-y-2">
@@ -922,6 +924,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                         <FormControl>
                                                             <Input placeholder="e.g. S, M, L, XL" {...field} />
                                                         </FormControl>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
@@ -943,21 +946,23 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 </Button>
                             </div>
 
-                             {/* Variant Stock */}
+                             {/* Generated Variants Table */}
                             {variantCombinations.length > 0 && (
-                                <div>
+                                <div className="space-y-4">
                                     <h3 className="text-lg font-medium mb-2 mt-6">Variant Details</h3>
                                     
-                                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    {/* Bulk Edit Controls */}
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-2 border rounded-lg bg-muted/50">
+                                        <span className="text-sm font-medium mr-2">Bulk Apply:</span>
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="number"
                                                 placeholder="Stock"
                                                 value={bulkValues.stock}
                                                 onChange={(e) => setBulkValues(v => ({...v, stock: e.target.value}))}
-                                                className="h-9 max-w-[100px]"
+                                                className="h-8 max-w-[90px]"
                                             />
-                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('stock')}>Apply</Button>
+                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('stock')}>Apply</Button>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Input
@@ -965,9 +970,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                 placeholder="Price"
                                                 value={bulkValues.price}
                                                 onChange={(e) => setBulkValues(v => ({...v, price: e.target.value}))}
-                                                className="h-9 max-w-[100px]"
+                                                className="h-8 max-w-[90px]"
                                             />
-                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('price')}>Apply</Button>
+                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('price')}>Apply</Button>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Input
@@ -975,20 +980,21 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                 placeholder="Discount Price"
                                                 value={bulkValues.discountPrice}
                                                 onChange={(e) => setBulkValues(v => ({...v, discountPrice: e.target.value}))}
-                                                className="h-9 max-w-[140px]"
+                                                className="h-8 max-w-[120px]"
                                             />
-                                            <Button type="button" variant="secondary" onClick={() => handleApplyBulkValues('discountPrice')}>Apply</Button>
+                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('discountPrice')}>Apply</Button>
                                         </div>
                                     </div>
                                     
+                                    {/* Variants Table */}
                                     <div className="border rounded-lg overflow-hidden">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>Variant</TableHead>
-                                                    <TableHead className="w-[100px]">Price</TableHead>
-                                                    <TableHead className="w-[100px]">Discount</TableHead>
-                                                    <TableHead className="w-[100px]">Stock</TableHead>
+                                                    <TableHead className="w-[120px]">Price</TableHead>
+                                                    <TableHead className="w-[120px]">Discount</TableHead>
+                                                    <TableHead className="w-[120px]">Stock</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -1002,12 +1008,13 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                             <FormField
                                                                 control={form.control}
                                                                 name={`variants.details.${key}.price`}
+                                                                defaultValue={0}
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-8" />
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-9" />
                                                                         </FormControl>
-                                                                        <FormMessage />
+                                                                        <FormMessage className="text-xs"/>
                                                                     </FormItem>
                                                                 )}
                                                             />
@@ -1019,9 +1026,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-8" />
+                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-9" />
                                                                         </FormControl>
-                                                                        <FormMessage />
+                                                                        <FormMessage className="text-xs"/>
                                                                     </FormItem>
                                                                 )}
                                                             />
@@ -1030,12 +1037,13 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                             <FormField
                                                                 control={form.control}
                                                                 name={`variants.details.${key}.stock`}
+                                                                defaultValue={0}
                                                                 render={({ field }) => (
                                                                     <FormItem>
                                                                         <FormControl>
-                                                                            <Input type="number" {...field} value={field.value ?? ''} className="h-8" />
+                                                                            <Input type="number" {...field} value={field.value ?? ''} className="h-9" />
                                                                         </FormControl>
-                                                                        <FormMessage />
+                                                                        <FormMessage className="text-xs"/>
                                                                     </FormItem>
                                                                 )}
                                                             />
@@ -1045,6 +1053,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                             </TableBody>
                                         </Table>
                                     </div>
+                                    <FormMessage>{form.formState.errors.variants?.root?.message}</FormMessage>
                                 </div>
                             )}
 
@@ -1069,7 +1078,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormLabel>Category</FormLabel>
                         <Select
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
                             value={field.value}
                         >
                             <FormControl>
@@ -1117,7 +1125,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
                     </FormItem>
@@ -1137,7 +1145,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={(checked) => setTimeout(() => field.onChange(checked), 0)}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
                     </FormItem>
