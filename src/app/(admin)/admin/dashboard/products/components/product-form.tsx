@@ -38,7 +38,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Category, VariantDetail } from '@/lib/types';
-import { Loader2, Upload, X, Trash2, PlusCircle } from 'lucide-react';
+import { Loader2, Upload, X, Trash2, PlusCircle, HelpCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -49,6 +49,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type UploadedImage = {
   id: string;
@@ -105,6 +111,24 @@ const formSchema = z.object({
             message: "You must add at least one Color or Size and generate variants.",
         });
     }
+    // Check each variant for valid price and stock
+    data.variants.forEach((variant, index) => {
+        if (variant.price <= 0) {
+            ctx.addIssue({
+                code: 'custom',
+                path: [`variants.${index}.price`],
+                message: 'Price must be > 0',
+            });
+        }
+        if (variant.stock < 0) {
+            ctx.addIssue({
+                code: 'custom',
+                path: [`variants.${index}.stock`],
+                message: 'Stock must be >= 0',
+            });
+        }
+    });
+
   } else {
     if (data.price <= 0) {
       ctx.addIssue({ code: 'custom', message: 'Price must be positive.', path: ['price'] });
@@ -208,12 +232,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       colors: (productToEdit?.variantOptions?.colors || []).map(c => ({ value: c })),
       sizes: (productToEdit?.variantOptions?.sizes || []).map(s => ({ value: s })),
     },
-    variants: productToEdit?.variants || [],
+    variants: (productToEdit?.variants || []).map(v => ({
+      ...v,
+      discountPrice: v.discountPrice === null ? undefined : v.discountPrice,
+      sku: v.sku === null ? undefined : v.sku,
+    })),
   };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
+    mode: 'onChange',
   });
 
   const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
@@ -232,10 +261,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const watchedColors = useWatch({ control: form.control, name: 'variantOptions.colors' });
   const watchedSizes = useWatch({ control: form.control, name: 'variantOptions.sizes' });
   const variantsEnabled = useWatch({ control: form.control, name: 'variantsEnabled' });
+  const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
+  const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
+
 
   // This effect will regenerate the variants table whenever colors or sizes change.
   useEffect(() => {
-    if (!variantsEnabled) return;
+    if (!variantsEnabled) {
+      replaceVariants([]); // Clear variants if disabled
+      return;
+    }
 
     const colors = watchedColors.map(c => c.value).filter(Boolean);
     const sizes = watchedSizes.map(s => s.value).filter(Boolean);
@@ -528,6 +563,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 },
                 price: 0, 
                 stock: 0, 
+                discountPrice: null,
+                sku: null,
             };
         } else {
             productData = {
@@ -565,7 +602,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             });
             errorEmitter.emit('permission-error', permissionError);
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
-        } else {
+        } else if ((error as any)?.message?.includes?.('Unsupported field value: undefined')) {
+             toast({ 
+                variant: 'destructive', 
+                title: 'Save Failed', 
+                description: 'One or more optional fields (like discount price or SKU) were invalid. Please clear them or enter a valid value.' 
+            });
+        }
+        else {
             toast({ variant: 'destructive', title: 'Save Failed', description: (error as Error).message || 'An unexpected error occurred while saving the product.' });
         }
     } finally {
@@ -805,24 +849,59 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 </CardHeader>
                 <CardContent>
                     {!variantsEnabled ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="price" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Price</FormLabel>
-                                        <FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger type="button" className="flex items-center gap-1">
+                                                    <FormLabel>Original Price</FormLabel>
+                                                    <HelpCircle className="h-4 w-4 text-muted-foreground"/>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Put the actual base price here.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <FormControl><Input type="number" step="0.01" placeholder="e.g., 120" {...field} /></FormControl>
+                                        <FormDescription>
+                                            This is the base price. If discount price is added, this one will appear crossed-out.
+                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="discountPrice" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Discount Price (Optional)</FormLabel>
-                                        <FormControl><Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} /></FormControl>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger type="button" className="flex items-center gap-1">
+                                                    <FormLabel>Discount Price (optional)</FormLabel>
+                                                    <HelpCircle className="h-4 w-4 text-muted-foreground"/>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Put the sale price here if the product is discounted.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <FormControl><Input type="number" step="0.01" placeholder="e.g., 89" {...field} value={field.value ?? ''} /></FormControl>
+                                        <FormDescription>
+                                            This price will be shown to customers as the main price.
+                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {(watchedBasePrice > 0 && watchedBaseDiscountPrice && watchedBaseDiscountPrice > 0) && (
+                                <div className="mt-2 p-3 rounded-md bg-muted text-sm space-y-1">
+                                    <p className="font-semibold text-muted-foreground">Preview</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-muted-foreground line-through">${watchedBasePrice.toFixed(2)}</p>
+                                        <p className="text-green-600 dark:text-green-500 font-semibold text-lg">${watchedBaseDiscountPrice.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="stock" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Stock Quantity</FormLabel>
@@ -1052,5 +1131,3 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
-
-    
