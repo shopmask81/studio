@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback }from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -199,21 +199,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     mode: 'onChange',
   });
 
-  const freeShipping = form.watch('freeShipping');
+  const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
   const watchedBasePrice = form.watch('price');
   const watchedBaseDiscountPrice = form.watch('discountPrice');
 
-  // --- Functions to manage independent variant state ---
-  const handleOptionChange = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string, value: string) => {
-    setter(prev => prev.map(opt => opt.id === id ? { ...opt, value } : opt));
-  };
-  const addOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>) => {
-    setter(prev => [...prev, { id: crypto.randomUUID(), value: '' }]);
-  };
-  const removeOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string) => {
-    setter(prev => prev.filter(opt => opt.id !== id));
-  };
-
+  useEffect(() => {
+    if (freeShipping) {
+      form.setValue('shippingPrice', 0);
+    }
+  }, [freeShipping, form]);
+  
   const generateVariants = useCallback(() => {
     const colors = variantColors.map(c => c.value).filter(Boolean);
     const sizes = variantSizes.map(s => s.value).filter(Boolean);
@@ -243,14 +238,26 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     );
     setVariantDetails(newVariants);
   }, [variantColors, variantSizes, variantDetails]);
-
-  // Effect to generate variants when options change, ONLY if variants are enabled
+  
   useEffect(() => {
     if (variantsEnabled) {
       generateVariants();
+    } else {
+      setVariantDetails([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variantsEnabled, variantColors, variantSizes]);
+  }, [variantsEnabled]);
+
+
+  const handleOptionChange = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string, value: string) => {
+    setter(prev => prev.map(opt => opt.id === id ? { ...opt, value } : opt));
+  };
+  const addOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>) => {
+    setter(prev => [...prev, { id: crypto.randomUUID(), value: '' }]);
+  };
+  const removeOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string) => {
+    setter(prev => prev.filter(opt => opt.id !== id));
+  };
 
   const handleVariantDetailChange = (id: string, field: keyof VariantDetail, value: string | number) => {
     setVariantDetails(prev =>
@@ -961,12 +968,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                          field.onChange(checked);
-                                          if (checked) {
-                                            form.setValue('shippingPrice', 0);
-                                          }
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormControl>
                             </FormItem>
