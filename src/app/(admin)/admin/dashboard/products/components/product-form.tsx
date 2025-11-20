@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -277,43 +276,42 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     const currentVariants = form.getValues('variants') || [];
     const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
     const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
-    
+
     if (!form.getValues('variantsEnabled')) {
-      replaceVariants([]);
-      return;
+        replaceVariants([]);
+        return;
     }
 
     if (colors.length === 0 && sizes.length === 0) {
-      replaceVariants([]);
-      return;
+        replaceVariants([]);
+        return;
     }
 
     const colorOptions = colors.length > 0 ? colors : [''];
     const sizeOptions = sizes.length > 0 ? sizes : [''];
 
     const newVariants = colorOptions.flatMap(color =>
-      sizeOptions.map(size => {
-        const id = createVariantId(color, size);
-        const existingVariant = currentVariants.find(v => v.id === id);
-        return {
-          id,
-          color,
-          size,
-          price: existingVariant?.price || 0,
-          discountPrice: existingVariant?.discountPrice || undefined,
-          stock: existingVariant?.stock || 0,
-          sku: existingVariant?.sku || '',
-        };
-      })
+        sizeOptions.map(size => {
+            const id = createVariantId(color, size);
+            const existingVariant = currentVariants.find(v => v.id === id);
+            return {
+                id,
+                color,
+                size,
+                price: existingVariant?.price || 0,
+                discountPrice: existingVariant?.discountPrice || undefined,
+                stock: existingVariant?.stock || 0,
+                sku: existingVariant?.sku || '',
+            };
+        })
     );
-    
+
     replaceVariants(newVariants);
   }, [form, replaceVariants]);
-  
+
+  // This is the correct way to handle the side-effect of toggling variants.
   useEffect(() => {
-    if (variantsEnabled) {
-      generateVariants();
-    }
+    generateVariants();
   }, [watchedColors, watchedSizes, variantsEnabled, generateVariants]);
 
 
@@ -851,10 +849,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                              field.onChange(checked);
-                                              // This logic now correctly triggers the useEffect
-                                            }}
+                                            onCheckedChange={field.onChange}
                                         />
                                     </FormControl>
                                 </FormItem>
