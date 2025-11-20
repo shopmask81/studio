@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -306,11 +306,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   }, [form, replaceVariants]);
   
   useEffect(() => {
-    if(variantsEnabled) {
+    if (variantsEnabled) {
       generateVariants();
+    } else {
+      replaceVariants([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedColors, watchedSizes, variantsEnabled]);
+  }, [watchedColors, watchedSizes, variantsEnabled, generateVariants, replaceVariants]);
 
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
@@ -847,11 +848,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked);
-                                                // The logic to generate/clear variants is now in a useEffect
-                                                // that watches for changes on `variantsEnabled`.
-                                            }}
+                                            onCheckedChange={field.onChange}
                                         />
                                     </FormControl>
                                 </FormItem>
