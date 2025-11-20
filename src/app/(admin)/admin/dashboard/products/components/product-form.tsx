@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -271,16 +272,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
   const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
   const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
-  
+
+  // This function contains the logic to generate variants based on the current color/size options
   const generateVariants = useCallback(() => {
     const currentVariants = form.getValues('variants') || [];
     const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
     const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
-
-    if (!form.getValues('variantsEnabled')) {
-        replaceVariants([]);
-        return;
-    }
 
     if (colors.length === 0 && sizes.length === 0) {
         replaceVariants([]);
@@ -305,15 +302,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             };
         })
     );
-
     replaceVariants(newVariants);
   }, [form, replaceVariants]);
 
-  // Effect to handle side-effects of toggling variantsEnabled
+  // Effect to generate/clear variants when options change, ONLY if variants are enabled
   useEffect(() => {
-    generateVariants();
-  }, [variantsEnabled, watchedColors, watchedSizes, generateVariants]);
-  
+    if (variantsEnabled) {
+      setTimeout(() => generateVariants(), 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variantsEnabled, watchedColors, watchedSizes]);
+
   // Effect to handle side-effects of toggling freeShipping
   useEffect(() => {
     if (freeShipping) {
@@ -856,7 +855,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked);
+                                                if (!checked) {
+                                                    // Clear variants when disabled
+                                                    replaceVariants([]);
+                                                } else {
+                                                    // Generate variants when enabled
+                                                    generateVariants();
+                                                }
+                                            }}
                                         />
                                     </FormControl>
                                 </FormItem>
