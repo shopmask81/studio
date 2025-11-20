@@ -62,33 +62,41 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
-// Simplified zod schema for the main form, excluding variants.
+// Zod schema with conditional validation for variants
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
   name_ar: z.string().optional(),
   description_ar: z.string().optional(),
-  price: z.coerce.number(),
+  
+  // Base fields are optional by default...
+  price: z.coerce.number().optional(),
   discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().int(),
+  stock: z.coerce.number().int().optional(),
+
   freeShipping: z.boolean().default(true),
   shippingPrice: z.coerce.number().optional(),
   category: z.string().min(1, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
+  
+  // This field is managed outside the form state but included for validation logic
+  variantsEnabled: z.boolean().default(false),
+
 }).superRefine((data, ctx) => {
-  // This validation only runs if variants are NOT enabled.
-  // Variant validation will be handled manually before submit.
-  if (data.price <= 0) {
-    ctx.addIssue({ code: 'custom', message: 'Price must be positive.', path: ['price'] });
-  }
-  if (data.stock < 0) {
-    ctx.addIssue({ code: 'custom', message: 'Stock cannot be negative.', path: ['stock'] });
+  // ... and required conditionally using superRefine
+  if (!data.variantsEnabled) {
+    if (data.price === undefined || data.price <= 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'A positive price is required.', path: ['price'] });
+    }
+    if (data.stock === undefined || data.stock < 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Stock quantity is required.', path: ['stock'] });
+    }
   }
 
   if (!data.freeShipping && (data.shippingPrice === undefined || data.shippingPrice < 0)) {
-    ctx.addIssue({ code: 'custom', message: 'Shipping price must be a positive number.', path: ['shippingPrice'] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Shipping price must be a positive number.', path: ['shippingPrice'] });
   }
 });
 
@@ -173,13 +181,13 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
 
-  const defaultValues: ProductFormValues = {
+  const defaultValues: Partial<ProductFormValues> = {
     name: productToEdit?.name || '',
     description: productToEdit?.description || '',
     name_ar: productToEdit?.name_ar || '',
     description_ar: productToEdit?.description_ar || '',
-    price: productToEdit?.price ?? 0,
-    stock: productToEdit?.stock ?? 0,
+    price: productToEdit?.price ?? undefined,
+    stock: productToEdit?.stock ?? undefined,
     discountPrice: productToEdit?.discountPrice ?? undefined,
     freeShipping: productToEdit?.shippingPrice === undefined || productToEdit.shippingPrice === 0,
     shippingPrice: productToEdit?.shippingPrice ?? undefined,
@@ -187,6 +195,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     sku: productToEdit?.sku ?? '',
     active: productToEdit?.active ?? true,
     featured: productToEdit?.featured ?? false,
+    variantsEnabled: productToEdit?.variantsEnabled ?? false,
   };
 
   const form = useForm<ProductFormValues>({
@@ -251,13 +260,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     setter(prev => prev.filter(opt => opt.id !== id));
   };
 
-  const handleVariantDetailChange = (id: string, field: keyof VariantDetail, value: string | number) => {
+  const handleVariantDetailChange = (id: string, field: keyof VariantDetail, value: string | number | null) => {
     setVariantDetails(prev =>
       prev.map(v => (v.id === id ? { ...v, [field]: value } : v))
     );
   };
   
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string) => {
+    if (value === '') return;
     const numericValue = parseFloat(value);
     if (isNaN(numericValue) || numericValue < 0) return;
   
@@ -276,6 +286,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         .map(url => ({
           id: `${url}-${Math.random().toString(36).substring(2, 9)}`,
           url,
+          // For existing images, we don't have the deleteUrl.
+          // You might need a different strategy if deletion of old images is needed.
           deleteUrl: `placeholder-delete-url-for-${url}` 
         }));
       
@@ -344,7 +356,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     if (!imageToRemove) return;
   
     if (imageToRemove.deleteUrl.startsWith('placeholder')) {
-        toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This image was saved without a deletion link.' });
+        toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This image was part of the original product and cannot be deleted from here.' });
         return;
     }
 
@@ -526,8 +538,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                     sizes: variantSizes.map(s => s.value).filter(Boolean),
                 },
                 price: 0, 
-                stock: 0, 
                 discountPrice: null,
+                stock: 0, 
                 sku: null,
             };
         } else {
@@ -837,11 +849,24 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             <CardDescription>Manage variants or set a single price.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2 space-y-0">
-                          <Label htmlFor="variants-enabled-switch">Enable Variants</Label>
-                          <Switch
-                              id="variants-enabled-switch"
-                              checked={variantsEnabled}
-                              onCheckedChange={setVariantsEnabled}
+                          <FormField
+                            control={form.control}
+                            name="variantsEnabled"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center gap-2 space-y-0">
+                                    <Label htmlFor="variants-enabled-switch">Enable Variants</Label>
+                                    <FormControl>
+                                        <Switch
+                                            id="variants-enabled-switch"
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked)
+                                                setVariantsEnabled(checked)
+                                            }}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
                           />
                         </div>
                     </div>
@@ -854,7 +879,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormItem>
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger type="button" className="flex items-center gap-1">
+                                                <TooltipTrigger asChild type="button" className="flex items-center gap-1">
                                                     <FormLabel>Original Price</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
                                                 </TooltipTrigger>
@@ -863,7 +888,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
-                                        <FormControl><Input type="number" step="0.01" placeholder="e.g., 120" {...field} /></FormControl>
+                                        <FormControl><Input type="number" step="0.01" placeholder="e.g., 120" {...field} value={field.value ?? ''} /></FormControl>
                                         <FormDescription>
                                             This is the base price. If discount price is added, this one will appear crossed-out.
                                         </FormDescription>
@@ -874,7 +899,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormItem>
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger type="button" className="flex items-center gap-1">
+                                                <TooltipTrigger asChild type="button" className="flex items-center gap-1">
                                                     <FormLabel>Discount Price (optional)</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
                                                 </TooltipTrigger>
@@ -904,7 +929,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormField control={form.control} name="stock" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Stock Quantity</FormLabel>
-                                        <FormControl><Input type="number" placeholder="100" {...field} /></FormControl>
+                                        <FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -971,9 +996,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                     <TableRow key={variant.id}>
                                                         <TableCell className="font-medium">{variant.color && variant.size ? `${variant.color} / ${variant.size}` : variant.color || variant.size}</TableCell>
                                                         <TableCell><Input type="number" value={variant.price} onChange={e => handleVariantDetailChange(variant.id, 'price', Number(e.target.value))} className="w-24" /></TableCell>
-                                                        <TableCell><Input type="number" value={variant.discountPrice ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'discountPrice', Number(e.target.value))} className="w-24" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.discountPrice ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'discountPrice', Number(e.target.value) || null)} className="w-24" /></TableCell>
                                                         <TableCell><Input type="number" value={variant.stock} onChange={e => handleVariantDetailChange(variant.id, 'stock', Number(e.target.value))} className="w-20" /></TableCell>
-                                                        <TableCell><Input value={variant.sku ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'sku', e.target.value)} className="w-28" /></TableCell>
+                                                        <TableCell><Input value={variant.sku ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'sku', e.target.value || null)} className="w-28" /></TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
