@@ -495,7 +495,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     setIsSubmitting(true);
     
     try {
-        const mainImage = uploadedImages[mainImageIndex].url;
+        const mainImage = uploadedImages[mainImageIndex!].url;
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
         let productData: Partial<Product> = {
@@ -512,9 +512,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         };
 
         if (data.variantsEnabled) {
+            // Sanitize variants data to replace undefined with null
+            const sanitizedVariants = data.variants.map(variant => ({
+              ...variant,
+              discountPrice: variant.discountPrice ?? null,
+              sku: variant.sku ?? null,
+            }));
+
             productData = {
                 ...productData,
-                variants: data.variants,
+                variants: sanitizedVariants,
                 variantOptions: {
                     colors: Array.isArray(data.variantOptions?.colors) ? data.variantOptions.colors.map(c => c.value).filter(Boolean) : [],
                     sizes: Array.isArray(data.variantOptions?.sizes) ? data.variantOptions.sizes.map(s => s.value).filter(Boolean) : [],
@@ -526,9 +533,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             productData = {
                 ...productData,
                 price: data.price,
-                discountPrice: data.discountPrice,
+                discountPrice: data.discountPrice ?? null,
                 stock: data.stock,
-                sku: data.sku,
+                sku: data.sku ?? null,
                 variants: [],
                 variantOptions: { colors: [], sizes: [] },
             }
@@ -537,14 +544,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         if (productToEdit) {
             const productRef = doc(firestore, 'products', productToEdit.id);
             const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
-            await updateDoc(productRef, dataToUpdate);
+            await updateDoc(productRef, dataToUpdate as any);
             toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
             router.push('/admin/dashboard/products');
             router.refresh();
         } else {
             const collectionRef = collection(firestore, 'products');
             const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            await addDoc(collectionRef, dataToCreate);
+            await addDoc(collectionRef, dataToCreate as any);
             toast({ title: 'Product Created', description: 'The new product has been added.' });
             router.push('/admin/dashboard/products');
             router.refresh();
@@ -559,7 +566,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             errorEmitter.emit('permission-error', permissionError);
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
         } else {
-            toast({ variant: 'destructive', title: 'Save Failed', description: 'An unexpected error occurred while saving the product.' });
+            toast({ variant: 'destructive', title: 'Save Failed', description: (error as Error).message || 'An unexpected error occurred while saving the product.' });
         }
     } finally {
         setIsSubmitting(false);
