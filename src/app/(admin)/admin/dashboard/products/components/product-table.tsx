@@ -77,9 +77,6 @@ export function ProductTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="hidden w-[100px] sm:table-cell">
-              Image
-            </TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Category</TableHead>
             <TableHead className="hidden md:table-cell">Price</TableHead>
@@ -94,16 +91,18 @@ export function ProductTable() {
         <TableBody>
           {products?.map((product) => (
             <TableRow key={product.id}>
-              <TableCell className="hidden sm:table-cell">
-                <Image
-                  alt={product.name}
-                  className="aspect-square rounded-md object-cover"
-                  height="64"
-                  src={product.mainImage || 'https://placehold.co/64x64'}
-                  width="64"
-                />
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-3">
+                   <Image
+                    alt={product.name}
+                    className="aspect-square rounded-md object-cover"
+                    height="40"
+                    src={product.mainImage || 'https://placehold.co/40x40'}
+                    width="40"
+                  />
+                  <span>{product.name}</span>
+                </div>
               </TableCell>
-              <TableCell className="font-medium">{product.name}</TableCell>
               <TableCell>{product.category}</TableCell>
               <TableCell className="hidden md:table-cell">
                 ${product.price.toFixed(2)}
