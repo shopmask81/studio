@@ -86,6 +86,8 @@ const formSchema = z.object({
   price: z.coerce.number(),
   discountPrice: z.coerce.number().optional(),
   stock: z.coerce.number().int(),
+  freeShipping: z.boolean().default(true),
+  shippingPrice: z.coerce.number().optional(),
   category: z.string().min(1, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
@@ -136,6 +138,10 @@ const formSchema = z.object({
     if (data.stock < 0) {
       ctx.addIssue({ code: 'custom', message: 'Stock cannot be negative.', path: ['stock'] });
     }
+  }
+
+  if (!data.freeShipping && (data.shippingPrice === undefined || data.shippingPrice < 0)) {
+    ctx.addIssue({ code: 'custom', message: 'Shipping price must be a positive number.', path: ['shippingPrice'] });
   }
 });
 
@@ -223,6 +229,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     price: productToEdit?.price ?? 0,
     stock: productToEdit?.stock ?? 0,
     discountPrice: productToEdit?.discountPrice ?? undefined,
+    freeShipping: productToEdit?.shippingPrice === undefined || productToEdit.shippingPrice === 0,
+    shippingPrice: productToEdit?.shippingPrice ?? undefined,
     category: productToEdit?.category || '',
     sku: productToEdit?.sku ?? '',
     active: productToEdit?.active ?? true,
@@ -263,7 +271,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const variantsEnabled = useWatch({ control: form.control, name: 'variantsEnabled' });
   const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
   const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
+  const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
 
+  // Effect to manage shipping price based on free shipping toggle
+  useEffect(() => {
+    if (freeShipping) {
+      form.setValue('shippingPrice', 0);
+    }
+  }, [freeShipping, form]);
 
   // This effect will regenerate the variants table whenever colors or sizes change.
   useEffect(() => {
@@ -541,6 +556,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             category: data.category,
             active: data.active,
             featured: data.featured,
+            shippingPrice: data.freeShipping ? 0 : data.shippingPrice,
             mainImage: mainImage,
             images: additionalImages,
             variantsEnabled: data.variantsEnabled,
@@ -1024,6 +1040,56 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                     )}
                 </CardContent>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Shipping</CardTitle>
+                    <CardDescription>Configure shipping options for this product.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <FormField
+                        control={form.control}
+                        name="freeShipping"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Free Shipping</FormLabel>
+                                    <FormDescription>
+                                        Enable this if the product ships for free.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="shippingPrice"
+                        render={({ field }) => (
+                            <FormItem className={cn("transition-opacity", freeShipping && "opacity-50 pointer-events-none")}>
+                                <FormLabel>Shipping Price</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type="number" 
+                                        step="0.01" 
+                                        placeholder="e.g., 5.99" 
+                                        {...field} 
+                                        value={field.value ?? ''}
+                                        disabled={freeShipping}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+
           </div>
 
           <div className="lg:col-span-1 space-y-8">

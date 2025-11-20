@@ -19,6 +19,7 @@ export type Product = {
   description_ar?: string;
   price: number;
   discountPrice: number | null;
+  shippingPrice?: number;
   mainImage: string;
   images: string[];
   category: string;
@@ -66,10 +67,10 @@ export type Banner = {
 export type CartItem = {
   product: Product;
   quantity: number;
-  variant?: {
+  variant: {
     color: string;
     size: string;
-  }
+  } | null;
 };
 
 export type OrderItem = {
