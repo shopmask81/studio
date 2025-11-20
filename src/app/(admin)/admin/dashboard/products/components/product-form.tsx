@@ -309,10 +309,17 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     replaceVariants(newVariants);
   }, [form, replaceVariants]);
 
-  // This is the correct way to handle the side-effect of toggling variants.
+  // Effect to handle side-effects of toggling variantsEnabled
   useEffect(() => {
     generateVariants();
-  }, [watchedColors, watchedSizes, variantsEnabled, generateVariants]);
+  }, [variantsEnabled, watchedColors, watchedSizes, generateVariants]);
+  
+  // Effect to handle side-effects of toggling freeShipping
+  useEffect(() => {
+    if (freeShipping) {
+      form.setValue('shippingPrice', 0);
+    }
+  }, [freeShipping, form]);
 
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
@@ -1055,12 +1062,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            if (checked) {
-                                                form.setValue('shippingPrice', 0);
-                                            }
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormControl>
                             </FormItem>
