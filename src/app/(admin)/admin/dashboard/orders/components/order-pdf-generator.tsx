@@ -123,8 +123,9 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
     for (let i = 0; i < ordersToExport.length; i++) {
         const order = ordersToExport[i];
 
+        // Increased height for each item to accommodate variant info
+        const itemRowHeight = 62; 
         const headerHeight = 130;
-        const itemRowHeight = 54; 
         const itemsHeight = order.items.length * itemRowHeight;
         const footerPadding = 16;
         const cardHeight = headerHeight + itemsHeight + footerPadding;
@@ -290,12 +291,21 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
 
             {/* Bottom Section: Ordered Items */}
             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'hidden', padding: '8px', backgroundColor: '#E8F8EC', borderRadius: '8px' }}>
-                {order.items.map(item => (
-                    <div key={item.productId + (item.imageUrl || '')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
+                {order.items.map((item, index) => (
+                    <div key={item.productId + index} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
                         <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', backgroundColor: '#E2E8EA', border: '1px solid #D5DDDF' }}>
                             {productImages[item.productId] && <img src={productImages[item.productId]!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         </div>
-                        <p style={{ flexGrow: 1, fontSize: '12px', margin: 0, fontWeight: 'bold', color: '#3A464B' }}>{shorten(item.name, 5)}</p>
+                        <div style={{ flexGrow: 1 }}>
+                            <p style={{ fontSize: '12px', margin: 0, fontWeight: 'bold', color: '#3A464B' }}>{shorten(item.name, 5)}</p>
+                            {item.variant && (item.variant.color || item.variant.size) && (
+                                <div style={{ fontSize: '10px', color: '#4F5B62', margin: '2px 0 0' }}>
+                                    {item.variant.color && `Color: ${item.variant.color}`}
+                                    {item.variant.color && item.variant.size && ' / '}
+                                    {item.variant.size && `Size: ${item.variant.size}`}
+                                </div>
+                            )}
+                        </div>
                         <p style={{ fontSize: '12px', color: '#4F5B62', margin: 0 }}><span style={{fontSize: '14px', fontWeight: 'bold'}}>QTY:</span> <span style={{fontWeight: 'bold'}}>{item.quantity}</span></p>
                         <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
@@ -304,5 +314,8 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
         </div>
     );
 }
+
+    
+
 
     
