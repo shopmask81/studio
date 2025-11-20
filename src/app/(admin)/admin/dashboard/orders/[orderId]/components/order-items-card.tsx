@@ -38,7 +38,7 @@ export function OrderItemsCard({ items, total, productImages }: OrderItemsCardPr
                             const isImageLoading = !productImages.hasOwnProperty(item.productId);
                             
                             return (
-                                <TableRow key={item.productId}>
+                                <TableRow key={item.productId + (item.variant?.color || '') + (item.variant?.size || '')}>
                                     <TableCell>
                                         <div className="flex items-center gap-4">
                                              {isImageLoading ? (
@@ -54,7 +54,16 @@ export function OrderItemsCard({ items, total, productImages }: OrderItemsCardPr
                                                     />
                                                 </div>
                                             )}
-                                            <span className="font-medium">{item.name}</span>
+                                            <div>
+                                                <span className="font-medium">{item.name}</span>
+                                                {item.variant && (item.variant.color || item.variant.size) && (
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {item.variant.color && <span>{item.variant.color}</span>}
+                                                        {item.variant.color && item.variant.size && <span> / </span>}
+                                                        {item.variant.size && <span>{item.variant.size}</span>}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">{item.quantity}</TableCell>

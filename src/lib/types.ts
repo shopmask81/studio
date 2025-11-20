@@ -6,9 +6,9 @@ export type VariantDetail = {
   color: string;
   size: string;
   price: number;
-  discountPrice?: number;
+  discountPrice: number | null; // Use null for consistency
   stock: number;
-  sku?: string;
+  sku: string | null; // Use null for consistency
 };
 
 export type Product = {
@@ -18,14 +18,14 @@ export type Product = {
   name_ar?: string;
   description_ar?: string;
   price: number;
-  discountPrice?: number;
+  discountPrice: number | null;
   mainImage: string;
   images: string[];
   category: string;
   stock: number;
   featured?: boolean;
   active?: boolean;
-  sku?: string;
+  sku?: string | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   // This field is for placeholder images and not part of the Firestore schema
