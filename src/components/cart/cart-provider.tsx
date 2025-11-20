@@ -9,10 +9,7 @@ import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } fr
 import { useTranslation } from '../language/language-provider';
 
 type AddToCartOptions = {
-  selectedColor?: string;
-  selectedSize?: string;
-  variantPrice?: number;
-  variantDiscountPrice?: number;
+  // This space is reserved for future variant options like color or size
 }
 
 type CartContextType = {
@@ -85,10 +82,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = useCallback((product: Product, quantity: number = 1, options?: AddToCartOptions) => {
     setCartItems((prevItems) => {
-      const findPredicate = (item: CartItem) =>
-        item.product.id === product.id &&
-        item.selectedColor === options?.selectedColor &&
-        item.selectedSize === options?.selectedSize;
+      const findPredicate = (item: CartItem) => item.product.id === product.id;
 
       const existingItem = prevItems.find(findPredicate);
       let newItems: CartItem[];
@@ -101,28 +95,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         newItems = [...prevItems, { 
           product, 
           quantity, 
-          selectedColor: options?.selectedColor, 
-          selectedSize: options?.selectedSize,
-          variantPrice: options?.variantPrice,
-          variantDiscountPrice: options?.variantDiscountPrice,
         }];
       }
       
-      const cartItemId = `${product.id}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
+      const cartItemId = product.id;
       
       if (user && firestore) {
         const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
         const itemToSave = newItems.find(findPredicate);
         if (itemToSave) {
-          // Convert undefined to null for Firestore compatibility
-          const firestoreSafeItem = {
-            ...itemToSave,
-            selectedColor: itemToSave.selectedColor ?? null,
-            selectedSize: itemToSave.selectedSize ?? null,
-            variantPrice: itemToSave.variantPrice ?? null,
-            variantDiscountPrice: itemToSave.variantDiscountPrice ?? null,
-          };
-          setDoc(cartItemRef, firestoreSafeItem, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
+          setDoc(cartItemRef, itemToSave, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
         }
       } else {
         localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
@@ -140,11 +122,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = useCallback((productId: string, options?: AddToCartOptions) => {
     setCartItems((prevItems) => {
-      const cartItemId = `${productId}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
-      const newItems = prevItems.filter((item) => {
-        const currentItemId = `${item.product.id}${item.selectedColor || ''}${item.selectedSize || ''}`;
-        return currentItemId !== cartItemId;
-      });
+      const cartItemId = productId;
+      const newItems = prevItems.filter(item => item.product.id !== cartItemId);
 
       if (user && firestore) {
           const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
@@ -162,14 +141,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     setCartItems((prevItems) => {
-      const findPredicate = (item: CartItem) =>
-        item.product.id === productId &&
-        item.selectedColor === options?.selectedColor &&
-        item.selectedSize === options?.selectedSize;
+      const findPredicate = (item: CartItem) => item.product.id === productId;
       
       const newItems = prevItems.map((item) => (findPredicate(item) ? { ...item, quantity } : item));
       
-      const cartItemId = `${productId}${options?.selectedColor || ''}${options?.selectedSize || ''}`;
+      const cartItemId = productId;
       
       if (user && firestore) {
           const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
@@ -198,7 +174,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   
   const cartTotal = useMemo(() => {
     return cartItems.reduce((total, item) => {
-        const price = item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price;
+        const price = item.product.discountPrice ?? item.product.price;
         return total + price * item.quantity;
     }, 0);
   }, [cartItems]);

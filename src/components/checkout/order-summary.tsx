@@ -21,11 +21,11 @@ export function OrderSummary() {
       <CardContent>
         <div className="space-y-4">
           {cartItems.map((item) => {
-            const price = item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price;
+            const price = item.product.discountPrice ?? item.product.price;
             const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
             const { dir } = t(displayName);
             return (
-                <div key={`${item.product.id}-${item.selectedColor}-${item.selectedSize}`} className="flex items-center justify-between text-sm">
+                <div key={item.product.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-3">
                         <div className="relative h-12 w-12 rounded-md overflow-hidden border">
                             <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
@@ -35,11 +35,6 @@ export function OrderSummary() {
                         </div>
                         <div>
                             <p className="font-medium truncate max-w-[150px]" dir={dir}>{displayName}</p>
-                            {(item.selectedColor || item.selectedSize) && (
-                                <p className="text-xs text-muted-foreground">
-                                    {item.selectedColor}{item.selectedColor && item.selectedSize && ', '}{item.selectedSize}
-                                </p>
-                            )}
                             <p className="text-muted-foreground">${price.toFixed(2)}</p>
                         </div>
                     </div>

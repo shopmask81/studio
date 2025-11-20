@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -38,14 +38,13 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Category } from '@/lib/types';
-import { Loader2, Upload, X, PlusCircle } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type UploadedImage = {
@@ -54,96 +53,18 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
-// Zod schema for individual variant details (price, stock)
-const variantDetailSchema = z.object({
-    price: z.coerce.number().positive('Price must be positive.'),
-    stock: z.coerce.number().int().min(0, 'Stock must be non-negative.'),
-    discountPrice: z.coerce.number().optional(),
-});
-
-// Zod schema for the entire variants structure
-const variantSchema = z.object({
-  enabled: z.boolean().default(false),
-  colors: z.array(z.object({ value: z.string().min(1, 'Color name cannot be empty.') })).default([]),
-  sizes: z.array(z.object({ value: z.string().min(1, 'Size name cannot be empty.') })).default([]),
-  details: z.record(z.string(), variantDetailSchema).optional(),
-});
-
-// Main form schema with superRefine for conditional validation
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
   name_ar: z.string().optional(),
   description_ar: z.string().optional(),
-  price: z.coerce.number().positive('Price must be a positive number.').optional(),
+  price: z.coerce.number().positive('Price must be a positive number.'),
   discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.').optional(),
+  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
   category: z.string().min(1, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
-  variants: variantSchema,
-}).superRefine((data, ctx) => {
-    // This function provides custom validation logic that depends on multiple fields.
-    if (data.variants.enabled) {
-        // If variants are enabled, we validate the generated combinations.
-        const colors = data.variants.colors?.map(c => c.value).filter(Boolean) ?? [];
-        const sizes = data.variants.sizes?.map(s => s.value).filter(Boolean) ?? [];
-        
-        // At least one color or one size must be provided if variants are enabled.
-        if (colors.length === 0 && sizes.length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Add at least one color or size to create variants.',
-                path: ['variants.colors'],
-            });
-            return;
-        }
-
-        // Generate the keys for all possible variant combinations.
-        let combinations: string[] = [];
-        if (colors.length > 0 && sizes.length === 0) combinations = colors;
-        else if (colors.length === 0 && sizes.length > 0) combinations = sizes;
-        else if (colors.length > 0 && sizes.length > 0) {
-            combinations = colors.flatMap(color => sizes.map(size => `${color}-${size}`));
-        }
-        
-        // Check that details (price/stock) exist and are valid for each combination.
-        for (const key of combinations) {
-            const detail = data.variants.details?.[key];
-            if (!detail || detail.price === undefined || detail.price === null || isNaN(detail.price) || detail.price <= 0) {
-                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: `Price is required for variant ${key.replace('-', ' / ')}.`,
-                    path: [`variants.details.${key}.price`],
-                });
-            }
-             if (detail?.stock === undefined || detail?.stock === null || isNaN(detail.stock) || detail.stock < 0) {
-                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: `Stock is required for variant ${key.replace('-', ' / ')}.`,
-                    path: [`variants.details.${key}.stock`],
-                });
-            }
-        }
-
-    } else {
-        // If variants are disabled, the base price and stock fields are required.
-        if (data.price === undefined || data.price === null || isNaN(data.price) || data.price <= 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Price is required when variants are disabled.',
-                path: ['price'],
-            });
-        }
-        if (data.stock === undefined || data.stock === null || isNaN(data.stock) || data.stock < 0) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Stock is required when variants are disabled.',
-                path: ['stock'],
-            });
-        }
-    }
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -207,8 +128,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   
-  const [bulkValues, setBulkValues] = useState({ stock: '', price: '', discountPrice: '' });
-
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
@@ -222,95 +141,28 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
-    // This comprehensive defaultValues structure is key to preventing uncontrolled input errors.
     defaultValues: productToEdit
       ? {
           ...productToEdit,
-          price: productToEdit.price ?? undefined,
-          stock: productToEdit.stock ?? undefined,
+          price: productToEdit.price ?? 0,
+          stock: productToEdit.stock ?? 0,
           discountPrice: productToEdit.discountPrice ?? undefined,
           sku: productToEdit.sku ?? '',
-          // Ensure variants structure is always present and correctly typed.
-          variants: {
-            enabled: productToEdit.variants?.enabled ?? false,
-            colors: productToEdit.variants?.colors?.map(c => ({value: c})) ?? [],
-            sizes: productToEdit.variants?.sizes?.map(s => ({value: s})) ?? [],
-            details: productToEdit.variants?.details ?? {},
-          }
         }
       : {
           name: '',
           description: '',
           name_ar: '',
           description_ar: '',
-          price: undefined,
+          price: 0,
           discountPrice: undefined,
-          stock: undefined,
+          stock: 0,
           category: '',
           sku: '',
           active: true,
           featured: false,
-          variants: {
-            enabled: false,
-            colors: [],
-            sizes: [],
-            details: {}
-          }
         },
   });
-
-  // react-hook-form's useFieldArray provides a stable way to manage dynamic form fields.
-  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
-    control: form.control,
-    name: "variants.colors"
-  });
-
-  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
-    control: form.control,
-    name: "variants.sizes"
-  });
-  
-  // Watch for changes in variant-related fields to dynamically update the UI.
-  const variantsEnabled = form.watch('variants.enabled');
-  const watchedColors = form.watch('variants.colors');
-  const watchedSizes = form.watch('variants.sizes');
-
-  // useMemo hook to calculate the Cartesian product of colors and sizes.
-  // This memoizes the result, preventing re-calculation on every render.
-  const variantCombinations = useMemo(() => {
-    const colors = watchedColors?.map(c => c.value).filter(Boolean) ?? [];
-    const sizes = watchedSizes?.map(s => s.value).filter(Boolean) ?? [];
-
-    if (!variantsEnabled || (colors.length === 0 && sizes.length === 0)) return [];
-    if (colors.length > 0 && sizes.length === 0) return colors.map(c => ({ color: c, size: null, key: c }));
-    if (colors.length === 0 && sizes.length > 0) return sizes.map(s => ({ color: null, size: s, key: s }));
-
-    // The Cartesian product logic.
-    return colors.flatMap(color =>
-      sizes.map(size => ({ color, size, key: `${color}-${size}` }))
-    );
-  }, [watchedColors, watchedSizes, variantsEnabled]);
-
-  // Function to apply a value (stock, price, etc.) to all generated variants at once.
-  const handleApplyBulkValues = (field: 'stock' | 'price' | 'discountPrice') => {
-    const value = bulkValues[field]; // Keep as string for the input
-    if (value === '') {
-        toast({ variant: 'destructive', title: `Invalid value`, description: 'Please enter a value to apply.'});
-        return;
-    }
-    const numericValue = parseFloat(value);
-     if (isNaN(numericValue) || (field !== 'stock' && numericValue <= 0) || (field === 'stock' && numericValue < 0)) {
-        toast({ variant: 'destructive', title: `Invalid ${field} value`, description: 'Please enter a valid, non-negative number.' });
-        return;
-    }
-
-    // Iterate over combinations and set the value for each in the form state.
-    variantCombinations.forEach(({ key }) => {
-        form.setValue(`variants.details.${key}.${field}`, numericValue, { shouldValidate: true, shouldDirty: true });
-    });
-    toast({ title: `Bulk value applied`, description: `Set ${field} to ${value} for all variants.` });
-  };
-
 
   useEffect(() => {
     if (productToEdit) {
@@ -526,18 +378,10 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         const mainImage = uploadedImages[mainImageIndex].url;
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
-        // Sanitize the variants data before sending it to Firestore.
         const productData = {
             ...data,
             mainImage: mainImage,
             images: additionalImages,
-            // Safely map arrays, ensuring they exist.
-            variants: {
-              enabled: data.variants?.enabled ?? false,
-              colors: Array.isArray(data.variants?.colors) ? data.variants.colors.map(c => c.value).filter(Boolean) : [],
-              sizes: Array.isArray(data.variants?.sizes) ? data.variants.sizes.map(s => s.value).filter(Boolean) : [],
-              details: data.variants?.details ?? {},
-            }
         };
 
         if (productToEdit) {
@@ -783,52 +627,48 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 <CardTitle>Pricing & Inventory</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!variantsEnabled && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="price"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Price</FormLabel>
-                                    <FormControl>
-                                    <Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="discountPrice"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Discount Price (Optional)</FormLabel>
-                                    <FormControl>
-                                    <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                        </div>
-                        <FormField
-                            control={form.control}
-                            name="stock"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Stock Quantity</FormLabel>
-                                <FormControl>
-                                <Input type="number" placeholder="100" {...field} value={field.value ?? ''}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                )}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Price</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="0.01" placeholder="99.99" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="discountPrice"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Discount Price (Optional)</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="stock"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Stock Quantity</FormLabel>
+                            <FormControl>
+                            <Input type="number" placeholder="100" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                      <FormField
                         control={form.control}
                         name="sku"
@@ -845,223 +685,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Product Variants</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <FormField
-                        control={form.control}
-                        name="variants.enabled"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <FormLabel>Enable Variants</FormLabel>
-                                    <FormDescription>
-                                        Allow customers to choose options like color or size.
-                                    </FormDescription>
-                                </div>
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-
-                    {variantsEnabled && (
-                        <div className="space-y-6 pt-6">
-                            {/* Colors Section */}
-                            <div>
-                                <h3 className="text-lg font-medium mb-2">Colors</h3>
-                                <div className="space-y-2">
-                                    {colorFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`variants.colors.${index}.value`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl>
-                                                            <Input placeholder="e.g. Red, Blue, Green" {...field} />
-                                                        </FormControl>
-                                                         <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(index)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2"
-                                    onClick={() => appendColor({ value: '' })}
-                                >
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Add Color
-                                </Button>
-                            </div>
-
-                            {/* Sizes Section */}
-                            <div>
-                                <h3 className="text-lg font-medium mb-2">Sizes</h3>
-                                <div className="space-y-2">
-                                    {sizeFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`variants.sizes.${index}.value`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl>
-                                                            <Input placeholder="e.g. S, M, L, XL" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(index)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2"
-                                    onClick={() => appendSize({ value: '' })}
-                                >
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Add Size
-                                </Button>
-                            </div>
-
-                             {/* Generated Variants Table */}
-                            {variantCombinations.length > 0 && (
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-medium mb-2 mt-6">Variant Details</h3>
-                                    
-                                    {/* Bulk Edit Controls */}
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-2 border rounded-lg bg-muted/50">
-                                        <span className="text-sm font-medium mr-2">Bulk Apply:</span>
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                placeholder="Stock"
-                                                value={bulkValues.stock}
-                                                onChange={(e) => setBulkValues(v => ({...v, stock: e.target.value}))}
-                                                className="h-8 max-w-[90px]"
-                                            />
-                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('stock')}>Apply</Button>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                placeholder="Price"
-                                                value={bulkValues.price}
-                                                onChange={(e) => setBulkValues(v => ({...v, price: e.target.value}))}
-                                                className="h-8 max-w-[90px]"
-                                            />
-                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('price')}>Apply</Button>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                placeholder="Discount Price"
-                                                value={bulkValues.discountPrice}
-                                                onChange={(e) => setBulkValues(v => ({...v, discountPrice: e.target.value}))}
-                                                className="h-8 max-w-[120px]"
-                                            />
-                                            <Button type="button" size="sm" variant="secondary" onClick={() => handleApplyBulkValues('discountPrice')}>Apply</Button>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Variants Table */}
-                                    <div className="border rounded-lg overflow-hidden">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Variant</TableHead>
-                                                    <TableHead className="w-[120px]">Price</TableHead>
-                                                    <TableHead className="w-[120px]">Discount</TableHead>
-                                                    <TableHead className="w-[120px]">Stock</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {variantCombinations.map(({ color, size, key }) => (
-                                                    <TableRow key={key}>
-                                                        <TableCell className="font-medium">
-                                                            {color && <Badge variant="secondary" className="mr-2">{color}</Badge>}
-                                                            {size && <Badge variant="outline">{size}</Badge>}
-                                                        </TableCell>
-                                                         <TableCell>
-                                                            <FormField
-                                                                control={form.control}
-                                                                name={`variants.details.${key}.price`}
-                                                                defaultValue={0}
-                                                                render={({ field }) => (
-                                                                    <FormItem>
-                                                                        <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-9" />
-                                                                        </FormControl>
-                                                                        <FormMessage className="text-xs"/>
-                                                                    </FormItem>
-                                                                )}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <FormField
-                                                                control={form.control}
-                                                                name={`variants.details.${key}.discountPrice`}
-                                                                render={({ field }) => (
-                                                                    <FormItem>
-                                                                        <FormControl>
-                                                                            <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="h-9" />
-                                                                        </FormControl>
-                                                                        <FormMessage className="text-xs"/>
-                                                                    </FormItem>
-                                                                )}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <FormField
-                                                                control={form.control}
-                                                                name={`variants.details.${key}.stock`}
-                                                                defaultValue={0}
-                                                                render={({ field }) => (
-                                                                    <FormItem>
-                                                                        <FormControl>
-                                                                            <Input type="number" {...field} value={field.value ?? ''} className="h-9" />
-                                                                        </FormControl>
-                                                                        <FormMessage className="text-xs"/>
-                                                                    </FormItem>
-                                                                )}
-                                                            />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    <FormMessage>{form.formState.errors.variants?.root?.message}</FormMessage>
-                                </div>
-                            )}
-
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
           </div>
 
           <div className="lg:col-span-1 space-y-8">

@@ -20,8 +20,6 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { useTranslation } from '../language/language-provider';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Label } from '../ui/label';
 
 interface ProductDetailsProps {
   productId: string;
@@ -36,55 +34,14 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
-  const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
-  const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
-
   const productRef = useMemo(() => {
     if (!firestore || !productId) return null;
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
-  
-  const hasVariants = product?.variants?.enabled;
-  const hasColors = hasVariants && product.variants.colors && product.variants.colors.length > 0;
-  const hasSizes = hasVariants && product.variants.sizes && product.variants.sizes.length > 0;
 
-  const currentVariantKey = useMemo(() => {
-    if (!hasVariants) return null;
-    if (hasColors && !selectedColor) return null;
-    if (hasSizes && !selectedSize) return null;
-    return [selectedColor, selectedSize].filter(Boolean).join('-') || null;
-  }, [hasVariants, hasColors, hasSizes, selectedColor, selectedSize]);
-
-  const currentVariantDetails = useMemo(() => {
-    if (!currentVariantKey || !product?.variants?.details) return null;
-    return product.variants.details[currentVariantKey];
-  }, [currentVariantKey, product?.variants?.details]);
-
-  const currentStock = useMemo(() => {
-    if (!hasVariants) return product?.stock ?? null;
-    return currentVariantDetails?.stock ?? null;
-  }, [product, hasVariants, currentVariantDetails]);
-
-  const currentPrice = useMemo(() => {
-    if (!hasVariants) return product?.price;
-    return currentVariantDetails?.price;
-  }, [product, hasVariants, currentVariantDetails]);
-  
-  const currentDiscountPrice = useMemo(() => {
-    if (!hasVariants) return product?.discountPrice;
-    return currentVariantDetails?.discountPrice;
-  }, [product, hasVariants, currentVariantDetails]);
-
-  const hasDiscount = currentDiscountPrice !== undefined && currentPrice !== undefined && currentDiscountPrice < currentPrice;
-
-
-  useEffect(() => {
-    // Reset selections when product changes
-    setSelectedColor(undefined);
-    setSelectedSize(undefined);
-  }, [productId])
+  const hasDiscount = product?.discountPrice && product?.price && product.discountPrice < product.price;
 
   const imageGallery = useMemo(() => {
       if (!product) return [];
@@ -125,12 +82,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, 1, { 
-      selectedColor, 
-      selectedSize,
-      variantPrice: currentPrice,
-      variantDiscountPrice: currentDiscountPrice
-    });
+    addToCart(product, 1);
   };
 
   if (isLoading) {
@@ -159,7 +111,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { dir: nameDir, style: nameStyle } = t(displayName);
   const { dir: descDir, style: descStyle } = t(displayDescription);
 
-  const isAddToCartDisabled = currentStock === 0 || (hasVariants && currentVariantKey === null);
+  const isAddToCartDisabled = product.stock === 0;
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -238,91 +190,24 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words" dir={nameDir} style={nameStyle}>{displayName}</h1>
 
             <div className="flex items-baseline gap-3 mb-6 min-h-[48px]">
-                {currentPrice !== undefined ? (
-                    hasDiscount ? (
-                        <>
-                            <p className="text-4xl font-bold text-primary">${currentDiscountPrice?.toFixed(2)}</p>
-                            <p className="text-2xl font-medium text-muted-foreground line-through">${currentPrice?.toFixed(2)}</p>
-                        </>
-                    ) : (
-                        <p className="text-4xl font-bold text-primary">${currentPrice.toFixed(2)}</p>
-                    )
+                {hasDiscount ? (
+                    <>
+                        <p className="text-4xl font-bold text-primary">${product.discountPrice?.toFixed(2)}</p>
+                        <p className="text-2xl font-medium text-muted-foreground line-through">${product.price?.toFixed(2)}</p>
+                    </>
                 ) : (
-                    hasVariants && <p className="text-muted-foreground">Select options to see price</p>
+                    <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
                 )}
             </div>
 
             <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
             
-            {/* Variants Section */}
-            {hasVariants && (
-              <div className="space-y-6 mb-8">
-                {hasColors && (
-                  <div>
-                    <Label className="text-lg font-medium">Color</Label>
-                    <RadioGroup
-                      value={selectedColor}
-                      onValueChange={setSelectedColor}
-                      className="flex flex-wrap gap-2 mt-2"
-                    >
-                      {product.variants!.colors!.map((color) => (
-                        <RadioGroupItem key={color} value={color} id={`color-${color}`} className="sr-only" />
-                      ))}
-                      {product.variants!.colors!.map((color) => (
-                        <Label
-                          key={`label-${color}`}
-                          htmlFor={`color-${color}`}
-                          className={cn(
-                            "cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors",
-                            selectedColor === color
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background hover:bg-muted"
-                          )}
-                        >
-                          {color}
-                        </Label>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-                {hasSizes && (
-                   <div>
-                    <Label className="text-lg font-medium">Size</Label>
-                    <RadioGroup
-                      value={selectedSize}
-                      onValueChange={setSelectedSize}
-                      className="flex flex-wrap gap-2 mt-2"
-                    >
-                      {product.variants!.sizes!.map((size) => (
-                        <RadioGroupItem key={size} value={size} id={`size-${size}`} className="sr-only" />
-                      ))}
-                      {product.variants!.sizes!.map((size) => (
-                        <Label
-                          key={`label-${size}`}
-                          htmlFor={`size-${size}`}
-                          className={cn(
-                            "cursor-pointer rounded-md border w-12 h-12 flex items-center justify-center text-sm font-medium transition-colors",
-                            selectedSize === size
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background hover:bg-muted"
-                          )}
-                        >
-                          {size}
-                        </Label>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-              </div>
-            )}
-
-
-            {currentStock !== null && currentStock <= 10 && currentStock > 0 && (
+            {product.stock <= 10 && product.stock > 0 && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
-                    currentStock <= 5 ? "text-red-500" : "text-amber-500"
-                )} {...t('only_left_in_stock', {count: currentStock})}>
-                    {t('only_left_in_stock', { count: currentStock }).text}
+                    product.stock <= 5 ? "text-red-500" : "text-amber-500"
+                )} {...t('only_left_in_stock', {count: product.stock})}>
+                    {t('only_left_in_stock', { count: product.stock }).text}
                 </p>
             )}
 
@@ -334,7 +219,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {currentStock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
+                    {product.stock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
                 </Button>
             </div>
         </div>
