@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -272,13 +271,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
   const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
   const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
-
-  // Effect to manage shipping price based on free shipping toggle
-  useEffect(() => {
-    if (freeShipping) {
-      form.setValue('shippingPrice', 0);
-    }
-  }, [freeShipping, form]);
 
   // This effect will regenerate the variants table whenever colors or sizes change.
   useEffect(() => {
@@ -1061,7 +1053,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            if (checked) {
+                                                form.setValue('shippingPrice', 0);
+                                            }
+                                        }}
                                     />
                                 </FormControl>
                             </FormItem>
