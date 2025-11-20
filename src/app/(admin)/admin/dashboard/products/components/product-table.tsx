@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -39,6 +38,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function ProductTable() {
   const firestore = useFirestore();
@@ -68,6 +68,13 @@ export function ProductTable() {
     }
   };
 
+  const truncateName = (name: string, maxLength = 50) => {
+    if (name.length <= maxLength) {
+      return name;
+    }
+    return `${name.substring(0, maxLength)}...`;
+  };
+
   if (isLoading) {
     return <div>Loading products...</div>;
   }
@@ -82,6 +89,7 @@ export function ProductTable() {
             <TableHead className="hidden md:table-cell">Price</TableHead>
             <TableHead className="hidden md:table-cell">Stock</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Featured</TableHead>
             <TableHead className="hidden md:table-cell">Created at</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -100,7 +108,7 @@ export function ProductTable() {
                     src={product.mainImage || 'https://placehold.co/40x40'}
                     width="40"
                   />
-                  <span>{product.name}</span>
+                  <span>{truncateName(product.name)}</span>
                 </div>
               </TableCell>
               <TableCell>{product.category}</TableCell>
@@ -112,6 +120,16 @@ export function ProductTable() {
                 <Badge variant={product.active ? 'default' : 'outline'}>
                   {product.active ? 'Active' : 'Draft'}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                <div className={cn(
+                  "rounded px-2 py-1 text-xs text-center w-fit",
+                  product.featured 
+                    ? "bg-green-600/20 text-green-500" 
+                    : "bg-gray-600/20 text-gray-400"
+                )}>
+                  {product.featured ? 'Yes' : 'No'}
+                </div>
               </TableCell>
                <TableCell className="hidden md:table-cell">
                 {product.createdAt ? format(product.createdAt.toDate(), 'PPP') : 'N/A'}
