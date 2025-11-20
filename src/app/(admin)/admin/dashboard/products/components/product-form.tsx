@@ -533,8 +533,8 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             images: additionalImages,
             variants: {
               enabled: data.variants?.enabled ?? false,
-              colors: data.variants?.colors?.map(c => c.value).filter(Boolean) ?? [],
-              sizes: data.variants?.sizes?.map(s => s.value).filter(Boolean) ?? [],
+              colors: Array.isArray(data.variants?.colors) ? data.variants.colors.map(c => c.value).filter(Boolean) : [],
+              sizes: Array.isArray(data.variants?.sizes) ? data.variants.sizes.map(s => s.value).filter(Boolean) : [],
               details: data.variants?.details ?? {},
             }
         };
@@ -542,37 +542,30 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         if (productToEdit) {
             const productRef = doc(firestore, 'products', productToEdit.id);
             const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
-            updateDoc(productRef, dataToUpdate).catch(async (serverError) => {
-              console.error("Firestore update error:", serverError);
-              const permissionError = new FirestorePermissionError({
-                  path: productRef.path,
-                  operation: 'update',
-                  requestResourceData: dataToUpdate,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-            });
+            await updateDoc(productRef, dataToUpdate);
             toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
             router.push('/admin/dashboard/products');
             router.refresh();
         } else {
             const collectionRef = collection(firestore, 'products');
             const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            addDoc(collectionRef, dataToCreate).catch(async (serverError) => {
-              console.error("Firestore creation error:", serverError);
-              const permissionError = new FirestorePermissionError({
-                  path: collectionRef.path,
-                  operation: 'create',
-                  requestResourceData: dataToCreate,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-            });
+            await addDoc(collectionRef, dataToCreate);
             toast({ title: 'Product Created', description: 'The new product has been added.' });
             router.push('/admin/dashboard/products');
             router.refresh();
         }
     } catch (error) {
         console.error('Error in onSubmit logic:', error);
-        toast({ variant: 'destructive', title: 'Save Failed', description: 'An unexpected error occurred while saving the product.' });
+        if ((error as any)?.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: productToEdit ? `products/${productToEdit.id}` : 'products',
+                operation: productToEdit ? 'update' : 'create',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
+        } else {
+            toast({ variant: 'destructive', title: 'Save Failed', description: 'An unexpected error occurred while saving the product.' });
+        }
     } finally {
         setIsSubmitting(false);
     }
