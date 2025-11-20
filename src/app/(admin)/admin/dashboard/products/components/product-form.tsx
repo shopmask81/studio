@@ -787,6 +787,47 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             </Card>
 
             <Card>
+              <CardHeader>
+                <CardTitle>Organization</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                        >
+                            <FormControl>
+                                <SelectTrigger disabled={isLoadingCategories}>
+                                <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {isLoadingCategories ? (
+                                    <div className="flex items-center justify-center p-4">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    </div>
+                                ) : (
+                                categories?.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.slug}>
+                                    {cat.name}
+                                    </SelectItem>
+                                ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -1000,47 +1041,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
           </div>
 
           <div className="lg:col-span-1 space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Organization</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                        <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                        >
-                            <FormControl>
-                                <SelectTrigger disabled={isLoadingCategories}>
-                                <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {isLoadingCategories ? (
-                                    <div className="flex items-center justify-center p-4">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    </div>
-                                ) : (
-                                categories?.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.slug}>
-                                    {cat.name}
-                                    </SelectItem>
-                                ))
-                                )}
-                            </SelectContent>
-                        </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Status & Visibility</CardTitle>
