@@ -25,10 +25,36 @@ export function ProductCard({ product }: ProductCardProps) {
     addToCart(product);
   };
 
-  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-
   const displayName = (language === 'ar' && product.name_ar) || product.name;
   const { dir, style } = t(displayName);
+
+  let displayPrice: number;
+  let originalPrice: number | null = null;
+
+  if (product.variantsEnabled && product.variants && product.variants.length > 0) {
+    const validVariants = product.variants.filter(v => v.price > 0);
+
+    if (validVariants.length > 0) {
+      const minPrice = Math.min(...validVariants.map(v => v.price));
+      const minDiscountPrice = Math.min(...validVariants.map(v => v.discountPrice ?? v.price));
+      
+      displayPrice = minDiscountPrice;
+      if (minDiscountPrice < minPrice) {
+        originalPrice = minPrice;
+      }
+    } else {
+        displayPrice = 0; // Fallback for misconfigured variants
+    }
+  } else {
+    displayPrice = product.price;
+    if (product.discountPrice && product.discountPrice < product.price) {
+        originalPrice = product.price;
+        displayPrice = product.discountPrice;
+    }
+  }
+
+  const hasDiscount = originalPrice !== null;
+  const isFromPrice = product.variantsEnabled && product.variants && product.variants.length > 1;
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
@@ -50,13 +76,14 @@ export function ProductCard({ product }: ProductCardProps) {
             </CardContent>
             <CardFooter className="p-4 flex justify-between items-center mt-auto">
                 <div className="flex items-baseline gap-2">
+                    {isFromPrice && <span className="text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-xl font-bold text-accent dark:text-shadow-glow">${product.discountPrice?.toFixed(2)}</p>
-                            <p className="text-sm font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-accent dark:text-shadow-glow">${displayPrice.toFixed(2)}</p>
+                            <p className="text-sm font-medium text-muted-foreground line-through">${originalPrice?.toFixed(2)}</p>
                         </>
                     ) : (
-                        <p className="text-xl font-bold text-accent dark:text-shadow-glow">${product.price.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-accent dark:text-shadow-glow">${displayPrice.toFixed(2)}</p>
                     )}
                 </div>
                  <Button onClick={handleAddToCart} variant="secondary" className="bg-primary text-primary-foreground font-semibold hover:bg-ring hover:shadow-accent-glow transition-all duration-200 ease-in-out">
