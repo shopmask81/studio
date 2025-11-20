@@ -26,16 +26,18 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import {
   collection,
   addDoc,
   updateDoc,
   doc,
   serverTimestamp,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Product } from '@/lib/types';
+import type { Product, Category } from '@/lib/types';
 import { Loader2, Upload, X, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type UploadedImage = {
   id: string;
@@ -73,7 +76,7 @@ const formSchema = z.object({
   price: z.coerce.number().positive('Price must be a positive number.').optional(),
   discountPrice: z.coerce.number().optional(),
   stock: z.coerce.number().int().min(0, 'Stock cannot be negative.').optional(),
-  category: z.string().min(2, 'Category is required.'),
+  category: z.string().min(1, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
@@ -200,6 +203,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+
+  const categoriesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'categories'), orderBy('name'));
+  }, [firestore]);
+
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
+
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -1063,9 +1074,30 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Venetian" {...field} />
-                      </FormControl>
+                        <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                        >
+                            <FormControl>
+                                <SelectTrigger disabled={isLoadingCategories}>
+                                <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {isLoadingCategories ? (
+                                    <div className="flex items-center justify-center p-4">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    </div>
+                                ) : (
+                                categories?.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.slug}>
+                                    {cat.name}
+                                    </SelectItem>
+                                ))
+                                )}
+                            </SelectContent>
+                        </Select>
                       <FormMessage />
                     </FormItem>
                   )}
