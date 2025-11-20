@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -37,8 +37,8 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Product, Category } from '@/lib/types';
-import { Loader2, Upload, X } from 'lucide-react';
+import type { Product, Category, VariantDetail } from '@/lib/types';
+import { Loader2, Upload, X, Trash2, PlusCircle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -46,6 +46,8 @@ import { cn } from '@/lib/utils';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type UploadedImage = {
   id: string;
@@ -53,25 +55,75 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
+// Zod schema for a single variant detail
+const variantDetailSchema = z.object({
+  id: z.string(),
+  color: z.string(),
+  size: z.string(),
+  price: z.coerce.number().positive('Price must be > 0'),
+  discountPrice: z.coerce.number().optional(),
+  stock: z.coerce.number().int().min(0, 'Stock required'),
+  sku: z.string().optional(),
+});
+
+// Zod schema for a single option (color or size)
+const optionSchema = z.object({
+  value: z.string().min(1, 'Option cannot be empty'),
+});
+
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
   name_ar: z.string().optional(),
   description_ar: z.string().optional(),
-  price: z.coerce.number().positive('Price must be a positive number.'),
+  price: z.coerce.number(),
   discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
+  stock: z.coerce.number().int(),
   category: z.string().min(1, 'Category is required.'),
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
+  
+  // Variants structure
+  variantsEnabled: z.boolean().default(false),
+  variantOptions: z.object({
+    colors: z.array(optionSchema),
+    sizes: z.array(optionSchema),
+  }),
+  variants: z.array(variantDetailSchema),
+}).superRefine((data, ctx) => {
+  if (data.variantsEnabled) {
+    if (data.variantOptions.colors.length === 0 && data.variantOptions.sizes.length === 0) {
+      // It's okay if no options are added yet, but no variants will be generated.
+      return;
+    }
+    if (data.variants.length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['variantsEnabled'],
+            message: "You must add at least one Color or Size and generate variants.",
+        });
+    }
+  } else {
+    if (data.price <= 0) {
+      ctx.addIssue({ code: 'custom', message: 'Price must be positive.', path: ['price'] });
+    }
+    if (data.stock < 0) {
+      ctx.addIssue({ code: 'custom', message: 'Stock cannot be negative.', path: ['stock'] });
+    }
+  }
 });
+
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
 interface ProductFormProps {
   productToEdit?: Product;
 }
+
+// Helper to generate a unique ID for variants
+const createVariantId = (color: string, size: string) => `${color}-${size}`.toLowerCase().replace(/\s+/g, '-');
+
 
 async function uploadToImgBB(file: File): Promise<Omit<UploadedImage, 'id'>> {
     const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
@@ -138,31 +190,96 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
 
+  const defaultValues: ProductFormValues = {
+    name: productToEdit?.name || '',
+    description: productToEdit?.description || '',
+    name_ar: productToEdit?.name_ar || '',
+    description_ar: productToEdit?.description_ar || '',
+    price: productToEdit?.price ?? 0,
+    stock: productToEdit?.stock ?? 0,
+    discountPrice: productToEdit?.discountPrice ?? undefined,
+    category: productToEdit?.category || '',
+    sku: productToEdit?.sku ?? '',
+    active: productToEdit?.active ?? true,
+    featured: productToEdit?.featured ?? false,
+    variantsEnabled: productToEdit?.variantsEnabled ?? false,
+    variantOptions: {
+      colors: (productToEdit?.variantOptions?.colors || []).map(c => ({ value: c })),
+      sizes: (productToEdit?.variantOptions?.sizes || []).map(s => ({ value: s })),
+    },
+    variants: productToEdit?.variants || [],
+  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: productToEdit
-      ? {
-          ...productToEdit,
-          price: productToEdit.price ?? 0,
-          stock: productToEdit.stock ?? 0,
-          discountPrice: productToEdit.discountPrice ?? undefined,
-          sku: productToEdit.sku ?? '',
-        }
-      : {
-          name: '',
-          description: '',
-          name_ar: '',
-          description_ar: '',
-          price: 0,
-          discountPrice: undefined,
-          stock: 0,
-          category: '',
-          sku: '',
-          active: true,
-          featured: false,
-        },
+    defaultValues,
   });
+
+  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
+    control: form.control,
+    name: "variantOptions.colors",
+  });
+  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
+    control: form.control,
+    name: "variantOptions.sizes",
+  });
+  const { fields: variantFields, replace: replaceVariants } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  });
+
+  const watchedColors = useWatch({ control: form.control, name: 'variantOptions.colors' });
+  const watchedSizes = useWatch({ control: form.control, name: 'variantOptions.sizes' });
+  const variantsEnabled = useWatch({ control: form.control, name: 'variantsEnabled' });
+
+  // This effect will regenerate the variants table whenever colors or sizes change.
+  useEffect(() => {
+    if (!variantsEnabled) return;
+
+    const colors = watchedColors.map(c => c.value).filter(Boolean);
+    const sizes = watchedSizes.map(s => s.value).filter(Boolean);
+    
+    if (colors.length === 0 && sizes.length === 0) {
+      replaceVariants([]);
+      return;
+    }
+
+    // Ensure at least one array has items to avoid empty generation
+    const colorOptions = colors.length > 0 ? colors : [''];
+    const sizeOptions = sizes.length > 0 ? sizes : [''];
+
+    const newVariants = colorOptions.flatMap(color =>
+      sizeOptions.map(size => {
+        const id = createVariantId(color, size);
+        const existingVariant = variantFields.find(v => v.id === id);
+        return {
+          id,
+          color,
+          size,
+          price: existingVariant?.price || 0,
+          discountPrice: existingVariant?.discountPrice || undefined,
+          stock: existingVariant?.stock || 0,
+          sku: existingVariant?.sku || '',
+        };
+      })
+    );
+    
+    replaceVariants(newVariants);
+  }, [watchedColors, watchedSizes, variantsEnabled, replaceVariants, variantFields]);
+  
+
+  const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
+    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numericValue)) return;
+  
+    const currentVariants = form.getValues('variants');
+    const updatedVariants = currentVariants.map(variant => ({
+      ...variant,
+      [field]: numericValue,
+    }));
+    form.setValue('variants', updatedVariants, { shouldDirty: true });
+  };
+
 
   useEffect(() => {
     if (productToEdit) {
@@ -378,11 +495,41 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         const mainImage = uploadedImages[mainImageIndex].url;
         const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
 
-        const productData = {
-            ...data,
+        let productData: Partial<Product> = {
+            name: data.name,
+            description: data.description,
+            name_ar: data.name_ar,
+            description_ar: data.description_ar,
+            category: data.category,
+            active: data.active,
+            featured: data.featured,
             mainImage: mainImage,
             images: additionalImages,
+            variantsEnabled: data.variantsEnabled,
         };
+
+        if (data.variantsEnabled) {
+            productData = {
+                ...productData,
+                variants: data.variants,
+                variantOptions: {
+                    colors: data.variantOptions.colors.map(c => c.value).filter(Boolean),
+                    sizes: data.variantOptions.sizes.map(s => s.value).filter(Boolean),
+                },
+                price: 0, // Base price is not used
+                stock: 0, // Base stock is not used
+            };
+        } else {
+            productData = {
+                ...productData,
+                price: data.price,
+                discountPrice: data.discountPrice,
+                stock: data.stock,
+                sku: data.sku,
+                variants: [],
+                variantOptions: { colors: [], sizes: [] },
+            }
+        }
 
         if (productToEdit) {
             const productRef = doc(firestore, 'products', productToEdit.id);
@@ -623,67 +770,170 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Pricing & Inventory</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="price"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Price</FormLabel>
-                            <FormControl>
-                            <Input type="number" step="0.01" placeholder="99.99" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="discountPrice"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Discount Price (Optional)</FormLabel>
-                            <FormControl>
-                            <Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="stock"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Stock Quantity</FormLabel>
-                            <FormControl>
-                            <Input type="number" placeholder="100" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="sku"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>SKU (Optional)</FormLabel>
-                            <FormControl>
-                            <Input placeholder="MASK-VG-01" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-              </CardContent>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Pricing & Inventory</CardTitle>
+                            <CardDescription>Manage variants or set a single price.</CardDescription>
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="variantsEnabled"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center gap-2 space-y-0">
+                                    <FormLabel>Enable Variants</FormLabel>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {!variantsEnabled ? (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="price" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Price</FormLabel>
+                                        <FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="discountPrice" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Discount Price (Optional)</FormLabel>
+                                        <FormControl><Input type="number" step="0.01" placeholder="89.99" {...field} value={field.value ?? ''} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="stock" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Stock Quantity</FormLabel>
+                                        <FormControl><Input type="number" placeholder="100" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="sku" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>SKU (Optional)</FormLabel>
+                                        <FormControl><Input placeholder="MASK-VG-01" {...field} value={field.value ?? ''} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        </div>
+                    ) : (
+                        // Variants UI
+                        <div className="space-y-6">
+                            {/* --- OPTIONS --- */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label>Colors</Label>
+                                    {colorFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`variantOptions.colors.${index}.value`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl><Input placeholder="e.g., Black" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(index)}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => appendColor({ value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Color</Button>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Sizes</Label>
+                                    {sizeFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`variantOptions.sizes.${index}.value`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl><Input placeholder="e.g., Large" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(index)}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Size</Button>
+                                </div>
+                            </div>
+                            <Separator />
+                            {/* --- VARIANTS TABLE --- */}
+                            <div>
+                                <h3 className="text-lg font-medium mb-2">Generated Variants ({variantFields.length})</h3>
+                                {variantFields.length > 0 ? (
+                                  <>
+                                    {/* Bulk Actions */}
+                                    <div className="p-4 border rounded-lg bg-muted/50 mb-4 space-y-4">
+                                        <h4 className="font-semibold text-sm">Bulk Apply</h4>
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                            <Input type="number" placeholder="Price" onChange={e => handleBulkApply('price', e.target.value)} />
+                                            <Input type="number" placeholder="Discount Price" onChange={e => handleBulkApply('discountPrice', e.target.value)} />
+                                            <Input type="number" placeholder="Stock" onChange={e => handleBulkApply('stock', e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    <div className="border rounded-lg overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Variant</TableHead>
+                                                    <TableHead>Price</TableHead>
+                                                    <TableHead>Discount Price</TableHead>
+                                                    <TableHead>Stock</TableHead>
+                                                    <TableHead>SKU</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {variantFields.map((field, index) => (
+                                                    <TableRow key={field.id}>
+                                                        <TableCell className="font-medium">
+                                                          {field.color && field.size ? `${field.color} / ${field.size}` : field.color || field.size}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (<Input type="number" {...field} className="w-24"/>)} />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <FormField control={form.control} name={`variants.${index}.discountPrice`} render={({ field }) => (<Input type="number" {...field} value={field.value ?? ''} className="w-24" />)} />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (<Input type="number" {...field} className="w-20" />)} />
+                                                        </TableCell>
+                                                         <TableCell>
+                                                          <FormField control={form.control} name={`variants.${index}.sku`} render={({ field }) => (<Input {...field} value={field.value ?? ''} className="w-28" />)} />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    {form.formState.errors.variants && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.variants.message || form.formState.errors.variants.root?.message}</p>}
+                                  </>
+                                ) : (
+                                    <div className="text-center text-sm text-muted-foreground p-4 border rounded-lg">
+                                        <p>Add colors or sizes to generate variants.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
             </Card>
           </div>
 

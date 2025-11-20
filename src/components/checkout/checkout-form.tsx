@@ -142,13 +142,26 @@ export function CheckoutForm() {
                 city: values.city,
                 zip: values.postalCode,
                 country: values.country,
-                items: cartItems.map(item => ({
-                    productId: item.product.id,
-                    name: item.product.name,
-                    quantity: item.quantity,
-                    price: item.variantDiscountPrice ?? item.variantPrice ?? item.product.discountPrice ?? item.product.price,
-                    imageUrl: item.product.mainImage,
-                })),
+                items: cartItems.map(item => {
+                     let price: number;
+                      if (item.product.variantsEnabled && item.variant) {
+                          const variantDetail = item.product.variants?.find(v => 
+                              (item.product.variantOptions?.colors?.length ? v.color === item.variant?.color : true) &&
+                              (item.product.variantOptions?.sizes?.length ? v.size === item.variant?.size : true)
+                          );
+                          price = variantDetail?.discountPrice ?? variantDetail?.price ?? item.product.price;
+                      } else {
+                          price = item.product.discountPrice ?? item.product.price;
+                      }
+                      return {
+                          productId: item.product.id,
+                          name: item.product.name,
+                          quantity: item.quantity,
+                          price: price,
+                          imageUrl: item.product.mainImage,
+                          variant: item.variant ? { color: item.variant.color, size: item.variant.size } : undefined,
+                      }
+                }),
                 total: finalTotal,
                 paymentMethod: values.paymentMethod,
                 status: 'pending',

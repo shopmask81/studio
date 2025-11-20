@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '../language/language-provider';
+import { Badge } from '../ui/badge';
 
 function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
@@ -22,8 +23,8 @@ function CartDisplay() {
         router.push('/checkout');
     };
 
-    const handleRemoveItem = (productId: string, productName: string) => {
-        removeFromCart(productId);
+    const handleRemoveItem = (productId: string, productName: string, variant?: { color: string; size: string; }) => {
+        removeFromCart(productId, variant);
         const translatedName = t('item_removed_desc', { productName }).text;
         toast({
             title: t('item_removed_title').text,
@@ -57,21 +58,40 @@ function CartDisplay() {
                     </CardHeader>
                     <CardContent className="divide-y">
                         {cartItems.map(item => {
-                            const price = item.product.discountPrice ?? item.product.price;
-                            const originalPrice = item.product.price;
-                            const hasDiscount = price < originalPrice;
+                            let price: number;
+                            let originalPrice: number | undefined;
+
+                            if (item.product.variantsEnabled && item.variant) {
+                                const variantDetail = item.product.variants?.find(v => 
+                                    (item.product.variantOptions?.colors?.length ? v.color === item.variant?.color : true) &&
+                                    (item.product.variantOptions?.sizes?.length ? v.size === item.variant?.size : true)
+                                );
+                                price = variantDetail?.discountPrice ?? variantDetail?.price ?? item.product.price;
+                                if (variantDetail?.discountPrice) originalPrice = variantDetail.price;
+                            } else {
+                                price = item.product.discountPrice ?? item.product.price;
+                                if(item.product.discountPrice) originalPrice = item.product.price;
+                            }
+
+                            const hasDiscount = originalPrice && price < originalPrice;
 
                             const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
                             const { dir } = t(displayName);
 
                             return (
-                                <div key={item.product.id} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
+                                <div key={item.product.id + (item.variant?.color || '') + (item.variant?.size || '')} className="flex items-start sm:items-center gap-4 py-4 flex-col sm:flex-row">
                                     <div className="relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden">
                                          <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
                                     </div>
                                     <div className="flex-grow">
                                         <h3 className="font-semibold" dir={dir}>{displayName}</h3>
-                                        <div className="text-sm">
+                                        {item.variant && (item.variant.color || item.variant.size) && (
+                                            <div className="flex items-center gap-2 mt-1">
+                                                {item.variant.color && <Badge variant="secondary">{item.variant.color}</Badge>}
+                                                {item.variant.size && <Badge variant="outline">{item.variant.size}</Badge>}
+                                            </div>
+                                        )}
+                                        <div className="text-sm mt-1">
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
                                                     <p className="text-primary font-semibold">${price.toFixed(2)}</p>
@@ -84,16 +104,16 @@ function CartDisplay() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {item.quantity > 1 ? (
-                                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>
+                                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.variant)}>
                                                 <Minus className="h-4 w-4" />
                                             </Button>
                                         ) : (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, displayName)}>
+                                            <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleRemoveItem(item.product.id, displayName, item.variant)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}
                                         <span className="w-10 text-center font-medium">{item.quantity}</span>
-                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.variant)}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>

@@ -1,6 +1,16 @@
 
 import { Timestamp } from 'firebase/firestore';
 
+export type VariantDetail = {
+  id: string; // Combination of color and size, e.g., 'black-large'
+  color: string;
+  size: string;
+  price: number;
+  discountPrice?: number;
+  stock: number;
+  sku?: string;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -20,6 +30,14 @@ export type Product = {
   updatedAt?: Timestamp;
   // This field is for placeholder images and not part of the Firestore schema
   imageHint?: string;
+
+  // New Variants Structure
+  variantsEnabled?: boolean;
+  variantOptions?: {
+    colors: string[];
+    sizes: string[];
+  };
+  variants?: VariantDetail[];
 };
 
 export type Category = {
@@ -48,6 +66,10 @@ export type Banner = {
 export type CartItem = {
   product: Product;
   quantity: number;
+  variant?: {
+    color: string;
+    size: string;
+  }
 };
 
 export type OrderItem = {
@@ -56,21 +78,25 @@ export type OrderItem = {
     quantity: number;
     price: number;
     imageUrl: string;
+    variant?: {
+        color: string;
+        size: string;
+    }
 }
 
 export type Order = {
     id: string;
     userId: string | null;
     items: OrderItem[];
-    total: number; // Renamed from totalPrice
-    name: string; // From shippingAddress.fullName
-    email: string; // From shippingAddress.email
+    total: number;
+    name: string;
+    email: string;
     email_lowercase: string;
-    phone: string; // From shippingAddress.phone
-    street: string; // From shippingAddress
-    city: string; // From shippingAddress
-    zip: string; // Renamed from postalCode
-    country: string; // From shippingAddress
+    phone: string;
+    street: string;
+    city: string;
+    zip: string;
+    country: string;
     affiliateId?: string | null;
     paymentMethod: 'card' | 'paypal' | 'cod';
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';

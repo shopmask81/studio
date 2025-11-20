@@ -20,6 +20,8 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { useTranslation } from '../language/language-provider';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 interface ProductDetailsProps {
   productId: string;
@@ -34,6 +36,9 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
   const productRef = useMemo(() => {
     if (!firestore || !productId) return null;
     return doc(firestore, 'products', productId);
@@ -41,7 +46,27 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   const { data: product, isLoading, error } = useDoc<Product>(productRef);
 
-  const hasDiscount = product?.discountPrice && product?.price && product.discountPrice < product.price;
+  // Effect to set default selections when product loads
+  useEffect(() => {
+    if (product?.variantsEnabled) {
+        setSelectedColor(product.variantOptions?.colors?.[0] || null);
+        setSelectedSize(product.variantOptions?.sizes?.[0] || null);
+    }
+  }, [product]);
+
+  const selectedVariant = useMemo(() => {
+    if (!product?.variantsEnabled || !product.variants || (!selectedColor && !selectedSize)) return null;
+    
+    return product.variants.find(v => 
+        (product.variantOptions?.colors?.length ? v.color === selectedColor : true) &&
+        (product.variantOptions?.sizes?.length ? v.size === selectedSize : true)
+    );
+  }, [product, selectedColor, selectedSize]);
+
+  const displayPrice = selectedVariant?.price ?? product?.price;
+  const displayDiscountPrice = selectedVariant?.discountPrice ?? product?.discountPrice;
+  const hasDiscount = displayDiscountPrice && displayPrice && displayDiscountPrice < displayPrice;
+  const currentStock = selectedVariant?.stock ?? product?.stock ?? 0;
 
   const imageGallery = useMemo(() => {
       if (!product) return [];
@@ -82,7 +107,20 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, 1);
+    
+    // Check if variants are enabled and if a selection is required but not made
+    if (product.variantsEnabled) {
+      if ((product.variantOptions?.colors?.length || 0) > 0 && !selectedColor) {
+        alert("Please select a color."); // Replace with a nicer toast/alert
+        return;
+      }
+      if ((product.variantOptions?.sizes?.length || 0) > 0 && !selectedSize) {
+        alert("Please select a size."); // Replace with a nicer toast/alert
+        return;
+      }
+    }
+
+    addToCart(product, 1, product.variantsEnabled ? { color: selectedColor!, size: selectedSize! } : undefined);
   };
 
   if (isLoading) {
@@ -111,7 +149,8 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { dir: nameDir, style: nameStyle } = t(displayName);
   const { dir: descDir, style: descStyle } = t(displayDescription);
 
-  const isAddToCartDisabled = product.stock === 0;
+  const isAddToCartDisabled = currentStock === 0 || (product.variantsEnabled && !selectedVariant);
+
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -189,25 +228,75 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <p className="text-primary font-semibold mb-2">{product.category}</p>
             <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4 break-words" dir={nameDir} style={nameStyle}>{displayName}</h1>
 
+             {/* Variants Selection */}
+            {product.variantsEnabled && (
+                <div className="space-y-6 mb-6">
+                    {product.variantOptions?.colors && product.variantOptions.colors.length > 0 && (
+                        <div>
+                            <Label className="text-base font-semibold">Color: <span className="text-muted-foreground font-normal">{selectedColor}</span></Label>
+                             <RadioGroup value={selectedColor || undefined} onValueChange={setSelectedColor} className="flex flex-wrap gap-2 mt-2">
+                                {product.variantOptions.colors.map(color => (
+                                    <RadioGroupItem key={color} value={color} id={`color-${color}`} className="sr-only" />
+                                ))}
+                                {product.variantOptions.colors.map(color => (
+                                    <Label
+                                        key={`label-${color}`}
+                                        htmlFor={`color-${color}`}
+                                        className={cn(
+                                            "cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted",
+                                            selectedColor === color ? "border-primary bg-primary/10" : "border-border"
+                                        )}
+                                    >
+                                        {color}
+                                    </Label>
+                                ))}
+                            </RadioGroup>
+                        </div>
+                    )}
+                    {product.variantOptions?.sizes && product.variantOptions.sizes.length > 0 && (
+                         <div>
+                            <Label className="text-base font-semibold">Size: <span className="text-muted-foreground font-normal">{selectedSize}</span></Label>
+                             <RadioGroup value={selectedSize || undefined} onValueChange={setSelectedSize} className="flex flex-wrap gap-2 mt-2">
+                                {product.variantOptions.sizes.map(size => (
+                                    <RadioGroupItem key={size} value={size} id={`size-${size}`} className="sr-only" />
+                                ))}
+                                {product.variantOptions.sizes.map(size => (
+                                    <Label
+                                        key={`label-${size}`}
+                                        htmlFor={`size-${size}`}
+                                        className={cn(
+                                            "cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted",
+                                            selectedSize === size ? "border-primary bg-primary/10" : "border-border"
+                                        )}
+                                    >
+                                        {size}
+                                    </Label>
+                                ))}
+                            </RadioGroup>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="flex items-baseline gap-3 mb-6 min-h-[48px]">
                 {hasDiscount ? (
                     <>
-                        <p className="text-4xl font-bold text-primary">${product.discountPrice?.toFixed(2)}</p>
-                        <p className="text-2xl font-medium text-muted-foreground line-through">${product.price?.toFixed(2)}</p>
+                        <p className="text-4xl font-bold text-primary">${displayDiscountPrice?.toFixed(2)}</p>
+                        <p className="text-2xl font-medium text-muted-foreground line-through">${displayPrice?.toFixed(2)}</p>
                     </>
                 ) : (
-                    <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                    <p className="text-4xl font-bold text-primary">${displayPrice?.toFixed(2)}</p>
                 )}
             </div>
 
             <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
             
-            {product.stock <= 10 && product.stock > 0 && (
+            {currentStock <= 10 && currentStock > 0 && (
                 <p className={cn(
                     "font-bold mb-6 transition-colors duration-200",
-                    product.stock <= 5 ? "text-red-500" : "text-amber-500"
-                )} {...t('only_left_in_stock', {count: product.stock})}>
-                    {t('only_left_in_stock', { count: product.stock }).text}
+                    currentStock <= 5 ? "text-red-500" : "text-amber-500"
+                )} {...t('only_left_in_stock', {count: currentStock})}>
+                    {t('only_left_in_stock', { count: currentStock }).text}
                 </p>
             )}
 
@@ -219,7 +308,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {product.stock === 0 ? t('out_of_stock').text : t('add_to_cart').text}
+                    {isAddToCartDisabled ? (product.variantsEnabled ? 'Unavailable' : 'Out of Stock') : t('add_to_cart').text}
                 </Button>
             </div>
         </div>

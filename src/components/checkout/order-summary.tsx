@@ -6,6 +6,7 @@ import { useCart } from '../cart/cart-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { useTranslation } from '../language/language-provider';
+import { Badge } from '../ui/badge';
 
 export function OrderSummary() {
   const { cartItems, cartTotal } = useCart();
@@ -21,11 +22,21 @@ export function OrderSummary() {
       <CardContent>
         <div className="space-y-4">
           {cartItems.map((item) => {
-            const price = item.product.discountPrice ?? item.product.price;
+            let price: number;
+            if (item.product.variantsEnabled && item.variant) {
+                const variantDetail = item.product.variants?.find(v => 
+                    (item.product.variantOptions?.colors?.length ? v.color === item.variant?.color : true) &&
+                    (item.product.variantOptions?.sizes?.length ? v.size === item.variant?.size : true)
+                );
+                price = variantDetail?.discountPrice ?? variantDetail?.price ?? item.product.price;
+            } else {
+                price = item.product.discountPrice ?? item.product.price;
+            }
+
             const displayName = (language === 'ar' && item.product.name_ar) || item.product.name;
             const { dir } = t(displayName);
             return (
-                <div key={item.product.id} className="flex items-center justify-between text-sm">
+                <div key={item.product.id + (item.variant?.color || '') + (item.variant?.size || '')} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-3">
                         <div className="relative h-12 w-12 rounded-md overflow-hidden border">
                             <Image src={item.product.mainImage} alt={item.product.name} fill className="object-cover" />
@@ -33,9 +44,15 @@ export function OrderSummary() {
                                 {item.quantity}
                             </span>
                         </div>
-                        <div>
+                        <div className="flex-1">
                             <p className="font-medium truncate max-w-[150px]" dir={dir}>{displayName}</p>
-                            <p className="text-muted-foreground">${price.toFixed(2)}</p>
+                             {item.variant && (item.variant.color || item.variant.size) && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    {item.variant.color && <span>{item.variant.color}</span>}
+                                    {item.variant.color && item.variant.size && <span>/</span>}
+                                    {item.variant.size && <span>{item.variant.size}</span>}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <p className="font-medium">${(price * item.quantity).toFixed(2)}</p>
