@@ -160,14 +160,10 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const dragOverItem = useRef<number | null>(null);
 
   // --- Variants State (Independent from react-hook-form) ---
-  const [variantsEnabled, setVariantsEnabled] = useState(productToEdit?.variantsEnabled ?? false);
-  const [variantColors, setVariantColors] = useState<VariantOption[]>(
-    (productToEdit?.variantOptions?.colors || []).map(c => ({ id: crypto.randomUUID(), value: c }))
-  );
-  const [variantSizes, setVariantSizes] = useState<VariantOption[]>(
-    (productToEdit?.variantOptions?.sizes || []).map(s => ({ id: crypto.randomUUID(), value: s }))
-  );
-  const [variantDetails, setVariantDetails] = useState<VariantDetail[]>(productToEdit?.variants || []);
+  const [variantsEnabled, setVariantsEnabled] = useState(false);
+  const [variantColors, setVariantColors] = useState<VariantOption[]>([]);
+  const [variantSizes, setVariantSizes] = useState<VariantOption[]>([]);
+  const [variantDetails, setVariantDetails] = useState<VariantDetail[]>([]);
 
 
   const categoriesQuery = useMemoFirebase(() => {
@@ -272,10 +268,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
 
   useEffect(() => {
     if (productToEdit) {
+      // Hydrate image state
       const mainImageUrl = productToEdit.mainImage;
       const otherImageUrls = productToEdit.images || [];
       const loadedImages: UploadedImage[] = [mainImageUrl, ...otherImageUrls]
-        .filter(Boolean)
+        .filter((url): url is string => !!url)
         .map(url => ({
           id: `${url}-${Math.random().toString(36).substring(2, 9)}`,
           url,
@@ -286,6 +283,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       
       const mainIdx = loadedImages.findIndex(img => img.url === mainImageUrl);
       setMainImageIndex(mainIdx !== -1 ? mainIdx : (loadedImages.length > 0 ? 0 : null));
+      
+      // Hydrate variant state
+      if (productToEdit.variantsEnabled) {
+          setVariantsEnabled(true);
+          setVariantColors((productToEdit.variantOptions?.colors || []).map(c => ({ id: crypto.randomUUID(), value: c })));
+          setVariantSizes((productToEdit.variantOptions?.sizes || []).map(s => ({ id: crypto.randomUUID(), value: s })));
+          setVariantDetails(productToEdit.variants || []);
+      }
     }
   }, [productToEdit]);
   
@@ -785,6 +790,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Organization</CardTitle>
+                <CardDescription>Group and classify this product.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -964,9 +970,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                 {variantDetails.map((variant) => (
                                                     <TableRow key={variant.id}>
                                                         <TableCell className="font-medium">{variant.color && variant.size ? `${variant.color} / ${variant.size}` : variant.color || variant.size}</TableCell>
-                                                        <TableCell><Input type="number" value={variant.price} onChange={e => handleVariantDetailChange(variant.id, 'price', e.target.value)} className="w-24" /></TableCell>
-                                                        <TableCell><Input type="number" value={variant.discountPrice ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'discountPrice', e.target.value)} className="w-24" /></TableCell>
-                                                        <TableCell><Input type="number" value={variant.stock} onChange={e => handleVariantDetailChange(variant.id, 'stock', e.target.value)} className="w-20" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.price} onChange={e => handleVariantDetailChange(variant.id, 'price', Number(e.target.value))} className="w-24" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.discountPrice ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'discountPrice', Number(e.target.value))} className="w-24" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.stock} onChange={e => handleVariantDetailChange(variant.id, 'stock', Number(e.target.value))} className="w-20" /></TableCell>
                                                         <TableCell><Input value={variant.sku ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'sku', e.target.value)} className="w-28" /></TableCell>
                                                     </TableRow>
                                                 ))}
