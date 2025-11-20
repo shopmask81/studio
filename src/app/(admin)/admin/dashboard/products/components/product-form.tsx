@@ -213,7 +213,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     const colors = variantColors.map(c => c.value).filter(Boolean);
     const sizes = variantSizes.map(s => s.value).filter(Boolean);
     
-    if (colors.length === 0 && sizes.length === 0) {
+    if (!variantsEnabled || (colors.length === 0 && sizes.length === 0)) {
       setVariantDetails([]);
       return;
     }
@@ -237,16 +237,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       })
     );
     setVariantDetails(newVariants);
-  }, [variantColors, variantSizes, variantDetails]);
+  }, [variantColors, variantSizes, variantDetails, variantsEnabled]);
   
   useEffect(() => {
-    if (variantsEnabled) {
-      generateVariants();
-    } else {
-      setVariantDetails([]);
-    }
+    generateVariants();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variantsEnabled]);
+  }, [variantsEnabled, variantColors, variantSizes]);
 
 
   const handleOptionChange = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string, value: string) => {
