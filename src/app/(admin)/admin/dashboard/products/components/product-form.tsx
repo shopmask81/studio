@@ -840,7 +840,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 />
               </CardContent>
             </Card>
-            
+
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -879,9 +879,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormItem>
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger asChild type="button" className="flex items-center gap-1">
+                                                <TooltipTrigger asChild>
+                                                  <div className="flex items-center gap-1">
                                                     <FormLabel>Original Price</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
+                                                  </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Put the actual base price here.</p>
@@ -899,9 +901,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormItem>
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger asChild type="button" className="flex items-center gap-1">
+                                                 <TooltipTrigger asChild>
+                                                  <div className="flex items-center gap-1">
                                                     <FormLabel>Discount Price (optional)</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
+                                                  </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Put the sale price here if the product is discounted.</p>
