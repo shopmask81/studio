@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -271,30 +272,25 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
   const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
   const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
-
-  // This effect will regenerate the variants table whenever colors or sizes change.
-  useEffect(() => {
-    if (!variantsEnabled) {
-      replaceVariants([]); // Clear variants if disabled
-      return;
-    }
-
-    const colors = watchedColors.map(c => c.value).filter(Boolean);
-    const sizes = watchedSizes.map(s => s.value).filter(Boolean);
+  
+  // This function contains the logic to generate variants based on the current color/size options
+  const generateVariants = () => {
+    const currentVariants = form.getValues('variants') || [];
+    const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
+    const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
     
     if (colors.length === 0 && sizes.length === 0) {
       replaceVariants([]);
       return;
     }
 
-    // Ensure at least one array has items to avoid empty generation
     const colorOptions = colors.length > 0 ? colors : [''];
     const sizeOptions = sizes.length > 0 ? sizes : [''];
 
     const newVariants = colorOptions.flatMap(color =>
       sizeOptions.map(size => {
         const id = createVariantId(color, size);
-        const existingVariant = variantFields.find(v => v.id === id);
+        const existingVariant = currentVariants.find(v => v.id === id);
         return {
           id,
           color,
@@ -308,10 +304,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     );
     
     replaceVariants(newVariants);
-  // This dependency array is correct. We only want to re-run when the *watched* values change.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedColors, watchedSizes, variantsEnabled, replaceVariants]);
+  };
   
+  // This effect ensures that variants are regenerated whenever colors or sizes are added/removed.
+  useEffect(() => {
+    if(variantsEnabled) {
+      generateVariants();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedColors, watchedSizes, variantsEnabled]);
+
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -555,7 +557,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         };
 
         if (data.variantsEnabled) {
-            // Sanitize variants data to replace undefined with null
+            // Sanitize variants data to replace undefined with null for Firestore compatibility
             const sanitizedVariants = data.variants.map(variant => ({
               ...variant,
               discountPrice: variant.discountPrice ?? null,
@@ -847,7 +849,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <FormControl>
                                         <Switch
                                             checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked);
+                                                if (checked) {
+                                                  generateVariants();
+                                                } else {
+                                                  replaceVariants([]);
+                                                }
+                                            }}
                                         />
                                     </FormControl>
                                 </FormItem>
