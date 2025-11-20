@@ -21,6 +21,7 @@ type CartContextType = {
   clearCart: () => void;
   isCartLoading: boolean;
   cartTotal: number;
+  shippingTotal: number;
   itemCount: number;
 };
 
@@ -197,6 +198,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return total + price * item.quantity;
     }, 0);
   }, [cartItems]);
+  
+  const shippingTotal = useMemo(() => {
+    return cartItems.reduce((total, item) => {
+      const itemShipping = item.product.shippingPrice ?? 0;
+      return total + (itemShipping * item.quantity);
+    }, 0);
+  }, [cartItems]);
+
 
   const itemCount = useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -210,6 +219,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCart,
     isCartLoading,
     cartTotal,
+    shippingTotal,
     itemCount,
   };
   

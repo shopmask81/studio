@@ -9,10 +9,9 @@ import { useTranslation } from '../language/language-provider';
 import { Badge } from '../ui/badge';
 
 export function OrderSummary() {
-  const { cartItems, cartTotal } = useCart();
+  const { cartItems, cartTotal, shippingTotal } = useCart();
   const { t, language } = useTranslation();
-  const shippingCost = 5.00;
-  const total = cartTotal + shippingCost;
+  const total = cartTotal + shippingTotal;
 
   return (
     <Card className="sticky top-20">
@@ -70,7 +69,7 @@ export function OrderSummary() {
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span {...t('shipping')}>{t('shipping').text}</span>
-            <span>${shippingCost.toFixed(2)}</span>
+            <span>{shippingTotal > 0 ? `$${shippingTotal.toFixed(2)}` : 'Free'}</span>
           </div>
         </div>
 

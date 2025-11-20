@@ -14,7 +14,7 @@ import { useTranslation } from '../language/language-provider';
 import { Badge } from '../ui/badge';
 
 function CartDisplay() {
-    const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount } = useCart();
+    const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, shippingTotal, itemCount } = useCart();
     const router = useRouter();
     const { toast } = useToast();
     const { t, language } = useTranslation();
@@ -136,11 +136,11 @@ function CartDisplay() {
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                             <span {...t('shipping')}>{t('shipping').text}</span>
-                            <span>$5.00</span>
+                             <span>{shippingTotal > 0 ? `$${shippingTotal.toFixed(2)}` : 'Free'}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg pt-4 border-t">
                             <span {...t('total')}>{t('total').text}</span>
-                            <span>${(cartTotal + 5).toFixed(2)}</span>
+                            <span>${(cartTotal + shippingTotal).toFixed(2)}</span>
                         </div>
                     </CardContent>
                     <CardFooter>

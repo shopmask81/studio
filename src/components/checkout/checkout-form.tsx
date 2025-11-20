@@ -55,7 +55,7 @@ export function CheckoutForm() {
     const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
-    const { cartItems, cartTotal, clearCart } = useCart();
+    const { cartItems, cartTotal, shippingTotal, clearCart } = useCart();
     const { t } = useTranslation();
     
     const addressesRef = useMemoFirebase(() => {
@@ -128,8 +128,7 @@ export function CheckoutForm() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!firestore) return;
 
-        const shippingCost = 5.00;
-        const finalTotal = cartTotal + shippingCost;
+        const finalTotal = cartTotal + shippingTotal;
 
         try {
             await addDoc(collection(firestore, 'orders'), {
