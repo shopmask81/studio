@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback }from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -62,22 +62,7 @@ type UploadedImage = {
   deleteUrl: string;
 };
 
-// Zod schema for a single variant detail
-const variantDetailSchema = z.object({
-  id: z.string(),
-  color: z.string(),
-  size: z.string(),
-  price: z.coerce.number().positive('Price must be > 0'),
-  discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().int().min(0, 'Stock required'),
-  sku: z.string().optional(),
-});
-
-// Zod schema for a single option (color or size)
-const optionSchema = z.object({
-  value: z.string().min(1, 'Option cannot be empty'),
-});
-
+// Simplified zod schema for the main form, excluding variants.
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
   description: z.string().min(10, 'Description is required.'),
@@ -92,52 +77,14 @@ const formSchema = z.object({
   sku: z.string().optional(),
   active: z.boolean().default(true),
   featured: z.boolean().default(false),
-  
-  // Variants structure
-  variantsEnabled: z.boolean().default(false),
-  variantOptions: z.object({
-    colors: z.array(optionSchema),
-    sizes: z.array(optionSchema),
-  }),
-  variants: z.array(variantDetailSchema),
 }).superRefine((data, ctx) => {
-  if (data.variantsEnabled) {
-    if (data.variantOptions.colors.length === 0 && data.variantOptions.sizes.length === 0) {
-      // It's okay if no options are added yet, but no variants will be generated.
-      return;
-    }
-    if (data.variants.length === 0) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['variantsEnabled'],
-            message: "You must add at least one Color or Size and generate variants.",
-        });
-    }
-    // Check each variant for valid price and stock
-    data.variants.forEach((variant, index) => {
-        if (variant.price <= 0) {
-            ctx.addIssue({
-                code: 'custom',
-                path: [`variants.${index}.price`],
-                message: 'Price must be > 0',
-            });
-        }
-        if (variant.stock < 0) {
-            ctx.addIssue({
-                code: 'custom',
-                path: [`variants.${index}.stock`],
-                message: 'Stock must be >= 0',
-            });
-        }
-    });
-
-  } else {
-    if (data.price <= 0) {
-      ctx.addIssue({ code: 'custom', message: 'Price must be positive.', path: ['price'] });
-    }
-    if (data.stock < 0) {
-      ctx.addIssue({ code: 'custom', message: 'Stock cannot be negative.', path: ['stock'] });
-    }
+  // This validation only runs if variants are NOT enabled.
+  // Variant validation will be handled manually before submit.
+  if (data.price <= 0) {
+    ctx.addIssue({ code: 'custom', message: 'Price must be positive.', path: ['price'] });
+  }
+  if (data.stock < 0) {
+    ctx.addIssue({ code: 'custom', message: 'Stock cannot be negative.', path: ['stock'] });
   }
 
   if (!data.freeShipping && (data.shippingPrice === undefined || data.shippingPrice < 0)) {
@@ -152,8 +99,8 @@ interface ProductFormProps {
   productToEdit?: Product;
 }
 
-// Helper to generate a unique ID for variants
-const createVariantId = (color: string, size: string) => `${color}-${size}`.toLowerCase().replace(/\s+/g, '-');
+// Independent state for a single variant option (color or size)
+type VariantOption = { id: string; value: string };
 
 
 async function uploadToImgBB(file: File): Promise<Omit<UploadedImage, 'id'>> {
@@ -200,19 +147,28 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // --- Image State ---
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState<number | null>(null);
-
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
-  
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
-  
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+
+  // --- Variants State (Independent from react-hook-form) ---
+  const [variantsEnabled, setVariantsEnabled] = useState(productToEdit?.variantsEnabled ?? false);
+  const [variantColors, setVariantColors] = useState<VariantOption[]>(
+    (productToEdit?.variantOptions?.colors || []).map(c => ({ id: crypto.randomUUID(), value: c }))
+  );
+  const [variantSizes, setVariantSizes] = useState<VariantOption[]>(
+    (productToEdit?.variantOptions?.sizes || []).map(s => ({ id: crypto.randomUUID(), value: s }))
+  );
+  const [variantDetails, setVariantDetails] = useState<VariantDetail[]>(productToEdit?.variants || []);
+
 
   const categoriesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -235,16 +191,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     sku: productToEdit?.sku ?? '',
     active: productToEdit?.active ?? true,
     featured: productToEdit?.featured ?? false,
-    variantsEnabled: productToEdit?.variantsEnabled ?? false,
-    variantOptions: {
-      colors: (productToEdit?.variantOptions?.colors || []).map(c => ({ value: c })),
-      sizes: (productToEdit?.variantOptions?.sizes || []).map(s => ({ value: s })),
-    },
-    variants: (productToEdit?.variants || []).map(v => ({
-      ...v,
-      discountPrice: v.discountPrice === null ? undefined : v.discountPrice,
-      sku: v.sku === null ? undefined : v.sku,
-    })),
   };
 
   const form = useForm<ProductFormValues>({
@@ -253,86 +199,73 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     mode: 'onChange',
   });
 
-  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
-    control: form.control,
-    name: "variantOptions.colors",
-  });
-  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
-    control: form.control,
-    name: "variantOptions.sizes",
-  });
-  const { fields: variantFields, replace: replaceVariants } = useFieldArray({
-    control: form.control,
-    name: "variants",
-  });
+  const freeShipping = form.watch('freeShipping');
+  const watchedBasePrice = form.watch('price');
+  const watchedBaseDiscountPrice = form.watch('discountPrice');
 
-  const watchedColors = useWatch({ control: form.control, name: 'variantOptions.colors' });
-  const watchedSizes = useWatch({ control: form.control, name: 'variantOptions.sizes' });
-  const variantsEnabled = useWatch({ control: form.control, name: 'variantsEnabled' });
-  const watchedBasePrice = useWatch({ control: form.control, name: 'price' });
-  const watchedBaseDiscountPrice = useWatch({ control: form.control, name: 'discountPrice' });
-  const freeShipping = useWatch({ control: form.control, name: 'freeShipping' });
+  // --- Functions to manage independent variant state ---
+  const handleOptionChange = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string, value: string) => {
+    setter(prev => prev.map(opt => opt.id === id ? { ...opt, value } : opt));
+  };
+  const addOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>) => {
+    setter(prev => [...prev, { id: crypto.randomUUID(), value: '' }]);
+  };
+  const removeOption = (setter: React.Dispatch<React.SetStateAction<VariantOption[]>>, id: string) => {
+    setter(prev => prev.filter(opt => opt.id !== id));
+  };
 
-  // This function contains the logic to generate variants based on the current color/size options
   const generateVariants = useCallback(() => {
-    const currentVariants = form.getValues('variants') || [];
-    const colors = form.getValues('variantOptions.colors').map(c => c.value).filter(Boolean);
-    const sizes = form.getValues('variantOptions.sizes').map(s => s.value).filter(Boolean);
-
+    const colors = variantColors.map(c => c.value).filter(Boolean);
+    const sizes = variantSizes.map(s => s.value).filter(Boolean);
+    
     if (colors.length === 0 && sizes.length === 0) {
-        replaceVariants([]);
-        return;
+      setVariantDetails([]);
+      return;
     }
 
     const colorOptions = colors.length > 0 ? colors : [''];
     const sizeOptions = sizes.length > 0 ? sizes : [''];
 
     const newVariants = colorOptions.flatMap(color =>
-        sizeOptions.map(size => {
-            const id = createVariantId(color, size);
-            const existingVariant = currentVariants.find(v => v.id === id);
-            return {
-                id,
-                color,
-                size,
-                price: existingVariant?.price || 0,
-                discountPrice: existingVariant?.discountPrice || undefined,
-                stock: existingVariant?.stock || 0,
-                sku: existingVariant?.sku || '',
-            };
-        })
+      sizeOptions.map(size => {
+        const id = `${color}-${size}`.toLowerCase().replace(/\s+/g, '-');
+        const existing = variantDetails.find(v => v.id === id);
+        return {
+          id,
+          color,
+          size,
+          price: existing?.price ?? 0,
+          discountPrice: existing?.discountPrice ?? null,
+          stock: existing?.stock ?? 0,
+          sku: existing?.sku ?? null,
+        };
+      })
     );
-    replaceVariants(newVariants);
-  }, [form, replaceVariants]);
+    setVariantDetails(newVariants);
+  }, [variantColors, variantSizes, variantDetails]);
 
-  // Effect to generate/clear variants when options change, ONLY if variants are enabled
+  // Effect to generate variants when options change, ONLY if variants are enabled
   useEffect(() => {
     if (variantsEnabled) {
-      setTimeout(() => generateVariants(), 0);
+      generateVariants();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variantsEnabled, watchedColors, watchedSizes]);
+  }, [variantsEnabled, variantColors, variantSizes]);
 
-  // Effect to handle side-effects of toggling freeShipping
-  useEffect(() => {
-    if (freeShipping) {
-      form.setValue('shippingPrice', 0);
-    }
-  }, [freeShipping, form]);
-
-
-  const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
-    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+  const handleVariantDetailChange = (id: string, field: keyof VariantDetail, value: string | number) => {
+    setVariantDetails(prev =>
+      prev.map(v => (v.id === id ? { ...v, [field]: value } : v))
+    );
+  };
+  
+  const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string) => {
+    const numericValue = parseFloat(value);
     if (isNaN(numericValue) || numericValue < 0) return;
   
-    const currentVariants = form.getValues('variants');
-    const updatedVariants = currentVariants.map(variant => ({
-      ...variant,
-      [field]: numericValue,
-    }));
-    form.setValue('variants', updatedVariants, { shouldDirty: true });
+    setVariantDetails(prev =>
+      prev.map(variant => ({ ...variant, [field]: numericValue }))
+    );
   };
-
 
   useEffect(() => {
     if (productToEdit) {
@@ -541,6 +474,20 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
       toast({ variant: 'destructive', title: 'Un-uploaded images', description: `You have ${selectedFiles.length} selected images that have not been uploaded. Please upload them before saving.`});
       return;
     }
+    
+    // Manual validation for variants
+    if (variantsEnabled) {
+      if (variantDetails.length === 0) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please generate at least one product variant.' });
+        return;
+      }
+      for (const variant of variantDetails) {
+        if (variant.price <= 0 || variant.stock < 0) {
+          toast({ variant: 'destructive', title: 'Validation Error', description: `Variant "${variant.color || ''} / ${variant.size || ''}" has an invalid price or stock.` });
+          return;
+        }
+      }
+    }
 
     setIsSubmitting(true);
     
@@ -559,23 +506,16 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
             shippingPrice: data.freeShipping ? 0 : data.shippingPrice,
             mainImage: mainImage,
             images: additionalImages,
-            variantsEnabled: data.variantsEnabled,
+            variantsEnabled: variantsEnabled,
         };
 
-        if (data.variantsEnabled) {
-            // Sanitize variants data to replace undefined with null for Firestore compatibility
-            const sanitizedVariants = data.variants.map(variant => ({
-              ...variant,
-              discountPrice: variant.discountPrice ?? null,
-              sku: variant.sku ?? null,
-            }));
-
+        if (variantsEnabled) {
             productData = {
                 ...productData,
-                variants: sanitizedVariants,
+                variants: variantDetails,
                 variantOptions: {
-                    colors: Array.isArray(data.variantOptions?.colors) ? data.variantOptions.colors.map(c => c.value).filter(Boolean) : [],
-                    sizes: Array.isArray(data.variantOptions?.sizes) ? data.variantOptions.sizes.map(s => s.value).filter(Boolean) : [],
+                    colors: variantColors.map(c => c.value).filter(Boolean),
+                    sizes: variantSizes.map(s => s.value).filter(Boolean),
                 },
                 price: 0, 
                 stock: 0, 
@@ -846,30 +786,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             <CardTitle>Pricing & Inventory</CardTitle>
                             <CardDescription>Manage variants or set a single price.</CardDescription>
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="variantsEnabled"
-                            render={({ field }) => (
-                                <FormItem className="flex items-center gap-2 space-y-0">
-                                    <FormLabel>Enable Variants</FormLabel>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked);
-                                                if (!checked) {
-                                                    // Clear variants when disabled
-                                                    replaceVariants([]);
-                                                } else {
-                                                    // Generate variants when enabled
-                                                    generateVariants();
-                                                }
-                                            }}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <div className="flex items-center gap-2 space-y-0">
+                          <Label htmlFor="variants-enabled-switch">Enable Variants</Label>
+                          <Switch
+                              id="variants-enabled-switch"
+                              checked={variantsEnabled}
+                              onCheckedChange={setVariantsEnabled}
+                          />
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -944,56 +868,35 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                             </div>
                         </div>
                     ) : (
-                        // Variants UI
+                        // Variants UI using independent state
                         <div className="space-y-6">
-                            {/* --- OPTIONS --- */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label>Colors</Label>
-                                    {colorFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`variantOptions.colors.${index}.value`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl><Input placeholder="e.g., Black" {...field} /></FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeColor(index)}><Trash2 className="h-4 w-4" /></Button>
+                                    {variantColors.map((option) => (
+                                        <div key={option.id} className="flex items-center gap-2">
+                                            <Input placeholder="e.g., Black" value={option.value} onChange={e => handleOptionChange(setVariantColors, option.id, e.target.value)} />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(setVariantColors, option.id)}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     ))}
-                                    <Button type="button" variant="outline" size="sm" onClick={() => appendColor({ value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Color</Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addOption(setVariantColors)}><PlusCircle className="mr-2 h-4 w-4" />Add Color</Button>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Sizes</Label>
-                                    {sizeFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`variantOptions.sizes.${index}.value`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl><Input placeholder="e.g., Large" {...field} /></FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(index)}><Trash2 className="h-4 w-4" /></Button>
+                                    {variantSizes.map((option) => (
+                                        <div key={option.id} className="flex items-center gap-2">
+                                            <Input placeholder="e.g., Large" value={option.value} onChange={e => handleOptionChange(setVariantSizes, option.id, e.target.value)} />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(setVariantSizes, option.id)}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     ))}
-                                    <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Size</Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addOption(setVariantSizes)}><PlusCircle className="mr-2 h-4 w-4" />Add Size</Button>
                                 </div>
                             </div>
                             <Separator />
-                            {/* --- VARIANTS TABLE --- */}
                             <div>
-                                <h3 className="text-lg font-medium mb-2">Generated Variants ({variantFields.length})</h3>
-                                {variantFields.length > 0 ? (
+                                <h3 className="text-lg font-medium mb-2">Generated Variants ({variantDetails.length})</h3>
+                                {variantDetails.length > 0 ? (
                                   <>
-                                    {/* Bulk Actions */}
                                     <div className="p-4 border rounded-lg bg-muted/50 mb-4 space-y-4">
                                         <h4 className="font-semibold text-sm">Bulk Apply</h4>
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1002,7 +905,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                             <Input type="number" placeholder="Stock" onBlur={e => handleBulkApply('stock', e.target.value)} />
                                         </div>
                                     </div>
-
                                     <div className="border rounded-lg overflow-x-auto">
                                         <Table>
                                             <TableHeader>
@@ -1011,33 +913,22 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                     <TableHead>Price</TableHead>
                                                     <TableHead>Discount Price</TableHead>
                                                     <TableHead>Stock</TableHead>
-                                                     <TableHead>SKU</TableHead>
+                                                    <TableHead>SKU</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {variantFields.map((field, index) => (
-                                                    <TableRow key={field.id}>
-                                                        <TableCell className="font-medium">
-                                                          {field.color && field.size ? `${field.color} / ${field.size}` : field.color || field.size}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                          <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (<Input type="number" {...field} className="w-24"/>)} />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                          <FormField control={form.control} name={`variants.${index}.discountPrice`} render={({ field }) => (<Input type="number" {...field} value={field.value ?? ''} className="w-24" />)} />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                          <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (<Input type="number" {...field} className="w-20" />)} />
-                                                        </TableCell>
-                                                         <TableCell>
-                                                          <FormField control={form.control} name={`variants.${index}.sku`} render={({ field }) => (<Input {...field} value={field.value ?? ''} className="w-28" />)} />
-                                                        </TableCell>
+                                                {variantDetails.map((variant) => (
+                                                    <TableRow key={variant.id}>
+                                                        <TableCell className="font-medium">{variant.color && variant.size ? `${variant.color} / ${variant.size}` : variant.color || variant.size}</TableCell>
+                                                        <TableCell><Input type="number" value={variant.price} onChange={e => handleVariantDetailChange(variant.id, 'price', e.target.value)} className="w-24" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.discountPrice ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'discountPrice', e.target.value)} className="w-24" /></TableCell>
+                                                        <TableCell><Input type="number" value={variant.stock} onChange={e => handleVariantDetailChange(variant.id, 'stock', e.target.value)} className="w-20" /></TableCell>
+                                                        <TableCell><Input value={variant.sku ?? ''} onChange={e => handleVariantDetailChange(variant.id, 'sku', e.target.value)} className="w-28" /></TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                     </div>
-                                    {form.formState.errors.variants && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.variants.message || form.formState.errors.variants.root?.message}</p>}
                                   </>
                                 ) : (
                                     <div className="text-center text-sm text-muted-foreground p-4 border rounded-lg">
@@ -1070,7 +961,12 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => {
+                                          field.onChange(checked);
+                                          if (checked) {
+                                            form.setValue('shippingPrice', 0);
+                                          }
+                                        }}
                                     />
                                 </FormControl>
                             </FormItem>
