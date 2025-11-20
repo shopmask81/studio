@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Category, VariantDetail } from '@/lib/types';
-import { Loader2, Upload, X, Trash2, PlusCircle, Sparkles } from 'lucide-react';
+import { Loader2, Upload, X, Trash2, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -48,6 +48,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
 
 type UploadedImage = {
   id: string;
@@ -265,12 +266,14 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     );
     
     replaceVariants(newVariants);
-  }, [watchedColors, watchedSizes, variantsEnabled, replaceVariants, variantFields]);
+  // This dependency array is correct. We only want to re-run when the *watched* values change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedColors, watchedSizes, variantsEnabled, replaceVariants]);
   
 
   const handleBulkApply = (field: 'price' | 'discountPrice' | 'stock', value: string | number) => {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(numericValue)) return;
+    if (isNaN(numericValue) || numericValue < 0) return;
   
     const currentVariants = form.getValues('variants');
     const updatedVariants = currentVariants.map(variant => ({
@@ -513,11 +516,11 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                 ...productData,
                 variants: data.variants,
                 variantOptions: {
-                    colors: data.variantOptions.colors.map(c => c.value).filter(Boolean),
-                    sizes: data.variantOptions.sizes.map(s => s.value).filter(Boolean),
+                    colors: Array.isArray(data.variantOptions?.colors) ? data.variantOptions.colors.map(c => c.value).filter(Boolean) : [],
+                    sizes: Array.isArray(data.variantOptions?.sizes) ? data.variantOptions.sizes.map(s => s.value).filter(Boolean) : [],
                 },
-                price: 0, // Base price is not used
-                stock: 0, // Base stock is not used
+                price: 0, 
+                stock: 0, 
             };
         } else {
             productData = {
@@ -883,9 +886,9 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                     <div className="p-4 border rounded-lg bg-muted/50 mb-4 space-y-4">
                                         <h4 className="font-semibold text-sm">Bulk Apply</h4>
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                            <Input type="number" placeholder="Price" onChange={e => handleBulkApply('price', e.target.value)} />
-                                            <Input type="number" placeholder="Discount Price" onChange={e => handleBulkApply('discountPrice', e.target.value)} />
-                                            <Input type="number" placeholder="Stock" onChange={e => handleBulkApply('stock', e.target.value)} />
+                                            <Input type="number" placeholder="Price" onBlur={e => handleBulkApply('price', e.target.value)} />
+                                            <Input type="number" placeholder="Discount Price" onBlur={e => handleBulkApply('discountPrice', e.target.value)} />
+                                            <Input type="number" placeholder="Stock" onBlur={e => handleBulkApply('stock', e.target.value)} />
                                         </div>
                                     </div>
 
@@ -897,7 +900,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                                     <TableHead>Price</TableHead>
                                                     <TableHead>Discount Price</TableHead>
                                                     <TableHead>Stock</TableHead>
-                                                    <TableHead>SKU</TableHead>
+                                                     <TableHead>SKU</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -1042,3 +1045,5 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
     </Form>
   );
 }
+
+    
