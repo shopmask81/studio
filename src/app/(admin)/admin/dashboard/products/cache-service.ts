@@ -31,13 +31,13 @@ export async function updateProductCache(
       } as Product)
   );
 
-  // 2. Convert each product to a clean JSON object for caching
+  // 2. Convert each product to a clean JSON object for caching, ensuring no 'undefined' values.
   const productsForCache = allProducts.map((product) => ({
     id: product.id,
     name: product.name,
     description: product.description,
-    name_ar: product.name_ar,
-    description_ar: product.description_ar,
+    name_ar: product.name_ar ?? null,
+    description_ar: product.description_ar ?? null,
     price: product.price,
     discountPrice: product.discountPrice ?? null,
     shippingPrice: product.shippingPrice ?? 0,
