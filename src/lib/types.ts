@@ -68,8 +68,8 @@ export type CartItem = {
   product: Product;
   quantity: number;
   variant: {
-    color: string;
-    size: string;
+    color: string | null;
+    size: string | null;
   } | null;
 };
 
@@ -80,8 +80,8 @@ export type OrderItem = {
     price: number;
     imageUrl: string;
     variant?: {
-        color: string;
-        size: string;
+        color: string | null;
+        size: string | null;
     }
 }
 

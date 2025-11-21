@@ -2,15 +2,15 @@
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
-import type { CartItem, Product } from '@/lib/types';
+import type { CartItem, Product, VariantDetail } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
 import { useTranslation } from '../language/language-provider';
 
 type AddToCartOptions = {
-  color: string;
-  size: string;
+  color?: string | null;
+  size?: string | null;
 }
 
 type CartContextType = {
@@ -106,7 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         newItems = [...prevItems, { 
           product, 
           quantity, 
-          variant: variant ? { color: variant.color, size: variant.size } : null,
+          variant: variant ? { color: variant.color || null, size: variant.size || null } : null,
         }];
       }
       
@@ -202,7 +202,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const shippingTotal = useMemo(() => {
     return cartItems.reduce((total, item) => {
       const itemShipping = item.product.shippingPrice ?? 0;
-      return total + (itemShipping * item.quantity);
+      return total + itemShipping;
     }, 0);
   }, [cartItems]);
 

@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { LanguageProvider } from '@/components/language/language-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { ModalProvider } from '@/components/modals/modal-provider';
 
 export const metadata: Metadata = {
   title: 'MaskShop',
@@ -45,7 +46,9 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <LanguageProvider>
             <Providers>
-              {children}
+              <ModalProvider>
+                {children}
+              </ModalProvider>
               <Toaster />
             </Providers>
           </LanguageProvider>

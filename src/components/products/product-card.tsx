@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { cn } from '@/lib/utils';
 import { useCart } from '@/components/cart/cart-provider';
 import { useTranslation } from '../language/language-provider';
+import { useModal } from '../modals/modal-provider';
 
 interface ProductCardProps {
   product: Product;
@@ -17,12 +18,17 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { showModal } = useModal();
   const { t, language } = useTranslation();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
+    if (product.variantsEnabled && product.variants && product.variants.length > 0) {
+      showModal('selectVariant', { product });
+    } else {
+      addToCart(product);
+    }
   };
 
   const displayName = (language === 'ar' && product.name_ar) || product.name;
@@ -55,6 +61,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const hasDiscount = originalPrice !== null;
   const isFromPrice = product.variantsEnabled && product.variants && product.variants.length > 1;
+  const hasVariants = product.variantsEnabled && product.variants && product.variants.length > 0;
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
@@ -88,7 +95,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 </div>
                  <Button onClick={handleAddToCart} variant="secondary" className="bg-primary text-primary-foreground font-semibold hover:bg-ring hover:shadow-accent-glow transition-all duration-200 ease-in-out">
                     <ShoppingCart className="h-4 w-4 me-2" />
-                    {t('add_to_cart').text}
+                    {hasVariants ? 'Select Options' : t('add_to_cart').text}
                 </Button>
             </CardFooter>
         </Card>
