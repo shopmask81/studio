@@ -152,14 +152,23 @@ export function CheckoutForm() {
                       } else {
                           price = item.product.discountPrice ?? item.product.price;
                       }
-                      return {
+                      
+                      const orderItem: any = {
                           productId: item.product.id,
                           name: item.product.name,
                           quantity: item.quantity,
                           price: price,
                           imageUrl: item.product.mainImage,
-                          variant: item.variant ? { color: item.variant.color, size: item.variant.size } : undefined,
+                      };
+
+                      if (item.variant) {
+                        orderItem.variant = {
+                          color: item.variant.color || null,
+                          size: item.variant.size || null,
+                        };
                       }
+                      
+                      return orderItem;
                 }),
                 total: finalTotal,
                 paymentMethod: values.paymentMethod,
@@ -326,3 +335,5 @@ export function CheckoutForm() {
         </Form>
     );
 }
+
+    
