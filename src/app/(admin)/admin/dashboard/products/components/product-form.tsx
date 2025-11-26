@@ -880,7 +880,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                  <div className="flex items-center gap-1">
+                                                  <div className="flex items-center gap-1 cursor-help">
                                                     <FormLabel>Original Price</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
                                                   </div>
@@ -902,7 +902,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
                                         <TooltipProvider>
                                             <Tooltip>
                                                  <TooltipTrigger asChild>
-                                                  <div className="flex items-center gap-1">
+                                                  <div className="flex items-center gap-1 cursor-help">
                                                     <FormLabel>Discount Price (optional)</FormLabel>
                                                     <HelpCircle className="h-4 w-4 text-muted-foreground"/>
                                                   </div>

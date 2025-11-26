@@ -153,7 +153,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
+    <>
         {/* Breadcrumbs */}
         <div className="flex items-center text-sm text-muted-foreground mb-8">
             <Link href="/" className="hover:text-primary transition-colors flex items-center">
@@ -313,6 +313,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             </div>
         </div>
       </div>
-    </div>
+      </>
   );
 }
