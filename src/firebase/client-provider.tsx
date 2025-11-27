@@ -3,7 +3,6 @@
 import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/init';
-import { AuthProvider } from '@/components/auth/auth-provider';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -17,9 +16,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
   return (
     <FirebaseProvider>
-        <AuthProvider>
-            {children}
-        </AuthProvider>
+      {children}
     </FirebaseProvider>
   );
 }

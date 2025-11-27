@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -7,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { LanguageProvider } from '@/components/language/language-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ModalProvider } from '@/components/modals/modal-provider';
+import { AuthProvider } from '@/components/auth/auth-provider';
 
 export const metadata: Metadata = {
   title: 'MaskShop',
@@ -45,12 +45,14 @@ export default function RootLayout({
       <body className={cn("font-body antialiased")}>
         <FirebaseClientProvider>
           <LanguageProvider>
-            <Providers>
-              <ModalProvider>
-                {children}
-              </ModalProvider>
-              <Toaster />
-            </Providers>
+            <AuthProvider>
+              <Providers>
+                <ModalProvider>
+                  {children}
+                </ModalProvider>
+                <Toaster />
+              </Providers>
+            </AuthProvider>
           </LanguageProvider>
         </FirebaseClientProvider>
       </body>

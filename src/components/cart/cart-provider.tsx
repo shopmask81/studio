@@ -1,16 +1,30 @@
-
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
-import type { CartItem, Product, VariantDetail } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
 import { useTranslation } from '../language/language-provider';
+import { useProductCache } from '../products/product-cache-provider';
 
 type AddToCartOptions = {
   color?: string | null;
   size?: string | null;
+}
+
+// Stored in localStorage and Firestore
+type CartItemStorage = {
+  productId: string;
+  quantity: number;
+  variant?: AddToCartOptions | null;
+}
+
+// Used within the application, with full product details
+export type CartItem = {
+  product: Product;
+  quantity: number;
+  variant: AddToCartOptions | null;
 }
 
 type CartContextType = {
@@ -28,7 +42,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Helper to create a unique ID for a cart item, including its variant
-const getCartItemId = (productId: string, variant?: AddToCartOptions) => {
+const getCartItemId = (productId: string, variant?: AddToCartOptions | null) => {
   if (!variant || (!variant.color && !variant.size)) return productId;
   const color = variant.color || '';
   const size = variant.size || '';
@@ -42,53 +56,95 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const firestore = useFirestore();
   const { t } = useTranslation();
+  const { findProductById, isLoading: isProductsLoading } = useProductCache();
   
   const getCartCollectionRef = useCallback((userId: string) => {
     if (!firestore) return null;
     return collection(firestore, `users/${userId}/cart`);
   }, [firestore]);
 
-  // This effect handles loading the cart from Firestore when a user is logged in,
-  // or from localStorage if they are a guest.
+  // Effect to load cart from storage and hydrate with full product details
   useEffect(() => {
-    const loadCart = async () => {
+    const loadAndHydrateCart = async () => {
+      if (isProductsLoading) {
+        // Wait for product cache to be ready
+        return;
+      }
       setIsCartLoading(true);
+      
+      let storedItems: CartItemStorage[] = [];
+      
       if (user && firestore) {
-        // User is logged in, load from Firestore
         const cartColRef = getCartCollectionRef(user.uid);
         if (cartColRef) {
           try {
             const snapshot = await getDocs(cartColRef);
-            const firestoreItems: CartItem[] = snapshot.docs.map(d => d.data() as CartItem);
-            setCartItems(firestoreItems);
+            storedItems = snapshot.docs.map(d => d.data() as CartItemStorage);
           } catch (error) {
             console.error("Failed to load cart from Firestore", error);
-            toast({
-                variant: "destructive",
-                title: t('load_cart_failed_title').text,
-                description: t('load_cart_failed_desc').text,
-            })
           }
         }
       } else {
-        // User is a guest, load from localStorage
         try {
           const savedCart = localStorage.getItem('maskshop-guest-cart');
           if (savedCart) {
-            setCartItems(JSON.parse(savedCart));
-          } else {
-            setCartItems([]);
+            storedItems = JSON.parse(savedCart);
           }
         } catch (error) {
           console.error("Failed to parse cart from localStorage", error);
-          setCartItems([]);
         }
       }
+
+      // Hydrate stored items with full product data from cache
+      const hydratedItems: CartItem[] = storedItems
+        .map(item => {
+          const product = findProductById(item.productId);
+          if (product) {
+            return {
+              product,
+              quantity: item.quantity,
+              variant: item.variant || null,
+            };
+          }
+          return null;
+        })
+        .filter((item): item is CartItem => item !== null);
+
+      setCartItems(hydratedItems);
       setIsCartLoading(false);
     };
-    loadCart();
-  }, [user, firestore, getCartCollectionRef, toast, t]);
+
+    loadAndHydrateCart();
+  }, [user, firestore, getCartCollectionRef, isProductsLoading, findProductById]);
   
+  const updateStorage = useCallback((newItems: CartItem[]) => {
+      const itemsToStore: CartItemStorage[] = newItems.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          variant: item.variant,
+      }));
+
+      if (user && firestore) {
+          const cartColRef = getCartCollectionRef(user.uid);
+          if (cartColRef) {
+              const batch = writeBatch(firestore);
+              // First, delete all existing items for simplicity
+              getDocs(cartColRef).then(snapshot => {
+                  snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                  // Then, add all the new items
+                  itemsToStore.forEach(item => {
+                      const cartItemId = getCartItemId(item.productId, item.variant);
+                      const docRef = doc(cartColRef, cartItemId);
+                      batch.set(docRef, item);
+                  });
+                  batch.commit().catch(e => console.error("Error updating cart in Firestore:", e));
+              });
+          }
+      } else {
+          localStorage.setItem('maskshop-guest-cart', JSON.stringify(itemsToStore));
+      }
+  }, [user, firestore, getCartCollectionRef]);
+
 
   const addToCart = useCallback((product: Product, quantity: number = 1, variant?: AddToCartOptions) => {
     setCartItems((prevItems) => {
@@ -110,16 +166,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }];
       }
       
-      if (user && firestore) {
-        const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
-        const itemToSave = newItems.find(findPredicate);
-        if (itemToSave) {
-          setDoc(cartItemRef, itemToSave, { merge: true }).catch(e => console.error("Error adding to cart in Firestore:", e));
-        }
-      } else {
-        localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
-      }
-      
+      updateStorage(newItems);
       return newItems;
     });
 
@@ -127,23 +174,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       title: t('added_to_cart_title').text,
       description: t('added_to_cart_desc', { productName: product.name }).text,
     });
-  }, [user, firestore, toast, t]);
+  }, [updateStorage, toast, t]);
 
 
   const removeFromCart = useCallback((productId: string, variant?: AddToCartOptions) => {
     setCartItems((prevItems) => {
       const cartItemId = getCartItemId(productId, variant);
       const newItems = prevItems.filter(item => getCartItemId(item.product.id, item.variant) !== cartItemId);
-
-      if (user && firestore) {
-          const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
-          deleteDoc(cartItemRef).catch(e => console.error("Error removing from cart in Firestore:", e));
-      } else {
-          localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
-      }
+      updateStorage(newItems);
       return newItems;
     });
-  }, [user, firestore]);
+  }, [updateStorage]);
 
   const updateQuantity = useCallback((productId: string, quantity: number, variant?: AddToCartOptions) => {
     if (quantity <= 0) {
@@ -156,15 +197,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       const newItems = prevItems.map((item) => (findPredicate(item) ? { ...item, quantity } : item));
       
-      if (user && firestore) {
-          const cartItemRef = doc(firestore, `users/${user.uid}/cart`, cartItemId);
-          updateDoc(cartItemRef, { quantity }).catch(e => console.error("Error updating cart quantity in Firestore:", e));
-      } else {
-          localStorage.setItem('maskshop-guest-cart', JSON.stringify(newItems));
-      }
+      updateStorage(newItems);
       return newItems;
     });
-  }, [user, firestore, removeFromCart]);
+  }, [removeFromCart, updateStorage]);
 
   const clearCart = useCallback(async () => {
     if (user && firestore) {
@@ -217,7 +253,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeFromCart,
     updateQuantity,
     clearCart,
-    isCartLoading,
+    isCartLoading: isCartLoading || isProductsLoading,
     cartTotal,
     shippingTotal,
     itemCount,

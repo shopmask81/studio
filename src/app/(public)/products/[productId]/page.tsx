@@ -1,64 +1,52 @@
-
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ProductDetails } from '@/components/products/product-details';
-import { useDoc, useFirestore } from '@/firebase';
-import { doc, getDocs, collection } from 'firebase/firestore';
 import { Product } from '@/lib/types';
 import { useMemo, useEffect, useState } from 'react';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Separator } from '@/components/ui/separator';
+import { useProductCache } from '@/components/products/product-cache-provider';
+import { Loader2 } from 'lucide-react';
 
 export default function ProductPage() {
   const params = useParams();
   const productId = params.productId as string;
-  const firestore = useFirestore();
+  const router = useRouter();
 
-  const productRef = useMemo(() => {
-    if (!firestore || !productId) return null;
-    return doc(firestore, 'products', productId);
-  }, [firestore, productId]);
+  const { products: allProducts, isLoading: isCacheLoading, findProductById } = useProductCache();
 
-  const { data: product, isLoading: isProductLoading } = useDoc<Product>(productRef);
+  const product = useMemo(() => findProductById(productId), [findProductById, productId]);
 
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [isLoadingRelated, setIsLoadingRelated] = useState(true);
 
   useEffect(() => {
-    const fetchRelatedProducts = async () => {
-      if (!firestore || !product || !product.category) {
-        setIsLoadingRelated(false);
-        return;
-      }
+    if (!isCacheLoading && allProducts.length > 0 && product) {
+      const filtered = allProducts
+        .filter(
+          (p) =>
+            p.category === product.category &&
+            p.id !== product.id &&
+            p.active === true
+        )
+        .slice(0, 3);
+      setRelatedProducts(filtered);
+    }
+  }, [isCacheLoading, allProducts, product]);
+  
+  if (isCacheLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-20rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-      setIsLoadingRelated(true);
-      try {
-        const cacheRef = doc(firestore, 'cachedData', 'allProducts');
-        const cacheSnap = await getDocs(collection(firestore, 'cachedData'));
-        const cacheDoc = cacheSnap.docs[0];
-
-        if (cacheDoc?.exists()) {
-          const allProducts = cacheDoc.data().products as Product[];
-          const filtered = allProducts
-            .filter(
-              (p) =>
-                p.category === product.category && // Match category
-                p.id !== product.id && // Exclude the current product
-                p.active === true // Only show active products
-            )
-            .slice(0, 3); // Limit to 3 related products
-          setRelatedProducts(filtered);
-        }
-      } catch (e) {
-        console.error("Failed to fetch related products from cache", e);
-      } finally {
-        setIsLoadingRelated(false);
-      }
-    };
-
-    fetchRelatedProducts();
-  }, [firestore, product]);
+  // If cache is loaded but product not found, it might be a stale link. Redirect.
+  if (!isCacheLoading && !product) {
+      router.push('/');
+      return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -71,7 +59,7 @@ export default function ProductPage() {
                 </h2>
                 <ProductGrid
                     products={relatedProducts}
-                    isLoading={isLoadingRelated}
+                    isLoading={false} // Related products are derived from already loaded cache
                 />
             </div>
         )}

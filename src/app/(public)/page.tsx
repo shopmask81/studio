@@ -1,43 +1,26 @@
-
 'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense, useMemo, useState } from 'react';
 import { useTranslation } from '@/components/language/language-provider';
 import { ClientOnly } from '@/components/layout/client-only';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Category, Product } from '@/lib/types';
-import { doc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Menu, Search, AlertCircle } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { CategoryDrawer } from '@/components/products/category-drawer';
 import { HeroBanner } from '@/components/layout/hero-banner';
-
-type CachedProducts = {
-  products: Product[];
-  updatedAt: any;
-}
+import { useProductCache } from '@/components/products/product-cache-provider';
 
 export default function Home() {
   const { t } = useTranslation();
-  const firestore = useFirestore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Fetch the single cache document instead of the entire collection
-  const cacheRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'cachedData', 'allProducts');
-  }, [firestore]);
-
-  const { data: cachedData, isLoading, error } = useDoc<CachedProducts>(cacheRef);
-
-  const allProducts = useMemo(() => {
-    return cachedData?.products || [];
-  }, [cachedData]);
+  // Fetch products from the global cache provider
+  const { products: allProducts, isLoading, error } = useProductCache();
   
   const filteredProducts = useMemo(() => {
     if (!allProducts) {
@@ -70,7 +53,6 @@ export default function Home() {
     return products;
   }, [allProducts, debouncedSearchQuery, selectedCategory]);
   
-  // Handle case where cache is not found or empty
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -82,7 +64,17 @@ export default function Home() {
       );
     }
 
-    if (!cachedData || allProducts.length === 0) {
+    if (error) {
+       return (
+        <div className="text-center py-12 text-muted-foreground bg-muted/50 rounded-lg">
+          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-2xl font-semibold mb-2 text-foreground">Failed to Load Products</h2>
+          <p>There was an error fetching the product data. Please try again later.</p>
+        </div>
+      );
+    }
+
+    if (!allProducts || allProducts.length === 0) {
       return (
         <div className="text-center py-12 text-muted-foreground bg-muted/50 rounded-lg">
           <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />

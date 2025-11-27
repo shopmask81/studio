@@ -1,11 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
@@ -22,29 +19,25 @@ import {
 import { useTranslation } from '../language/language-provider';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { useProductCache } from './product-cache-provider';
 
 interface ProductDetailsProps {
   productId: string;
 }
 
 export function ProductDetails({ productId }: ProductDetailsProps) {
-  const firestore = useFirestore();
   const { addToCart } = useCart();
   const { t, language } = useTranslation();
+  const { findProductById, isLoading: isCacheLoading } = useProductCache();
   
+  const product = useMemo(() => findProductById(productId), [findProductById, productId]);
+
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [currentSlide, setCurrentSlide] = useState(0)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
-
-  const productRef = useMemo(() => {
-    if (!firestore || !productId) return null;
-    return doc(firestore, 'products', productId);
-  }, [firestore, productId]);
-
-  const { data: product, isLoading, error } = useDoc<Product>(productRef);
 
   // Effect to set default selections when product loads
   useEffect(() => {
@@ -123,7 +116,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     addToCart(product, 1, product.variantsEnabled ? { color: selectedColor!, size: selectedSize! } : undefined);
   };
 
-  if (isLoading) {
+  if (isCacheLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-20rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -131,7 +124,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     );
   }
 
-  if (error || !product) {
+  if (!product) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
