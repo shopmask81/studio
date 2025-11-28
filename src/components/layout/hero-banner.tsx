@@ -20,6 +20,16 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getActiveBanners } from '@/firebase/queries/getBanners';
 import { useToast } from '@/hooks/use-toast';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+
+const CACHE_KEY = 'bannersCache';
+const TIMESTAMP_KEY = 'bannersCacheUpdated';
+const CACHE_EXPIRATION_MS = 72 * 60 * 60 * 1000; // 72 hours
+
+type CachedBanners = {
+  banners: Banner[];
+  updatedAt: number; // Storing as milliseconds
+};
 
 export function HeroBanner() {
   const plugin = React.useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
@@ -33,9 +43,35 @@ export function HeroBanner() {
     const fetchBanners = async () => {
       if (!firestore) return;
       setIsLoading(true);
+
       try {
-        const fetchedBanners = await getActiveBanners(firestore);
-        setBanners(fetchedBanners);
+        const cachedDataJSON = localStorage.getItem(CACHE_KEY);
+        const lastUpdated = localStorage.getItem(TIMESTAMP_KEY);
+        const now = Date.now();
+
+        const isExpired = !lastUpdated || (now - Number(lastUpdated) > CACHE_EXPIRATION_MS);
+
+        if (cachedDataJSON && !isExpired) {
+          console.log('Loading banners from localStorage cache.');
+          const cachedData: CachedBanners = JSON.parse(cachedDataJSON);
+          // Firestore Timestamps are not plain JSON, so we need to convert them back
+          const bannersWithTimestamps = cachedData.banners.map(b => ({
+            ...b,
+            createdAt: new Timestamp(b.createdAt.seconds, b.createdAt.nanoseconds),
+            updatedAt: new Timestamp(b.updatedAt.seconds, b.updatedAt.nanoseconds),
+          }));
+          setBanners(bannersWithTimestamps);
+          setIsLoading(false);
+        } else {
+          console.log('Cache missing or expired. Fetching fresh banners.');
+          const fetchedBanners = await getActiveBanners(firestore);
+          setBanners(fetchedBanners);
+          
+          // The fetchedBanners have Firestore Timestamps which are objects.
+          // These are fine to be stored in component state but need to be serialized for localStorage.
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ banners: fetchedBanners }));
+          localStorage.setItem(TIMESTAMP_KEY, now.toString());
+        }
       } catch (error) {
         console.error("Failed to fetch active banners:", error);
         toast({

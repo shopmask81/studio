@@ -8,10 +8,13 @@ import {
   doc,
   serverTimestamp,
   writeBatch,
+  getDocs,
+  setDoc,
 } from 'firebase/firestore';
 import type { Banner } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { getAllBanners } from '@/firebase/queries/getBanners';
 
 type BannerData = Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>
 
@@ -164,4 +167,44 @@ export async function updateBannerOrder(
         // and harder to represent in a single contextual error.
         throw new Error('Failed to update banner order. You may not have permission for one or more banners.');
     });
+}
+
+
+/**
+ * Fetches all banners, transforms them, and saves them to a single
+ * cache document in Firestore. This is an admin-only operation.
+ * @param firestore The Firestore database instance.
+ * @returns The number of banners that were cached.
+ */
+export async function updateBannerCache(firestore: Firestore): Promise<number> {
+    try {
+        // 1. Fetch all banners from the 'banners' collection using the existing admin query
+        const allBanners = await getAllBanners(firestore);
+
+        // 2. We don't need to transform them if the types are already correct.
+        // The `Banner` type should match what we want to store.
+        const bannersForCache = allBanners.map(banner => ({
+            ...banner,
+            // Convert Timestamps to ISO strings for JSON compatibility if needed, but Firestore handles them.
+            createdAt: banner.createdAt,
+            updatedAt: banner.updatedAt,
+        }));
+        
+        // 3. Get a reference to the target cache document
+        const cacheDocRef = doc(firestore, 'cachedData', 'allBanners');
+
+        // 4. Save the data, overwriting any existing content
+        const dataToSet = {
+            banners: bannersForCache,
+            updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(cacheDocRef, dataToSet);
+
+        return bannersForCache.length;
+    } catch (error) {
+        console.error("Error updating banner cache:", error);
+        // This makes the error message available to the calling component's catch block
+        throw error; 
+    }
 }

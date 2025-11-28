@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import type { Banner } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -21,7 +21,8 @@ import {
     addBanner, 
     updateBanner, 
     deleteBanner,
-    updateBannerOrder
+    updateBannerOrder,
+    updateBannerCache,
 } from './services/banner-service';
 import { BannerTable } from './components/banner-table';
 import { BannerForm } from './components/banner-form';
@@ -43,6 +44,7 @@ export default function AdminBannersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCaching, setIsCaching] = useState(false);
 
   const fetchBanners = async () => {
     if (!firestore) return;
@@ -152,14 +154,36 @@ export default function AdminBannersPage() {
     }
   }
 
+  const handleCacheUpdate = async () => {
+    if (!firestore) return;
+    setIsCaching(true);
+    try {
+        const count = await updateBannerCache(firestore);
+        toast({
+            title: 'Banner Cache Updated',
+            description: `${count} banners have been cached for the public site.`
+        });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
+    } finally {
+        setIsCaching(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Banners</h1>
-        <Button onClick={handleAddNew}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Banner
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
+                {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Update Cache
+            </Button>
+            <Button onClick={handleAddNew}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add New Banner
+            </Button>
+        </div>
       </div>
 
       {isLoading ? (

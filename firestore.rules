@@ -32,6 +32,16 @@ service cloud.firestore {
     }
 
     /**
+     * @description Public read access for cached data.
+     */
+    match /cachedData/{docId} {
+      // Anyone can read the cache documents.
+      allow get: if true;
+      // Writing to the cache is an admin-only operation.
+      allow write: if isAdmin();
+    }
+
+    /**
      * @description Allows reading and writing messages.
      */
     match /messages/{messageId} {

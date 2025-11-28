@@ -5,45 +5,47 @@ import {
   collection,
   getDocs,
   query,
-  where,
   orderBy,
   Firestore,
-  DocumentData,
-  WithFieldValue,
+  getDoc,
+  doc
 } from 'firebase/firestore';
 import type { Banner } from '@/lib/types';
 
+type CachedBannerData = {
+  banners: Banner[];
+  updatedAt: any;
+}
+
 /**
- * Fetches all banners that are marked as 'active'.
- * This function is intended for public-facing parts of the site.
+ * Fetches active banners from the public cache document in Firestore.
+ * This is the primary method for public-facing parts of the site.
  * @param {Firestore} db - The Firestore database instance.
  * @returns {Promise<Banner[]>} A promise that resolves to an array of active banners.
  */
 export async function getActiveBanners(db: Firestore): Promise<Banner[]> {
-  const bannersRef = collection(db, 'banners');
-  // This query is now allowed for public users by the security rules.
-  // The orderBy('order') clause has been removed to prevent the missing index error.
-  const q = query(
-    bannersRef,
-    where('active', '==', true)
-  );
+  const cacheRef = doc(db, 'cachedData', 'allBanners');
+  const docSnap = await getDoc(cacheRef);
 
-  const querySnapshot = await getDocs(q);
-  
-  const banners = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Banner[];
+  if (!docSnap.exists()) {
+    console.warn("Banner cache document 'cachedData/allBanners' not found.");
+    return [];
+  }
 
-  // Manual sorting on the client-side after fetching
-  banners.sort((a, b) => a.order - b.order);
+  const data = docSnap.data() as CachedBannerData;
+  const allCachedBanners = data.banners || [];
 
-  return banners;
+  // Filter for active banners and sort them on the client side
+  const activeBanners = allCachedBanners
+    .filter(banner => banner.active)
+    .sort((a, b) => a.order - b.order);
+    
+  return activeBanners;
 }
 
 /**
- * Fetches all banners, regardless of their active status.
- * This function is intended for admin use.
+ * Fetches ALL banners directly from the 'banners' collection.
+ * This function is intended for admin use only and requires admin permissions.
  * @param {Firestore} db - The Firestore database instance.
  * @returns {Promise<Banner[]>} A promise that resolves to an array of all banners.
  */
