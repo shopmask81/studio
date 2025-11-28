@@ -7,6 +7,10 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  getDocs,
+  setDoc,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -107,4 +111,50 @@ export async function deleteCategory(
         errorEmitter.emit('permission-error', permissionError);
         throw new Error('You do not have permission to delete categories.');
     });
+}
+
+/**
+ * Fetches all categories, transforms them, and saves them to a single
+ * cache document in Firestore.
+ * @param firestore The Firestore database instance.
+ * @returns The number of categories that were cached.
+ */
+export async function updateCategoryCache(firestore: Firestore): Promise<number> {
+    try {
+        // 1. Fetch all categories, ordered by name
+        const categoriesRef = collection(firestore, 'categories');
+        const q = query(categoriesRef, orderBy('name'));
+        const querySnapshot = await getDocs(q);
+
+        const allCategories = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Category[];
+
+        // 2. Prepare the data for the cache document
+        const dataToSet = {
+            lastUpdated: new Date().toISOString(),
+            categories: allCategories,
+        };
+
+        // 3. Get a reference to the target cache document and save the data
+        const cacheDocRef = doc(firestore, 'cachedData', 'allCategories');
+        await setDoc(cacheDocRef, dataToSet, { merge: true });
+
+        // 4. Return the number of cached categories
+        return allCategories.length;
+
+    } catch (error) {
+        console.error("Error updating category cache:", error);
+        if ((error as any).code === 'permission-denied') {
+             const permissionError = new FirestorePermissionError({
+                path: 'cachedData/allCategories',
+                operation: 'write',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw new Error('You do not have permission to update the cache.');
+        }
+        // Re-throw other errors to be caught by the calling component
+        throw error;
+    }
 }

@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Search } from 'lucide-react';
+import { PlusCircle, Loader2, Search, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { CategoryTable } from './components/category-table';
@@ -15,6 +15,7 @@ import {
   addCategory as addCategoryService,
   updateCategory as updateCategoryService,
   deleteCategory as deleteCategoryService,
+  updateCategoryCache,
 } from './services/category-service';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -42,6 +43,8 @@ export default function AdminCategoriesPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const [isCaching, setIsCaching] = useState(false);
 
   const categoriesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -115,14 +118,36 @@ export default function AdminCategoriesPage() {
     }
   }
 
+  const handleCacheUpdate = async () => {
+    if (!firestore) return;
+    setIsCaching(true);
+    try {
+        const count = await updateCategoryCache(firestore);
+        toast({
+            title: 'Category Cache Updated',
+            description: `${count} categories have been cached.`
+        });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
+    } finally {
+        setIsCaching(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Categories</h1>
-        <Button onClick={handleAddNew}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Category
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
+                {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Update Cache
+            </Button>
+            <Button onClick={handleAddNew}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Category
+            </Button>
+        </div>
       </div>
 
       <div className="relative">
