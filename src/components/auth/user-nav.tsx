@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -31,11 +32,12 @@ export function UserNav() {
     const auth = getAuthInstance();
     try {
       await signOut(auth);
+      // Redirect immediately. The AuthProvider will handle the state change.
+      router.push('/');
       toast({
         title: t('signed_out_title').text,
         description: t('signed_out_desc').text,
       });
-      router.push('/');
     } catch (error) {
       toast({
         variant: "destructive",

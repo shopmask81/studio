@@ -17,6 +17,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
 
+  // If auth state is loading, or if the user is null (and redirect is imminent),
+  // show a loading skeleton. This prevents children from rendering prematurely.
   if (isLoading || !user) {
     return (
         <div className="container mx-auto px-4 py-12">
@@ -28,5 +30,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Only render children if loading is complete and user is authenticated.
   return <>{children}</>;
 }

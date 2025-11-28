@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState } from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Address } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,10 @@ import { AddressForm } from './address-form';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useTranslation } from '@/components/language/language-provider';
+import { useAuth } from '@/components/auth/auth-provider';
 
 export function AddressList() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const { t } = useTranslation();

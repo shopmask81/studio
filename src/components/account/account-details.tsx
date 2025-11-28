@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,22 +11,15 @@ import { updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "../language/language-provider";
+import { useAuth } from "../auth/auth-provider";
 
 export function AccountDetails() {
-    const { user, isUserLoading } = useUser();
-    const firestore = useFirestore();
+    const { user, userProfile, isLoading: isAuthLoading } = useAuth();
     const { toast } = useToast();
     const { t } = useTranslation();
 
-    const userDocRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [firestore, user]);
-
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
-
     const [fullName, setFullName] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         if (userProfile) {
@@ -40,13 +32,16 @@ export function AccountDetails() {
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !userDocRef) return;
-        setIsLoading(true);
+        if (!user) return;
+        setIsUpdating(true);
         try {
             // Update auth profile
-            await updateProfile(user, { displayName: fullName });
+            if(user.displayName !== fullName) {
+                await updateProfile(user, { displayName: fullName });
+            }
 
             // Update firestore document
+            const userDocRef = doc(useFirestore(), 'users', user.uid);
             await setDoc(userDocRef, { name: fullName }, { merge: true });
             
             toast({
@@ -60,13 +55,11 @@ export function AccountDetails() {
                 description: error.message || t('update_failed_desc').text,
             });
         } finally {
-            setIsLoading(false);
+            setIsUpdating(false);
         }
     }
 
-    const loading = isUserLoading || isProfileLoading;
-
-    if (loading) {
+    if (isAuthLoading) {
         return (
              <div className="container mx-auto px-4 py-12">
                 <h1 className="text-4xl font-headline mb-8" {...t('your_account')}>{t('your_account').text}</h1>
@@ -118,8 +111,8 @@ export function AccountDetails() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button type="submit" disabled={isLoading}>
-                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isUpdating}>
+                             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {t('save_changes').text}
                         </Button>
                     </CardFooter>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +20,7 @@ import { Address } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
+import { useAuth } from '../auth/auth-provider';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -51,7 +51,7 @@ const formSchema = z.object({
 });
 
 export function CheckoutForm() {
-    const { user } = useUser();
+    const { user } = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
@@ -335,5 +335,3 @@ export function CheckoutForm() {
         </Form>
     );
 }
-
-    

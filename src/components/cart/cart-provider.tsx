@@ -3,10 +3,11 @@
 import { createContext, useContext, useState, type ReactNode, useMemo, useEffect, useCallback } from 'react';
 import type { Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
-import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { useTranslation } from '../language/language-provider';
 import { useProductCache } from '../products/product-cache-provider';
+import { useAuth } from '../auth/auth-provider';
 
 type AddToCartOptions = {
   color?: string | null;
@@ -53,7 +54,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartLoading, setIsCartLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user } = useAuth();
   const firestore = useFirestore();
   const { t } = useTranslation();
   const { findProductById, isLoading: isProductsLoading } = useProductCache();
@@ -126,20 +127,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (user && firestore) {
           const cartColRef = getCartCollectionRef(user.uid);
-          if (cartColRef) {
-              const batch = writeBatch(firestore);
-              // First, delete all existing items for simplicity
-              getDocs(cartColRef).then(snapshot => {
-                  snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                  // Then, add all the new items
-                  itemsToStore.forEach(item => {
-                      const cartItemId = getCartItemId(item.productId, item.variant);
-                      const docRef = doc(cartColRef, cartItemId);
-                      batch.set(docRef, item);
-                  });
-                  batch.commit().catch(e => console.error("Error updating cart in Firestore:", e));
+          if (!cartColRef) return;
+          const batch = writeBatch(firestore);
+          // First, delete all existing items for simplicity
+          getDocs(cartColRef).then(snapshot => {
+              snapshot.docs.forEach(doc => batch.delete(doc.ref));
+              // Then, add all the new items
+              itemsToStore.forEach(item => {
+                  const cartItemId = getCartItemId(item.productId, item.variant);
+                  const docRef = doc(cartColRef, cartItemId);
+                  batch.set(docRef, item);
               });
-          }
+              batch.commit().catch(e => console.error("Error updating cart in Firestore:", e));
+          });
       } else {
           localStorage.setItem('maskshop-guest-cart', JSON.stringify(itemsToStore));
       }

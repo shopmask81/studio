@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from "react";
-import { useUser } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Copy, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "../language/language-provider";
+import { useAuth } from "../auth/auth-provider";
 
 export function AffiliateTool() {
-    const { user } = useUser();
+    const { user } = useAuth();
     const [productUrl, setProductUrl] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
     const { toast } = useToast();

@@ -2,24 +2,15 @@
 
 import { Theater } from "lucide-react";
 import Link from "next/link";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import { useAuth } from "../auth/auth-provider";
 import { useTranslation } from "../language/language-provider";
 
 
 export function Footer() {
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { userProfile } = useAuth();
   const { t } = useTranslation();
 
-  const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-  
-  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
-  const isAffiliate = user && userProfile?.role === 'affiliate';
+  const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
 
   return (
     <footer className="border-t mt-16 bg-card/50">

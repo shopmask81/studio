@@ -1,18 +1,17 @@
-
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
-import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, Auth } from 'firebase/auth';
+import { setDoc, doc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, PasswordInput } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import { useTranslation } from '../language/language-provider';
 
 export function SignupForm() {
@@ -22,8 +21,8 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const auth: Auth = useFirebaseAuth();
+  const firestore: Firestore = useFirestore();
   const { t } = useTranslation();
 
   const handleSignUp = async (e: React.FormEvent) => {

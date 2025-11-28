@@ -1,34 +1,27 @@
 'use client';
 
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { doc } from 'firebase/firestore';
-import { UserProfile } from '@/lib/types';
+import { useAuth } from './auth-provider';
+import { useEffect } from 'react';
 
 export function AffiliateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { user, userProfile, isLoading } = useAuth();
   const router = useRouter();
-  
-  const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
-
-  const isLoading = isUserLoading || isProfileLoading;
-  const isAffiliate = userProfile?.role === 'affiliate';
+  const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
 
   useEffect(() => {
-    if (!isLoading && !isAffiliate) {
-      router.push('/');
+    if (!isLoading) {
+      if (!user) {
+        router.push('/login');
+      } else if (!isAffiliate) {
+        router.push('/account');
+      }
     }
-  }, [isLoading, isAffiliate, router]);
+  }, [isLoading, user, isAffiliate, router]);
 
-  if (isLoading || !isAffiliate) {
+  if (isLoading || !user || !isAffiliate) {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="space-y-4">

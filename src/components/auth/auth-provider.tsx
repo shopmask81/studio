@@ -27,14 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // Start with isLoading as true to prevent premature rendering
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      // Set loading to true whenever the user state might change.
       setIsLoading(true);
+      
       if (firebaseUser) {
         setUser(firebaseUser);
-        // Fetch user profile from Firestore and listen for real-time updates
         const userDocRef = doc(firestore, 'users', firebaseUser.uid);
         
         const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
@@ -43,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             setUserProfile(null);
           }
-           // Mark loading as complete only after profile is fetched/updated
+           // Mark loading as complete only after the profile has been fetched/updated.
           setIsLoading(false);
         }, (error) => {
           console.error("Failed to fetch user profile:", error);
@@ -51,18 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         });
 
-        // Return the profile listener's unsubscribe function
+        // This function will be called when the auth state changes again,
+        // cleaning up the previous profile listener.
         return () => unsubProfile();
 
       } else {
-        // No user is signed in
+        // No user is signed in. Clear all user-related state.
         setUser(null);
         setUserProfile(null);
         setIsLoading(false);
       }
     });
 
-    // Cleanup auth subscription on unmount
+    // Cleanup auth subscription on component unmount
     return () => unsubscribe();
   }, [auth, firestore]);
 
