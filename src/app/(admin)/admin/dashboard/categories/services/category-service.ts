@@ -11,6 +11,7 @@ import {
   setDoc,
   query,
   orderBy,
+  Timestamp,
 } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -115,7 +116,7 @@ export async function deleteCategory(
 
 /**
  * Fetches all categories, transforms them, and saves them to a single
- * cache document in Firestore.
+ * cache document in Firestore and triggers a client-side update.
  * @param firestore The Firestore database instance.
  * @returns The number of categories that were cached.
  */
@@ -128,20 +129,30 @@ export async function updateCategoryCache(firestore: Firestore): Promise<number>
 
         const allCategories = querySnapshot.docs.map(doc => ({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            // Ensure timestamps are serializable
+            createdAt: (doc.data().createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            updatedAt: (doc.data().updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         })) as Category[];
+
 
         // 2. Prepare the data for the cache document
         const dataToSet = {
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: serverTimestamp(),
             categories: allCategories,
         };
 
         // 3. Get a reference to the target cache document and save the data
         const cacheDocRef = doc(firestore, 'cachedData', 'allCategories');
-        await setDoc(cacheDocRef, dataToSet, { merge: true });
+        await setDoc(cacheDocRef, dataToSet);
 
-        // 4. Return the number of cached categories
+        // 4. Update local storage to trigger real-time updates across tabs
+        localStorage.setItem('categoriesCache', JSON.stringify(allCategories));
+        localStorage.setItem('categoriesCacheTimestamp', Date.now().toString());
+        // This item is what other tabs will listen for. Its value change triggers the event.
+        localStorage.setItem('categories-version', Date.now().toString());
+
+        // 5. Return the number of cached categories
         return allCategories.length;
 
     } catch (error) {

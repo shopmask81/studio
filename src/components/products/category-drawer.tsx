@@ -1,15 +1,13 @@
 
 'use client';
 
-import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, orderBy, query } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Loader2, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { useCategoryCache } from '../category/category-cache-provider';
 
 interface CategoryDrawerProps {
   isOpen: boolean;
@@ -24,14 +22,7 @@ export function CategoryDrawer({
   selectedCategory,
   onSelectCategory,
 }: CategoryDrawerProps) {
-  const firestore = useFirestore();
-
-  const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'categories'), orderBy('name'));
-  }, [firestore]);
-
-  const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
+  const { categories, isLoading } = useCategoryCache();
 
   const handleSelect = (category: Category | null) => {
     onSelectCategory(category);
