@@ -20,16 +20,21 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getActiveBanners } from '@/firebase/queries/getBanners';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 const CACHE_KEY = 'bannersCache';
-const TIMESTAMP_KEY = 'bannersCacheUpdated';
-const CACHE_EXPIRATION_MS = 72 * 60 * 60 * 1000; // 72 hours
+const TIMESTAMP_KEY = 'bannersCacheTimestamp';
+const VERSION_KEY = 'banners-version';
+const CACHE_EXPIRATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 
-type CachedBanners = {
-  banners: Banner[];
-  updatedAt: number; // Storing as milliseconds
-};
+// Helper to convert ISO strings back to Timestamps for type consistency
+const parseBanners = (banners: any[]): Banner[] => {
+  return banners.map(b => ({
+    ...b,
+    createdAt: typeof b.createdAt === 'string' ? Timestamp.fromDate(new Date(b.createdAt)) : b.createdAt,
+    updatedAt: typeof b.updatedAt === 'string' ? Timestamp.fromDate(new Date(b.updatedAt)) : b.updatedAt,
+  }));
+}
 
 export function HeroBanner() {
   const plugin = React.useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
@@ -38,54 +43,72 @@ export function HeroBanner() {
 
   const [banners, setBanners] = React.useState<Banner[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  
+  const fetchBanners = React.useCallback(async (forceRefetch = false) => {
+    if (!firestore) return;
+    setIsLoading(true);
 
-  React.useEffect(() => {
-    const fetchBanners = async () => {
-      if (!firestore) return;
-      setIsLoading(true);
-
-      try {
+    try {
         const cachedDataJSON = localStorage.getItem(CACHE_KEY);
         const lastUpdated = localStorage.getItem(TIMESTAMP_KEY);
         const now = Date.now();
 
         const isExpired = !lastUpdated || (now - Number(lastUpdated) > CACHE_EXPIRATION_MS);
 
-        if (cachedDataJSON && !isExpired) {
-          console.log('Loading banners from localStorage cache.');
-          const cachedData: CachedBanners = JSON.parse(cachedDataJSON);
-          // Firestore Timestamps are not plain JSON, so we need to convert them back
-          const bannersWithTimestamps = cachedData.banners.map(b => ({
-            ...b,
-            createdAt: new Timestamp(b.createdAt.seconds, b.createdAt.nanoseconds),
-            updatedAt: new Timestamp(b.updatedAt.seconds, b.updatedAt.nanoseconds),
-          }));
-          setBanners(bannersWithTimestamps);
-          setIsLoading(false);
+        if (cachedDataJSON && !isExpired && !forceRefetch) {
+            console.log('Loading banners from localStorage cache.');
+            const parsed = JSON.parse(cachedDataJSON);
+            setBanners(parseBanners(parsed));
         } else {
-          console.log('Cache missing or expired. Fetching fresh banners.');
-          const fetchedBanners = await getActiveBanners(firestore);
-          setBanners(fetchedBanners);
-          
-          // The fetchedBanners have Firestore Timestamps which are objects.
-          // These are fine to be stored in component state but need to be serialized for localStorage.
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ banners: fetchedBanners }));
-          localStorage.setItem(TIMESTAMP_KEY, now.toString());
+            console.log(forceRefetch ? 'Forced refetch triggered.' : 'Cache missing or expired. Fetching fresh banners.');
+            const fetchedBanners = await getActiveBanners(firestore);
+            setBanners(fetchedBanners);
+            
+            // The `createdAt` and `updatedAt` might be Timestamps. Convert to string for localStorage.
+            const serializableBanners = fetchedBanners.map(b => ({
+                ...b,
+                createdAt: b.createdAt.toDate().toISOString(),
+                updatedAt: b.updatedAt.toDate().toISOString(),
+            }));
+            
+            localStorage.setItem(CACHE_KEY, JSON.stringify(serializableBanners));
+            localStorage.setItem(TIMESTAMP_KEY, now.toString());
         }
-      } catch (error) {
+    } catch (error) {
         console.error("Failed to fetch active banners:", error);
         toast({
-          variant: 'destructive',
-          title: 'Could not load banners',
-          description: (error as Error).message,
+            variant: 'destructive',
+            title: 'Could not load banners',
+            description: (error as Error).message,
         });
-      } finally {
+    } finally {
         setIsLoading(false);
+    }
+  }, [firestore, toast]);
+  
+
+  React.useEffect(() => {
+    fetchBanners();
+  }, [fetchBanners]);
+
+  // Effect to listen for storage events to update banners in real-time
+  React.useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      // If the 'banners-version' key changes, it means an admin updated the cache.
+      if (event.key === VERSION_KEY) {
+        console.log('New banner version detected. Refetching banners...');
+        // Force a refetch, bypassing the normal cache expiration check.
+        fetchBanners(true);
       }
     };
 
-    fetchBanners();
-  }, [firestore, toast]);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [fetchBanners]);
+
 
   if (isLoading) {
     return (

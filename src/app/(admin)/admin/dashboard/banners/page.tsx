@@ -161,7 +161,7 @@ export default function AdminBannersPage() {
         const count = await updateBannerCache(firestore);
         toast({
             title: 'Banner Cache Updated',
-            description: `${count} banners have been cached for the public site.`
+            description: `${count} banners have been cached and updated for all users.`
         });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
@@ -177,7 +177,7 @@ export default function AdminBannersPage() {
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
                 {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Update Cache
+                Update Banner Cache
             </Button>
             <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2 h-4 w-4" />

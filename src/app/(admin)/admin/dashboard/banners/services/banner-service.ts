@@ -10,6 +10,7 @@ import {
   writeBatch,
   getDocs,
   setDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import type { Banner } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -88,7 +89,6 @@ export async function addBanner(
         requestResourceData: dataToCreate,
         });
         errorEmitter.emit('permission-error', permissionError);
-        // We still throw an error to be caught by the UI layer's try/catch
         throw new Error('You do not have permission to create banners.');
     });
 }
@@ -171,35 +171,43 @@ export async function updateBannerOrder(
 
 
 /**
- * Fetches all banners, transforms them, and saves them to a single
- * cache document in Firestore. This is an admin-only operation.
+ * Fetches all banners from the 'banners' collection (admin-only),
+ * writes them to the public `cachedData/allBanners` document, and also
+ * updates the admin's local storage to trigger immediate updates for all users.
  * @param firestore The Firestore database instance.
  * @returns The number of banners that were cached.
  */
 export async function updateBannerCache(firestore: Firestore): Promise<number> {
     try {
-        // 1. Fetch all banners from the 'banners' collection using the existing admin query
+        // 1. Fetch all banners from the 'banners' collection using the admin query
         const allBanners = await getAllBanners(firestore);
 
         // 2. We don't need to transform them if the types are already correct.
-        // The `Banner` type should match what we want to store.
         const bannersForCache = allBanners.map(banner => ({
             ...banner,
-            // Convert Timestamps to ISO strings for JSON compatibility if needed, but Firestore handles them.
-            createdAt: banner.createdAt,
-            updatedAt: banner.updatedAt,
+            // Convert Timestamps to a serializable format for JSON, if they are not already.
+            // Firestore SDK handles Timestamps, but direct objects might not.
+            createdAt: banner.createdAt instanceof Timestamp ? banner.createdAt.toDate().toISOString() : banner.createdAt,
+            updatedAt: banner.updatedAt instanceof Timestamp ? banner.updatedAt.toDate().toISOString() : banner.updatedAt,
         }));
         
         // 3. Get a reference to the target cache document
         const cacheDocRef = doc(firestore, 'cachedData', 'allBanners');
 
-        // 4. Save the data, overwriting any existing content
+        // 4. Save the data to Firestore, overwriting any existing content
         const dataToSet = {
             banners: bannersForCache,
             updatedAt: serverTimestamp(),
         };
 
         await setDoc(cacheDocRef, dataToSet);
+        
+        // 5. Update local storage for real-time updates across tabs/users
+        localStorage.setItem('bannersCache', JSON.stringify(bannersForCache));
+        localStorage.setItem('bannersCacheTimestamp', Date.now().toString());
+        // This item is what other tabs will listen for. Its value triggers the event.
+        localStorage.setItem('banners-version', Date.now().toString());
+
 
         return bannersForCache.length;
     } catch (error) {
