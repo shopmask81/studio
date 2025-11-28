@@ -77,17 +77,17 @@ export async function addBanner(
     updatedAt: serverTimestamp(),
   };
 
-  try {
-    await addDoc(collectionRef, dataToCreate);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: collectionRef.path,
-      operation: 'create',
-      requestResourceData: dataToCreate,
+  addDoc(collectionRef, dataToCreate)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+        path: collectionRef.path,
+        operation: 'create',
+        requestResourceData: dataToCreate,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // We still throw an error to be caught by the UI layer's try/catch
+        throw new Error('You do not have permission to create banners.');
     });
-    errorEmitter.emit('permission-error', permissionError);
-    throw new Error('You do not have permission to create banners.');
-  }
 }
 
 export async function updateBanner(
@@ -110,17 +110,16 @@ export async function updateBanner(
       }
   }
   
-  try {
-    await updateDoc(bannerRef, dataToUpdate);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: bannerRef.path,
-      operation: 'update',
-      requestResourceData: dataToUpdate,
+  updateDoc(bannerRef, dataToUpdate)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+        path: bannerRef.path,
+        operation: 'update',
+        requestResourceData: dataToUpdate,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw new Error('You do not have permission to update banners.');
     });
-    errorEmitter.emit('permission-error', permissionError);
-    throw new Error('You do not have permission to update banners.');
-  }
 }
 
 export async function deleteBanner(
@@ -128,19 +127,22 @@ export async function deleteBanner(
   banner: Banner
 ): Promise<void> {
   const bannerRef = doc(firestore, 'banners', banner.id);
-  try {
-    await deleteDoc(bannerRef);
-    if(banner.deleteUrl) {
-      await deleteImage(banner.deleteUrl);
-    }
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: bannerRef.path,
-      operation: 'delete',
-    });
-    errorEmitter.emit('permission-error', permissionError);
-    throw new Error('You do not have permission to delete banners.');
+  
+  // First, optimistically try to delete the image from ImgBB
+  if (banner.deleteUrl) {
+    await deleteImage(banner.deleteUrl);
   }
+
+  // Then, attempt to delete the Firestore document
+  deleteDoc(bannerRef)
+    .catch((serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: bannerRef.path,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      throw new Error('You do not have permission to delete this banner.');
+    });
 }
 
 export async function updateBannerOrder(
@@ -153,12 +155,13 @@ export async function updateBannerOrder(
     batch.update(bannerRef, { order: index });
   });
 
-  try {
-    await batch.commit();
-  } catch (serverError) {
-    // This is a complex operation to represent in a single permission error,
-    // so we log it and throw a generic error for the UI.
-    console.error("Batch update error:", serverError);
-    throw new Error('Failed to update banner order. You may not have permission for one or more banners.');
-  }
+  batch.commit()
+    .catch((serverError) => {
+        // This is a complex operation to represent in a single permission error,
+        // so we log it and throw a generic error for the UI.
+        console.error("Batch update error:", serverError);
+        // A generic error is acceptable here as batch writes are admin-only
+        // and harder to represent in a single contextual error.
+        throw new Error('Failed to update banner order. You may not have permission for one or more banners.');
+    });
 }

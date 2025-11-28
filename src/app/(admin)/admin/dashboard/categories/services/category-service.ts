@@ -43,18 +43,16 @@ export async function addCategory(
     updatedAt: serverTimestamp(),
   };
 
-  try {
-    await addDoc(collectionRef, dataToCreate);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: collectionRef.path,
-      operation: 'create',
-      requestResourceData: dataToCreate,
+  addDoc(collectionRef, dataToCreate)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: collectionRef.path,
+          operation: 'create',
+          requestResourceData: dataToCreate,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw new Error('You do not have permission to create categories.');
     });
-    errorEmitter.emit('permission-error', permissionError);
-    // Also re-throw the original error or a generic one for the UI
-    throw new Error('You do not have permission to create categories.');
-  }
 }
 
 export async function updateCategory(
@@ -83,17 +81,16 @@ export async function updateCategory(
     updatedAt: serverTimestamp(),
   };
 
-  try {
-    await updateDoc(categoryRef, dataToUpdate);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: categoryRef.path,
-      operation: 'update',
-      requestResourceData: dataToUpdate,
+  updateDoc(categoryRef, dataToUpdate)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+        path: categoryRef.path,
+        operation: 'update',
+        requestResourceData: dataToUpdate,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw new Error('You do not have permission to update categories.');
     });
-    errorEmitter.emit('permission-error', permissionError);
-    throw new Error('You do not have permission to update categories.');
-  }
 }
 
 export async function deleteCategory(
@@ -101,14 +98,13 @@ export async function deleteCategory(
   categoryId: string
 ): Promise<void> {
   const categoryRef = doc(firestore, 'categories', categoryId);
-  try {
-    await deleteDoc(categoryRef);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: categoryRef.path,
-      operation: 'delete',
+  deleteDoc(categoryRef)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+        path: categoryRef.path,
+        operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw new Error('You do not have permission to delete categories.');
     });
-    errorEmitter.emit('permission-error', permissionError);
-    throw new Error('You do not have permission to delete categories.');
-  }
 }
