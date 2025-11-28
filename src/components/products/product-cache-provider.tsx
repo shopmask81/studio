@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,7 +12,9 @@ import {
 import { useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
-import { usePathname, useRouter } from 'next/navigation';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 const CACHE_KEY = 'productsCache';
 const TIMESTAMP_KEY = 'productsCacheUpdated';
@@ -50,9 +53,10 @@ export function ProductCacheProvider({ children }: { children: ReactNode }) {
       console.log('Fetching products from Firestore to warm cache...');
       setIsLoading(true);
       setError(null);
+      
+      const cacheRef = doc(firestore, 'cachedData', 'allProducts');
 
       try {
-        const cacheRef = doc(firestore, 'cachedData', 'allProducts');
         const docSnap = await getDoc(cacheRef);
 
         if (docSnap.exists()) {
@@ -66,14 +70,25 @@ export function ProductCacheProvider({ children }: { children: ReactNode }) {
           throw new Error('Cache document "allProducts" not found in Firestore.');
         }
       } catch (err: any) {
-        console.error('Failed to fetch and cache products:', err);
-        setError(err);
+        // This is the new, more specific error handling block.
+        if (err.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: cacheRef.path,
+                operation: 'get',
+            });
+            setError(permissionError);
+            // Globally emit the rich error for the listener to catch.
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+            console.error('Failed to fetch and cache products:', err);
+            setError(err);
+        }
       } finally {
         setIsLoading(false);
       }
     };
     
-    const loadProductsFromCache = () => {
+    const loadProducts = () => {
       try {
         const cachedProductsJSON = localStorage.getItem(CACHE_KEY);
         const lastUpdated = localStorage.getItem(TIMESTAMP_KEY);
@@ -95,7 +110,7 @@ export function ProductCacheProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    loadProductsFromCache();
+    loadProducts();
   }, [firestore]);
 
 
