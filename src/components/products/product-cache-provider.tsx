@@ -18,7 +18,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const CACHE_KEY = 'productsCache';
 const TIMESTAMP_KEY = 'productsCacheUpdated';
-const CACHE_EXPIRATION_MS = 72 * 60 * 60 * 1000; // 72 hours
+const CACHE_EXPIRATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 type CachedProducts = {
   products: Product[];
