@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -59,7 +60,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const displayPrice = selectedVariant?.price ?? product?.price;
   const displayDiscountPrice = selectedVariant?.discountPrice ?? product?.discountPrice;
   const hasDiscount = displayDiscountPrice && displayPrice && displayDiscountPrice < displayPrice;
-  const currentStock = selectedVariant?.stock ?? product?.stock ?? 0;
 
   const imageGallery = useMemo(() => {
       if (!product) return [];
@@ -104,11 +104,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     // Check if variants are enabled and if a selection is required but not made
     if (product.variantsEnabled) {
       if ((product.variantOptions?.colors?.length || 0) > 0 && !selectedColor) {
-        alert("Please select a color."); // Replace with a nicer toast/alert
+        // This case is handled by disabling the button, but as a fallback:
+        alert("Please select a color.");
         return;
       }
       if ((product.variantOptions?.sizes?.length || 0) > 0 && !selectedSize) {
-        alert("Please select a size."); // Replace with a nicer toast/alert
+        alert("Please select a size.");
         return;
       }
     }
@@ -141,9 +142,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const displayDescription = (language === 'ar' && product.description_ar) || product.description;
   const { dir: nameDir, style: nameStyle } = t(displayName);
   const { dir: descDir, style: descStyle } = t(displayDescription);
-
-  const isAddToCartDisabled = currentStock === 0 || (product.variantsEnabled && !selectedVariant);
-
 
   return (
     <>
@@ -284,24 +282,15 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
 
             <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
             
-            {currentStock <= 10 && currentStock > 0 && (
-                <p className={cn(
-                    "font-bold mb-6 transition-colors duration-200",
-                    currentStock <= 5 ? "text-red-500" : "text-amber-500"
-                )} {...t('only_left_in_stock', {count: currentStock})}>
-                    {t('only_left_in_stock', { count: currentStock }).text}
-                </p>
-            )}
-
             <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                     size="lg" 
                     onClick={handleAddToCart}
-                    disabled={isAddToCartDisabled}
+                    disabled={product.variantsEnabled && !selectedVariant}
                     className="flex-grow"
                 >
                     <ShoppingCart className="me-2 h-5 w-5" />
-                    {isAddToCartDisabled ? (product.variantsEnabled ? 'Unavailable' : 'Out of Stock') : t('add_to_cart').text}
+                    {product.variantsEnabled && !selectedVariant ? 'Select Options' : t('add_to_cart').text}
                 </Button>
             </div>
         </div>
