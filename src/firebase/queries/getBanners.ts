@@ -22,10 +22,10 @@ import type { Banner } from '@/lib/types';
 export async function getActiveBanners(db: Firestore): Promise<Banner[]> {
   const bannersRef = collection(db, 'banners');
   // This query is now allowed for public users by the security rules.
+  // The orderBy('order') clause has been removed to prevent the missing index error.
   const q = query(
     bannersRef,
-    where('active', '==', true),
-    orderBy('order', 'asc')
+    where('active', '==', true)
   );
 
   const querySnapshot = await getDocs(q);
@@ -34,6 +34,9 @@ export async function getActiveBanners(db: Firestore): Promise<Banner[]> {
     id: doc.id,
     ...doc.data(),
   })) as Banner[];
+
+  // Manual sorting on the client-side after fetching
+  banners.sort((a, b) => a.order - b.order);
 
   return banners;
 }
