@@ -147,8 +147,11 @@ export async function updateCategoryCache(firestore: Firestore): Promise<number>
         await setDoc(cacheDocRef, dataToSet);
 
         // 4. Update local storage to trigger real-time updates across tabs
-        localStorage.setItem('categoriesCache', JSON.stringify(allCategories));
-        localStorage.setItem('categoriesCacheTimestamp', Date.now().toString());
+        const newCache = {
+            data: allCategories,
+            timestamp: Date.now(),
+        };
+        localStorage.setItem('cachedCategories', JSON.stringify(newCache));
         // This item is what other tabs will listen for. Its value change triggers the event.
         localStorage.setItem('categories-version', Date.now().toString());
 
