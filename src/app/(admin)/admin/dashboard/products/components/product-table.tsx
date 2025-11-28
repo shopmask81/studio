@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { useMemo, useState } from 'react';
+import { useFirestore, useDoc } from '@/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import {
   Table,
@@ -30,41 +31,59 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { updateProductCache } from '../cache-service';
 
 export function ProductTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const productsQuery = useMemo(() => {
+  const cachedProductsRef = useMemo(() => {
     if (!firestore) return null;
-    return collection(firestore, 'products');
+    return doc(firestore, 'cachedData', 'allProducts');
   }, [firestore]);
 
-  const { data: products, isLoading } = useCollection<Product>(productsQuery);
-
+  const { data: cachedData, isLoading } = useDoc<{ products: Product[] }>(cachedProductsRef);
+  const products = cachedData?.products || [];
+  
   const handleDelete = async (productId: string) => {
     if (!firestore) return;
+    setIsDeleting(productId);
     try {
+      // First, delete the actual product document
       await deleteDoc(doc(firestore, 'products', productId));
       toast({
         title: 'Product Deleted',
-        description: 'The product has been successfully removed.',
+        description: 'The product has been removed.',
       });
+
+      // Then, trigger a cache refresh
+      toast({
+        title: 'Refreshing Cache...',
+        description: 'Updating the product cache after deletion.',
+      });
+      await updateProductCache(firestore);
+      toast({
+        title: 'Cache Refreshed',
+        description: 'The product cache is now up to date.',
+      });
+
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error Deleting Product',
         description: 'There was a problem removing the product.',
       });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -76,7 +95,15 @@ export function ProductTable() {
   };
 
   if (isLoading) {
-    return <div>Loading products...</div>;
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+  }
+
+  if (!products || products.length === 0) {
+      return (
+          <div className="text-center p-8 text-muted-foreground border rounded-lg">
+              No products found in the cache. Try refreshing the cache.
+          </div>
+      );
   }
 
   return (
@@ -90,7 +117,7 @@ export function ProductTable() {
             <TableHead className="hidden md:table-cell">Stock</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Featured</TableHead>
-            <TableHead className="hidden md:table-cell">Created at</TableHead>
+            <TableHead className="hidden md:table-cell">Last Updated</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -113,7 +140,7 @@ export function ProductTable() {
               </TableCell>
               <TableCell>{product.category}</TableCell>
               <TableCell className="hidden md:table-cell">
-                ${product.price.toFixed(2)}
+                ${product.price ? product.price.toFixed(2) : 'N/A'}
               </TableCell>
               <TableCell className="hidden md:table-cell">{product.stock}</TableCell>
               <TableCell>
@@ -132,15 +159,15 @@ export function ProductTable() {
                 </div>
               </TableCell>
                <TableCell className="hidden md:table-cell">
-                {product.createdAt ? format(product.createdAt.toDate(), 'PPP') : 'N/A'}
+                {product.updatedAt ? format(product.updatedAt.toDate(), 'PPP') : 'N/A'}
               </TableCell>
               <TableCell>
                  <AlertDialog>
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isDeleting === product.id}>
+                          {isDeleting === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                          <span className="sr-only">Toggle menu</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -150,8 +177,8 @@ export function ProductTable() {
                                 <Edit className="mr-2 h-4 w-4"/> Edit
                             </Link>
                         </DropdownMenuItem>
-                        <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive">
+                         <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                                 <Trash2 className="mr-2 h-4 w-4"/> Delete
                             </DropdownMenuItem>
                         </AlertDialogTrigger>
@@ -161,7 +188,7 @@ export function ProductTable() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this product.
+                            This action cannot be undone. This will permanently delete this product and refresh the cache.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

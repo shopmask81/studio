@@ -29,10 +29,6 @@ import { Switch } from '@/components/ui/switch';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import {
   collection,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
   query,
   orderBy,
 } from 'firebase/firestore';
@@ -43,8 +39,6 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -105,6 +99,8 @@ type ProductFormValues = z.infer<typeof formSchema>;
 
 interface ProductFormProps {
   productToEdit?: Product;
+  onSubmit: (productData: any, uploadedImages: any[], mainImageIndex: number | null) => Promise<void>;
+  isSubmitting: boolean;
 }
 
 // Independent state for a single variant option (color or size)
@@ -149,11 +145,10 @@ async function deleteFromImgBB(deleteUrl: string): Promise<void> {
 }
 
 
-export function ProductForm({ productToEdit }: ProductFormProps) {
+export function ProductForm({ productToEdit, onSubmit, isSubmitting }: ProductFormProps) {
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Image State ---
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -477,7 +472,7 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
   };
 
 
-  const onSubmit = async (data: ProductFormValues) => {
+  const handleFormSubmit = async (data: ProductFormValues) => {
     if (!firestore) return;
     
     if (uploadedImages.length === 0) {
@@ -508,94 +503,50 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         }
       }
     }
-
-    setIsSubmitting(true);
     
-    try {
-        const mainImage = uploadedImages[mainImageIndex!].url;
-        const additionalImages = uploadedImages.filter((_, index) => index !== mainImageIndex).map(img => img.url);
+    let productData: Partial<Product> = {
+        name: data.name,
+        description: data.description,
+        name_ar: data.name_ar,
+        description_ar: data.description_ar,
+        category: data.category,
+        active: data.active,
+        featured: data.featured,
+        shippingPrice: data.freeShipping ? 0 : data.shippingPrice,
+        variantsEnabled: variantsEnabled,
+    };
 
-        let productData: Partial<Product> = {
-            name: data.name,
-            description: data.description,
-            name_ar: data.name_ar,
-            description_ar: data.description_ar,
-            category: data.category,
-            active: data.active,
-            featured: data.featured,
-            shippingPrice: data.freeShipping ? 0 : data.shippingPrice,
-            mainImage: mainImage,
-            images: additionalImages,
-            variantsEnabled: variantsEnabled,
+    if (variantsEnabled) {
+        productData = {
+            ...productData,
+            variants: variantDetails,
+            variantOptions: {
+                colors: variantColors.map(c => c.value).filter(Boolean),
+                sizes: variantSizes.map(s => s.value).filter(Boolean),
+            },
+            price: 0, 
+            discountPrice: null,
+            stock: 0, 
+            sku: null,
         };
-
-        if (variantsEnabled) {
-            productData = {
-                ...productData,
-                variants: variantDetails,
-                variantOptions: {
-                    colors: variantColors.map(c => c.value).filter(Boolean),
-                    sizes: variantSizes.map(s => s.value).filter(Boolean),
-                },
-                price: 0, 
-                discountPrice: null,
-                stock: 0, 
-                sku: null,
-            };
-        } else {
-            productData = {
-                ...productData,
-                price: data.price,
-                discountPrice: data.discountPrice ?? null,
-                stock: data.stock,
-                sku: data.sku ?? null,
-                variants: [],
-                variantOptions: { colors: [], sizes: [] },
-            }
+    } else {
+        productData = {
+            ...productData,
+            price: data.price,
+            discountPrice: data.discountPrice ?? null,
+            stock: data.stock,
+            sku: data.sku ?? null,
+            variants: [],
+            variantOptions: { colors: [], sizes: [] },
         }
-
-        if (productToEdit) {
-            const productRef = doc(firestore, 'products', productToEdit.id);
-            const dataToUpdate = { ...productData, updatedAt: serverTimestamp() };
-            await updateDoc(productRef, dataToUpdate as any);
-            toast({ title: 'Product Updated', description: 'The product has been successfully updated.' });
-            router.push('/admin/dashboard/products');
-            router.refresh();
-        } else {
-            const collectionRef = collection(firestore, 'products');
-            const dataToCreate = { ...productData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            await addDoc(collectionRef, dataToCreate as any);
-            toast({ title: 'Product Created', description: 'The new product has been added.' });
-            router.push('/admin/dashboard/products');
-            router.refresh();
-        }
-    } catch (error) {
-        console.error('Error in onSubmit logic:', error);
-        if ((error as any)?.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: productToEdit ? `products/${productToEdit.id}` : 'products',
-                operation: productToEdit ? 'update' : 'create',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
-        } else if ((error as any)?.message?.includes?.('Unsupported field value: undefined')) {
-             toast({ 
-                variant: 'destructive', 
-                title: 'Save Failed', 
-                description: 'One or more optional fields (like discount price or SKU) were invalid. Please clear them or enter a valid value.' 
-            });
-        }
-        else {
-            toast({ variant: 'destructive', title: 'Save Failed', description: (error as Error).message || 'An unexpected error occurred while saving the product.' });
-        }
-    } finally {
-        setIsSubmitting(false);
     }
+    
+    await onSubmit(productData, uploadedImages, mainImageIndex);
   };
   
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <Card>

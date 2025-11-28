@@ -9,11 +9,13 @@ import { PlusCircle, RefreshCw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { ProductTable } from './components/product-table';
 import { updateProductCache } from './cache-service';
+import { useRouter } from 'next/navigation';
 
 export default function AdminProductsPage() {
   const [isCaching, setIsCaching] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleCacheRefresh = async () => {
     if (!firestore) {
@@ -31,6 +33,8 @@ export default function AdminProductsPage() {
         title: 'Product Cache Refreshed',
         description: `${productCount} products have been successfully cached.`,
       });
+      // Force a re-render of the table component by navigating
+      router.refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
