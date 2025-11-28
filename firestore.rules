@@ -7,10 +7,13 @@ service cloud.firestore {
      * @description Public read access for general content.
      */
     match /banners/{bannerId} {
-      // Anyone can read active banners for the homepage slider via a query.
-      allow get: if true; 
-      // Only admins can list all banners (including inactive ones) and write to the collection.
-      allow list, write: if isAdmin();
+      // Anyone can get a single banner document directly.
+      allow get: if true;
+      // Allow public listing ONLY when querying for active banners.
+      // Admins are allowed to list all banners without restriction.
+      allow list: if request.query.where.get('active', false) == true || isAdmin();
+      // Only admins can create, update, or delete banners.
+      allow write: if isAdmin();
     }
 
     match /categories/{categoryId} {
