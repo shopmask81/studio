@@ -150,12 +150,12 @@ export function HeroBanner() {
                       className="object-cover object-center brightness-75"
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 z-10 bg-black/30">
-                      <div className="flex flex-col items-center text-center max-w-[800px] px-4">
+                      <div className="text-center flex flex-col items-center justify-center max-w-3xl mx-auto px-4">
                         <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight">
                           {banner.title}
                         </h2>
                         {banner.description && (
-                          <p className="mt-4 text-lg text-white/90">
+                          <p className="mt-4 text-lg md:text-xl text-white/90">
                               {banner.description}
                           </p>
                         )}
