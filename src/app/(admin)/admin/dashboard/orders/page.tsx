@@ -44,7 +44,7 @@ export default function AdminOrdersPage() {
     // Firestore Timestamps need to be converted back to Date objects for filtering
     return cachedData.orders.map(order => ({
       ...order,
-      createdAt: (order.createdAt as any)?.toDate ? (order.createdAt as any).toDate() : new Date(),
+      createdAt: order.createdAt ? (order.createdAt as any)?.toDate ? (order.createdAt as any).toDate() : new Date(order.createdAt as any) : new Date(),
     }));
   }, [cachedData]);
   
@@ -87,7 +87,7 @@ export default function AdminOrdersPage() {
                    check(order.zip) ||
                    check(order.country) ||
                    check(order.status) ||
-                   order.items.some(item => check(item.name) || check(item.productId));
+                   order.items?.some(item => check(item.name) || check(item.productId));
         });
     }
     
@@ -115,6 +115,7 @@ export default function AdminOrdersPage() {
         }
 
         for (const chunk of productChunks) {
+            if (chunk.length === 0) continue;
             const productsRef = collection(firestore, 'products');
             const q = query(productsRef, where('__name__', 'in', chunk));
             const querySnapshot = await getDocs(q);
@@ -215,7 +216,7 @@ export default function AdminOrdersPage() {
          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
                 {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Refresh Cache
+                Refresh Orders Cache
             </Button>
             {filteredOrders && filteredOrders.length > 0 && (
                 <OrderPDFGenerator orders={filteredOrders} isLoading={isLoading} />
