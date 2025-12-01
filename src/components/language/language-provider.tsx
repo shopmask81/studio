@@ -13,15 +13,13 @@ const arabicRegex = /[\u0600-\u06FF]/;
 const getDirection = (text: string) => {
     const isArabic = arabicRegex.test(text);
     return {
-        dir: isArabic ? 'rtl' : 'ltr',
-        style: { textAlign: isArabic ? 'right' : 'left' }
+        dir: isArabic ? 'rtl' : 'ltr'
     }
 }
 
 type TranslationResult = {
   text: string;
   dir: 'ltr' | 'rtl';
-  style: { textAlign: 'left' | 'right' };
 };
 
 type TranslationContextType = {
