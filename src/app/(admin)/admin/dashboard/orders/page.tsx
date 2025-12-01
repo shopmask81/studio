@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useDoc } from '@/firebase';
-import { writeBatch, doc, getDocs, collection, query, orderBy, where } from 'firebase/firestore';
+import { writeBatch, doc, getDocs, collection, query, orderBy } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, RefreshCw } from 'lucide-react';
@@ -152,7 +153,7 @@ export default function AdminOrdersPage() {
     setSelectedOrderIds(isSelected && filteredOrders ? filteredOrders.map(o => o.id) : []);
   };
   
-  const handleCacheUpdate = async () => {
+  const refreshOrdersCache = useCallback(async () => {
     if (!firestore) return;
     setIsCaching(true);
     try {
@@ -163,7 +164,17 @@ export default function AdminOrdersPage() {
     } finally {
       setIsCaching(false);
     }
-  }
+  }, [firestore, toast]);
+  
+  useEffect(() => {
+    refreshOrdersCache();
+    const interval = setInterval(() => {
+        refreshOrdersCache();
+    }, 3600000); // 1 hour
+    
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBulkStatusChange = async (status: Order['status']) => {
     if (!firestore || selectedOrderIds.length === 0) return;
@@ -214,7 +225,7 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
+            <Button variant="outline" onClick={refreshOrdersCache} disabled={isCaching}>
                 {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Refresh Orders Cache
             </Button>
