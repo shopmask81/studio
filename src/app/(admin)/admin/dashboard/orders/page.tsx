@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -51,7 +52,7 @@ export default function AdminOrdersPage() {
   }, [cachedData]);
   
   const handleManualCacheRefresh = useCallback(async () => {
-    if (!firestore) return;
+    if (!firestore || isCaching) return; // Prevent multiple clicks
     if (!isAdmin) {
       toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to update the order cache.' });
       return;
@@ -66,7 +67,7 @@ export default function AdminOrdersPage() {
     } finally {
       setIsCaching(false);
     }
-  }, [firestore, toast, isAdmin]);
+  }, [firestore, toast, isAdmin, isCaching]);
   
   // Effect for automatic cache refresh based on timestamp
   useEffect(() => {
