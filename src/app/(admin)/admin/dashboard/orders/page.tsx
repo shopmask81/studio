@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useDoc } from '@/firebase';
-import { writeBatch, doc, getDocs, collection, query, orderBy, where } from 'firebase/firestore';
+import { writeBatch, doc, getDocs, collection, query, orderBy, where, Timestamp } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, RefreshCw } from 'lucide-react';
@@ -15,6 +14,8 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { OrderPDFGenerator } from './components/order-pdf-generator';
 import { updateOrderCache } from './services/order-service';
 import { Button } from '@/components/ui/button';
+
+const CACHE_EXPIRATION_MS = 3600000; // 1 hour
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -38,7 +39,7 @@ export default function AdminOrdersPage() {
     return doc(firestore, 'cachedData', 'allOrders');
   }, [firestore, isAdmin, isAuthLoading]);
 
-  const { data: cachedData, isLoading: isCacheLoading, error: cacheError } = useDoc<{ orders: Order[] }>(cachedOrdersRef);
+  const { data: cachedData, isLoading: isCacheLoading, error: cacheError } = useDoc<{ orders: Order[], lastUpdated: Timestamp }>(cachedOrdersRef);
   
   const allOrders = useMemo(() => {
     if (!cachedData?.orders) return [];
@@ -49,8 +50,13 @@ export default function AdminOrdersPage() {
     }));
   }, [cachedData]);
   
-  const refreshOrdersCache = useCallback(async () => {
+  const handleManualCacheRefresh = useCallback(async () => {
     if (!firestore) return;
+    if (!isAdmin) {
+      toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to update the order cache.' });
+      return;
+    }
+
     setIsCaching(true);
     try {
       const count = await updateOrderCache(firestore);
@@ -60,17 +66,21 @@ export default function AdminOrdersPage() {
     } finally {
       setIsCaching(false);
     }
-  }, [firestore, toast]);
+  }, [firestore, toast, isAdmin]);
   
+  // Effect for automatic cache refresh based on timestamp
   useEffect(() => {
-    refreshOrdersCache();
-    const interval = setInterval(() => {
-        refreshOrdersCache();
-    }, 3600000); // 1 hour
-    
-    return () => clearInterval(interval);
+    if (cachedData && !isCacheLoading) {
+      const lastUpdated = cachedData.lastUpdated?.toDate().getTime() || 0;
+      const now = Date.now();
+      
+      if (now - lastUpdated > CACHE_EXPIRATION_MS) {
+        console.log("Order cache is older than 1 hour. Automatically refreshing...");
+        handleManualCacheRefresh();
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cachedData, isCacheLoading]);
 
   // This is the core filtering logic, now simplified and robust.
   const filteredOrders = useMemo(() => {
@@ -225,7 +235,7 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={refreshOrdersCache} disabled={isCaching}>
+            <Button variant="outline" onClick={handleManualCacheRefresh} disabled={isCaching}>
                 {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Refresh Orders Cache
             </Button>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +13,7 @@ import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/lib/types';
@@ -22,7 +21,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
 import { useAuth } from '../auth/auth-provider';
-import { createNewOrder } from '@/app/(admin)/admin/dashboard/orders/services/order-service';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -175,10 +173,12 @@ export function CheckoutForm() {
             paymentMethod: values.paymentMethod,
             status: 'pending' as const,
             affiliateId: null, // Placeholder for future implementation
+            createdAt: serverTimestamp(),
         };
 
         try {
-            await createNewOrder(firestore, newOrderData);
+            // Only write to the main orders collection.
+            await addDoc(collection(firestore, 'orders'), newOrderData);
 
             toast({
                 title: t('order_placed_title').text,

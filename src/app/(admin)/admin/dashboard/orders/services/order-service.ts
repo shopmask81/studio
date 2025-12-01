@@ -1,4 +1,3 @@
-
 import {
   Firestore,
   collection,
@@ -15,11 +14,11 @@ import type { Order } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-type NewOrderData = Omit<Order, 'id' | 'createdAt'>;
-
 /**
  * Fetches all orders from the 'orders' collection and updates the 
  * centralized cache document 'cachedData/allOrders'.
+ * This function should only be called from a context where the user
+ * is authenticated as an admin.
  * @param firestore The Firestore database instance.
  * @returns The number of orders cached.
  */
@@ -56,41 +55,6 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
       errorEmitter.emit('permission-error', permissionError);
       throw new Error('You do not have permission to update the order cache.');
     }
-    throw error;
-  }
-}
-
-/**
- * Creates a new order in the 'orders' collection.
- * This function no longer triggers a cache update.
- * @param firestore The Firestore database instance.
- * @param orderData The data for the new order.
- * @returns The newly created order document reference ID.
- */
-export async function createNewOrder(
-  firestore: Firestore,
-  orderData: NewOrderData
-): Promise<string> {
-  const collectionRef = collection(firestore, 'orders');
-  
-  try {
-    // Add the new order to the main collection.
-    const newOrderRef = await addDoc(collectionRef, {
-      ...orderData,
-      createdAt: serverTimestamp(),
-    });
-
-    return newOrderRef.id;
-
-  } catch (error) {
-    if ((error as any).code === 'permission-denied') {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: collectionRef.path,
-        operation: 'create',
-        requestResourceData: orderData,
-      }));
-    }
-    // Re-throw the error to be handled by the calling component (e.g., show a toast).
     throw error;
   }
 }
