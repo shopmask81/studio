@@ -117,7 +117,7 @@ export function OrderTable({
                           <Skeleton className="h-10 w-10 rounded-md" />
                       ) : (
                           <Image
-                              alt={order.items[0]?.name || 'Product Image'}
+                              alt={(order.items && order.items[0]?.name) || 'Product Image'}
                               className="aspect-square rounded-md object-cover"
                               height="40"
                               src={imageUrl || 'https://placehold.co/40x40'}
