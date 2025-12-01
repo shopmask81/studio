@@ -1,19 +1,19 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, Timestamp, writeBatch, doc, getDocs, orderBy } from 'firebase/firestore';
+import { useFirestore, useDoc } from '@/firebase';
+import { writeBatch, doc, getDocs, collection, query, orderBy } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Loader2 } from 'lucide-react';
+import { Terminal, Loader2, RefreshCw } from 'lucide-react';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import { OrderPDFGenerator } from './components/order-pdf-generator';
+import { updateOrderCache } from './services/order-service';
+import { Button } from '@/components/ui/button';
 
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
@@ -23,40 +23,45 @@ export default function AdminOrdersPage() {
   
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [isCaching, setIsCaching] = useState(false);
   const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
   const [isExportingSelected, setIsExportingSelected] = useState(false);
 
-  // State to cache product image URLs
   const [productImages, setProductImages] = useState<Record<string, string | null | undefined>>({});
 
   const isAdmin = userProfile?.role === 'admin';
 
-  // Base query to fetch all orders, sorted by creation date.
-  const allOrdersQuery = useMemo(() => {
+  // Listen to the cached document instead of the whole collection
+  const cachedOrdersRef = useMemo(() => {
     if (!firestore || !isAdmin || isAuthLoading) return null;
-    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+    return doc(firestore, 'cachedData', 'allOrders');
   }, [firestore, isAdmin, isAuthLoading]);
 
-  // The single source of truth for all orders, fetched from Firestore.
-  const { data: allOrders, isLoading: isRealtimeLoading, error: realtimeError } = useCollection<Order>(allOrdersQuery);
+  const { data: cachedData, isLoading: isCacheLoading, error: cacheError } = useDoc<{ orders: Order[] }>(cachedOrdersRef);
+  
+  const allOrders = useMemo(() => {
+    if (!cachedData?.orders) return [];
+    // Firestore Timestamps need to be converted back to Date objects for filtering
+    return cachedData.orders.map(order => ({
+      ...order,
+      createdAt: (order.createdAt as any)?.toDate ? (order.createdAt as any).toDate() : new Date(),
+    }));
+  }, [cachedData]);
   
   // This is the core filtering logic, now simplified and robust.
   const filteredOrders = useMemo(() => {
     if (!allOrders) return null;
 
-    // Start with the full list of orders.
     let orders = [...allOrders];
 
-    // Apply status filter
     if (filters.status) {
       orders = orders.filter(order => order.status === filters.status);
     }
     
-    // Apply date range filter
     if (filters.dateRange?.from) {
         orders = orders.filter(order => {
             if (!order.createdAt) return false;
-            const orderDate = order.createdAt.toDate();
+            const orderDate = order.createdAt; // Already a Date object
             if (filters.dateRange?.to) {
                 return orderDate >= filters.dateRange.from && orderDate <= filters.dateRange.to;
             }
@@ -64,69 +69,44 @@ export default function AdminOrdersPage() {
         });
     }
 
-    // Apply search query filter
     const searchQuery = filters.searchQuery?.toLowerCase().trim();
     if (searchQuery) {
         orders = orders.filter((order, index) => {
-            // Check for order number search (e.g., "1", "#1", "order 1")
             const numericQuery = searchQuery.replace(/[^0-9]/g, '');
-            if (numericQuery && parseInt(numericQuery, 10) === index + 1) {
-                return true;
-            }
+            const orderNumberMatch = numericQuery && parseInt(numericQuery, 10) === index + 1;
+            if (orderNumberMatch) return true;
             
-            // Safely stringify and check each field
             const check = (field: any) => String(field ?? '').toLowerCase().includes(searchQuery);
 
-            // Check top-level order fields
-            const matchesOrderFields = 
-                check(order.id) ||
-                check(order.name) ||
-                check(order.email) ||
-                check(order.phone) ||
-                check(order.street) ||
-                check(order.city) ||
-                check(order.zip) ||
-                check(order.country) ||
-                check(order.status);
-            
-            if (matchesOrderFields) return true;
-
-            // Check nested item fields
-            const matchesItems = order.items.some(item =>
-                check(item.name) ||
-                check(item.productId)
-            );
-
-            return matchesItems;
+            return check(order.id) ||
+                   check(order.name) ||
+                   check(order.email) ||
+                   check(order.phone) ||
+                   check(order.street) ||
+                   check(order.city) ||
+                   check(order.zip) ||
+                   check(order.country) ||
+                   check(order.status) ||
+                   order.items.some(item => check(item.name) || check(item.productId));
         });
     }
     
-    return orders;
+    return orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [allOrders, filters]);
 
 
-  // Effect to fetch product images for the current set of final orders
   useEffect(() => {
-    if (!firestore || !filteredOrders || filteredOrders.length === 0) {
-      return;
-    }
+    if (!firestore || !filteredOrders || filteredOrders.length === 0) return;
 
     const fetchProductImages = async () => {
-        const productIdsToFetch = [
-          ...new Set(
-            filteredOrders
-              .map(order => order.items?.[0]?.productId)
-              .filter((id): id is string => !!id && !productImages.hasOwnProperty(id))
-          ),
-        ];
+        const productIdsToFetch = [...new Set(
+            filteredOrders.flatMap(order => order.items.map(item => item.productId))
+                         .filter(id => !!id && !productImages.hasOwnProperty(id))
+        )];
 
         if (productIdsToFetch.length === 0) return;
 
-        setProductImages(prev => {
-            const newPlaceholders: Record<string, undefined> = {};
-            productIdsToFetch.forEach(id => newPlaceholders[id] = undefined);
-            return {...prev, ...newPlaceholders};
-        });
+        setProductImages(prev => ({...prev, ...Object.fromEntries(productIdsToFetch.map(id => [id, undefined]))}));
 
         const newImageMap: Record<string, string | null> = {};
         const productChunks = [];
@@ -138,18 +118,14 @@ export default function AdminOrdersPage() {
             const productsRef = collection(firestore, 'products');
             const q = query(productsRef, where('__name__', 'in', chunk));
             const querySnapshot = await getDocs(q);
-
             querySnapshot.forEach(doc => {
               const product = doc.data() as Product;
               newImageMap[doc.id] = product.mainImage || product.images?.[0] || null;
             });
         }
         
-        // For any IDs that were fetched but not found in the DB (e.g., deleted products)
         productIdsToFetch.forEach(id => {
-            if (!newImageMap.hasOwnProperty(id)) {
-                newImageMap[id] = null; // Mark as fetched but not found
-            }
+            if (!newImageMap.hasOwnProperty(id)) newImageMap[id] = null;
         });
 
         setProductImages(prev => ({...prev, ...newImageMap}));
@@ -159,8 +135,8 @@ export default function AdminOrdersPage() {
   }, [filteredOrders, firestore, productImages]);
 
 
-  const isLoading = isAuthLoading || isRealtimeLoading;
-  const error = realtimeError; // Only show errors from the real-time listener
+  const isLoading = isAuthLoading || isCacheLoading;
+  const error = cacheError;
 
   const selectedOrders = useMemo(() => {
     if (!filteredOrders) return [];
@@ -168,45 +144,41 @@ export default function AdminOrdersPage() {
   }, [filteredOrders, selectedOrderIds]);
 
   const handleSelectionChange = (orderId: string, isSelected: boolean) => {
-    setSelectedOrderIds(prev => 
-      isSelected ? [...prev, orderId] : prev.filter(id => id !== orderId)
-    );
+    setSelectedOrderIds(prev => isSelected ? [...prev, orderId] : prev.filter(id => id !== orderId));
   };
 
   const handleSelectAll = (isSelected: boolean) => {
-    if (isSelected && filteredOrders) {
-      setSelectedOrderIds(filteredOrders.map(o => o.id));
-    } else {
-      setSelectedOrderIds([]);
-    }
+    setSelectedOrderIds(isSelected && filteredOrders ? filteredOrders.map(o => o.id) : []);
   };
+  
+  const handleCacheUpdate = async () => {
+    if (!firestore) return;
+    setIsCaching(true);
+    try {
+      const count = await updateOrderCache(firestore);
+      toast({ title: 'Order Cache Updated', description: `${count} orders have been cached.` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
+    } finally {
+      setIsCaching(false);
+    }
+  }
 
   const handleBulkStatusChange = async (status: Order['status']) => {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
     
     const batch = writeBatch(firestore);
-    const dataToUpdate = { status };
-    selectedOrderIds.forEach(orderId => {
-        const orderRef = doc(firestore, 'orders', orderId);
-        batch.update(orderRef, dataToUpdate);
-    });
+    selectedOrderIds.forEach(orderId => batch.update(doc(firestore, 'orders', orderId), { status }));
 
     try {
         await batch.commit();
-        toast({
-            title: "Bulk Update Successful",
-            description: `${selectedOrderIds.length} orders have been updated to "${status}".`
-        });
+        await updateOrderCache(firestore); // Refresh cache
+        toast({ title: "Bulk Update Successful", description: `${selectedOrderIds.length} orders updated.` });
         setSelectedOrderIds([]);
     } catch(error) {
         console.error("Bulk status update failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Bulk Update Failed",
-            description: "Could not update order statuses. Check permissions."
-        });
-        // Note: No need to throw here, toast provides user feedback.
+        toast({ variant: "destructive", title: "Bulk Update Failed", description: "Could not update order statuses." });
     } finally {
         setIsBulkActionLoading(false);
     }
@@ -217,44 +189,38 @@ export default function AdminOrdersPage() {
     setIsBulkActionLoading(true);
 
     const batch = writeBatch(firestore);
-    selectedOrderIds.forEach(orderId => {
-        const orderRef = doc(firestore, 'orders', orderId);
-        batch.delete(orderRef);
-    });
+    selectedOrderIds.forEach(orderId => batch.delete(doc(firestore, 'orders', orderId)));
 
      try {
         await batch.commit();
-        toast({
-            title: "Bulk Delete Successful",
-            description: `${selectedOrderIds.length} orders have been deleted.`
-        });
+        await updateOrderCache(firestore); // Refresh cache
+        toast({ title: "Bulk Delete Successful", description: `${selectedOrderIds.length} orders deleted.` });
         setSelectedOrderIds([]);
     } catch (error) {
         console.error("Bulk delete failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Bulk Delete Failed",
-            description: "Could not delete orders. Check permissions."
-        });
-        // Note: No need to throw here, toast provides user feedback.
+        toast({ variant: "destructive", title: "Bulk Delete Failed", description: "Could not delete orders." });
     } finally {
         setIsBulkActionLoading(false);
     }
   };
 
   const handleExportSelected = () => {
-    if (selectedOrders.length > 0) {
-      setOrdersToExport(selectedOrders);
-    }
+    if (selectedOrders.length > 0) setOrdersToExport(selectedOrders);
   };
   
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Orders</h1>
-         {filteredOrders && filteredOrders.length > 0 && (
-            <OrderPDFGenerator orders={filteredOrders} isLoading={isLoading} />
-        )}
+         <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleCacheUpdate} disabled={isCaching}>
+                {isCaching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Refresh Cache
+            </Button>
+            {filteredOrders && filteredOrders.length > 0 && (
+                <OrderPDFGenerator orders={filteredOrders} isLoading={isLoading} />
+            )}
+        </div>
       </div>
       
       <OrderFilters onFilterChange={setFilters} />
@@ -288,13 +254,12 @@ export default function AdminOrdersPage() {
         />
       )}
 
-
       {error && !isLoading && (
          <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
             <AlertTitle>Permission Denied</AlertTitle>
             <AlertDescription>
-                You do not have permission to view orders. Please contact your administrator.
+                You do not have permission to view the orders cache. Please contact your administrator.
             </AlertDescription>
         </Alert>
       )}

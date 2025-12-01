@@ -13,7 +13,7 @@ import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/lib/types';
@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
 import { useAuth } from '../auth/auth-provider';
+import { processNewOrder } from '@/app/(admin)/admin/dashboard/orders/services/order-service';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -129,53 +130,55 @@ export function CheckoutForm() {
         if (!firestore) return;
 
         const finalTotal = cartTotal + shippingTotal;
+        
+        const newOrderData = {
+            userId: user?.uid ?? 'guest',
+            name: values.fullName,
+            email: values.email,
+            email_lowercase: values.email.toLowerCase(),
+            phone: values.phone,
+            street: values.street,
+            city: values.city,
+            zip: values.postalCode,
+            country: values.country,
+            items: cartItems.map(item => {
+                 let price: number;
+                  if (item.product.variantsEnabled && item.variant) {
+                      const variantDetail = item.product.variants?.find(v => 
+                          (item.product.variantOptions?.colors?.length ? v.color === item.variant?.color : true) &&
+                          (item.product.variantOptions?.sizes?.length ? v.size === item.variant?.size : true)
+                      );
+                      price = variantDetail?.discountPrice ?? variantDetail?.price ?? item.product.price;
+                  } else {
+                      price = item.product.discountPrice ?? item.product.price;
+                  }
+                  
+                  const orderItem: any = {
+                      productId: item.product.id,
+                      name: item.product.name,
+                      quantity: item.quantity,
+                      price: price,
+                      imageUrl: item.product.mainImage,
+                  };
+
+                  if (item.variant) {
+                    orderItem.variant = {
+                      color: item.variant.color || null,
+                      size: item.variant.size || null,
+                    };
+                  }
+                  
+                  return orderItem;
+            }),
+            total: finalTotal,
+            paymentMethod: values.paymentMethod,
+            status: 'pending' as const,
+            affiliateId: null, // Placeholder for future implementation
+        };
 
         try {
-            await addDoc(collection(firestore, 'orders'), {
-                userId: user?.uid ?? 'guest',
-                name: values.fullName,
-                email: values.email,
-                email_lowercase: values.email.toLowerCase(),
-                phone: values.phone,
-                street: values.street,
-                city: values.city,
-                zip: values.postalCode,
-                country: values.country,
-                items: cartItems.map(item => {
-                     let price: number;
-                      if (item.product.variantsEnabled && item.variant) {
-                          const variantDetail = item.product.variants?.find(v => 
-                              (item.product.variantOptions?.colors?.length ? v.color === item.variant?.color : true) &&
-                              (item.product.variantOptions?.sizes?.length ? v.size === item.variant?.size : true)
-                          );
-                          price = variantDetail?.discountPrice ?? variantDetail?.price ?? item.product.price;
-                      } else {
-                          price = item.product.discountPrice ?? item.product.price;
-                      }
-                      
-                      const orderItem: any = {
-                          productId: item.product.id,
-                          name: item.product.name,
-                          quantity: item.quantity,
-                          price: price,
-                          imageUrl: item.product.mainImage,
-                      };
-
-                      if (item.variant) {
-                        orderItem.variant = {
-                          color: item.variant.color || null,
-                          size: item.variant.size || null,
-                        };
-                      }
-                      
-                      return orderItem;
-                }),
-                total: finalTotal,
-                paymentMethod: values.paymentMethod,
-                status: 'pending',
-                affiliateId: null, // Placeholder for future implementation
-                createdAt: serverTimestamp(),
-            });
+            // Use the new service function to create the order and update the cache
+            await processNewOrder(firestore, newOrderData);
 
             toast({
                 title: t('order_placed_title').text,
