@@ -1,3 +1,4 @@
+
 'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense, useMemo, useState } from 'react';
