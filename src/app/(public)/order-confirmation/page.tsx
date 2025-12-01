@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import { CheckCircle, UserCheck, Package, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
