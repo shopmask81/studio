@@ -98,7 +98,8 @@ export function OrderTable({
         </TableHeader>
         <TableBody>
           {orders.map((order, index) => {
-            const firstItemId = order.items?.[0]?.productId;
+            const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
+            const firstItemId = firstItem?.productId;
             const imageUrl = firstItemId ? productImages[firstItemId] : undefined;
             const isImageLoading = firstItemId && productImages.hasOwnProperty(firstItemId) && imageUrl === undefined;
             
@@ -117,7 +118,7 @@ export function OrderTable({
                           <Skeleton className="h-10 w-10 rounded-md" />
                       ) : (
                           <Image
-                              alt={(order.items && order.items[0]?.name) || 'Product Image'}
+                              alt={firstItem?.name || 'Product Image'}
                               className="aspect-square rounded-md object-cover"
                               height="40"
                               src={imageUrl || 'https://placehold.co/40x40'}
@@ -141,7 +142,7 @@ export function OrderTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                  {order.createdAt ? format(order.createdAt.toDate(), 'PPp') : 'N/A'}
+                  {order.createdAt ? format(order.createdAt, 'PPp') : 'N/A'}
                 </TableCell>
                 <TableCell className="px-4 text-right">
                   <Button asChild variant="outline" size="icon">
