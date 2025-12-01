@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useDoc } from '@/firebase';
-import { writeBatch, doc, getDocs, collection, query, orderBy } from 'firebase/firestore';
+import { writeBatch, doc, getDocs, collection, query, orderBy, where } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, RefreshCw } from 'lucide-react';
@@ -100,7 +100,7 @@ export default function AdminOrdersPage() {
 
     const fetchProductImages = async () => {
         const productIdsToFetch = [...new Set(
-            filteredOrders.flatMap(order => order.items.map(item => item.productId))
+            filteredOrders.flatMap(order => order.items?.map(item => item.productId) || [])
                          .filter(id => !!id && !productImages.hasOwnProperty(id))
         )];
 
