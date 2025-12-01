@@ -243,6 +243,10 @@ const shorten = (text: string, words = 5) => {
 function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, orderNumber: number, productImages: ProductImageMap }) {
     const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
+    // The 'order' object passed here has `createdAt` as a JS Date object from the useMemo in AdminOrdersPage.
+    // It is not a Firestore Timestamp, so we don't need to call .toDate().
+    const orderDate = order.createdAt instanceof Date ? order.createdAt : new Date();
+
     return (
         <div 
             key={`pdf-card-${order.id}`} 
@@ -273,7 +277,7 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
                     <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
-                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {order.createdAt ? format(order.createdAt.toDate(), 'yyyy-MM-dd HH:mm') : 'N/A'}</p>
+                    <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {format(orderDate, 'yyyy-MM-dd HH:mm')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{fontWeight: 'bold', color: '#4F5B62'}}>Status:</span>
                         <div style={{
