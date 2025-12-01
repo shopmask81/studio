@@ -149,20 +149,22 @@ export function HeroBanner() {
                       priority={index === 0}
                       className="object-cover object-center brightness-75"
                     />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4 z-10 bg-black/30">
-                      <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight">
-                        {banner.title}
-                      </h2>
-                      {banner.description && (
-                         <p className="mt-4 max-w-xl text-lg text-white/90">
-                            {banner.description}
-                        </p>
-                      )}
-                      {banner.targetUrl && banner.cta && (
-                        <Button asChild className="mt-6" size="lg">
-                          <Link href={banner.targetUrl}>{banner.cta}</Link>
-                        </Button>
-                      )}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 z-10 bg-black/30">
+                      <div className="flex flex-col items-center text-center max-w-[800px] px-4">
+                        <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight">
+                          {banner.title}
+                        </h2>
+                        {banner.description && (
+                          <p className="mt-4 text-lg text-white/90">
+                              {banner.description}
+                          </p>
+                        )}
+                        {banner.targetUrl && banner.cta && (
+                          <Button asChild className="mt-6" size="lg">
+                            <Link href={banner.targetUrl}>{banner.cta}</Link>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
