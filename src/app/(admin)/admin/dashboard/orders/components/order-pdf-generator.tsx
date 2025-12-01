@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -126,11 +127,11 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
         // Increased height for each item to accommodate variant info
         const itemRowHeight = 62; 
         const headerHeight = 130;
-        const itemsHeight = order.items.length * itemRowHeight;
+        const itemsHeight = (order.items || []).length * itemRowHeight;
         const footerPadding = 16;
         const cardHeight = headerHeight + itemsHeight + footerPadding;
         
-        console.log(`PDF Export Debug: OrderID=${order.id}, Items=${order.items.length}, ComputedHeight=${cardHeight}`);
+        console.log(`PDF Export Debug: OrderID=${order.id}, Items=${(order.items || []).length}, ComputedHeight=${cardHeight}`);
 
         if (yPos > margin && yPos + cardHeight > pdfHeight - margin) {
             pdf.addPage();
@@ -244,7 +245,6 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
     const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
     // The 'order' object passed here has `createdAt` as a JS Date object from the useMemo in AdminOrdersPage.
-    // It is not a Firestore Timestamp, so we don't need to call .toDate().
     const orderDate = order.createdAt instanceof Date ? order.createdAt : new Date();
 
     return (
@@ -295,7 +295,7 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
 
             {/* Bottom Section: Ordered Items */}
             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'hidden', padding: '8px', backgroundColor: '#E8F8EC', borderRadius: '8px' }}>
-                {order.items.map((item, index) => (
+                {order.items && order.items.map((item, index) => (
                     <div key={item.productId + index} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
                         <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', backgroundColor: '#E2E8EA', border: '1px solid #D5DDDF' }}>
                             {productImages[item.productId] && <img src={productImages[item.productId]!} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
@@ -323,3 +323,4 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
 
 
     
+
