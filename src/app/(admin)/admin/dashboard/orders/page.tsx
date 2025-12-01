@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useDoc } from '@/firebase';
-import { writeBatch, doc, getDocs, collection, query, orderBy } from 'firebase/firestore';
+import { writeBatch, doc, getDocs, collection, query, orderBy, where } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, RefreshCw } from 'lucide-react';
@@ -49,6 +49,29 @@ export default function AdminOrdersPage() {
     }));
   }, [cachedData]);
   
+  const refreshOrdersCache = useCallback(async () => {
+    if (!firestore) return;
+    setIsCaching(true);
+    try {
+      const count = await updateOrderCache(firestore);
+      toast({ title: 'Order Cache Updated', description: `${count} orders have been cached.` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
+    } finally {
+      setIsCaching(false);
+    }
+  }, [firestore, toast]);
+  
+  useEffect(() => {
+    refreshOrdersCache();
+    const interval = setInterval(() => {
+        refreshOrdersCache();
+    }, 3600000); // 1 hour
+    
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // This is the core filtering logic, now simplified and robust.
   const filteredOrders = useMemo(() => {
     if (!allOrders) return null;
@@ -153,29 +176,6 @@ export default function AdminOrdersPage() {
     setSelectedOrderIds(isSelected && filteredOrders ? filteredOrders.map(o => o.id) : []);
   };
   
-  const refreshOrdersCache = useCallback(async () => {
-    if (!firestore) return;
-    setIsCaching(true);
-    try {
-      const count = await updateOrderCache(firestore);
-      toast({ title: 'Order Cache Updated', description: `${count} orders have been cached.` });
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
-    } finally {
-      setIsCaching(false);
-    }
-  }, [firestore, toast]);
-  
-  useEffect(() => {
-    refreshOrdersCache();
-    const interval = setInterval(() => {
-        refreshOrdersCache();
-    }, 3600000); // 1 hour
-    
-    return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleBulkStatusChange = async (status: Order['status']) => {
     if (!firestore || selectedOrderIds.length === 0) return;
     setIsBulkActionLoading(true);
