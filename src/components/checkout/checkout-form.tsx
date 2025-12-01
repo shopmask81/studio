@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +22,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
 import { useAuth } from '../auth/auth-provider';
-import { processNewOrder } from '@/app/(admin)/admin/dashboard/orders/services/order-service';
+import { createNewOrder } from '@/app/(admin)/admin/dashboard/orders/services/order-service';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -177,8 +178,7 @@ export function CheckoutForm() {
         };
 
         try {
-            // Use the new service function to create the order and update the cache
-            await processNewOrder(firestore, newOrderData);
+            await createNewOrder(firestore, newOrderData);
 
             toast({
                 title: t('order_placed_title').text,

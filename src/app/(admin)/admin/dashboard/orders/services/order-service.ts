@@ -61,32 +61,23 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
 }
 
 /**
- * Processes a new order by first adding it to the 'orders' collection,
- * and then immediately triggering a full refresh of the `cachedData/allOrders` document.
+ * Creates a new order in the 'orders' collection.
+ * This function no longer triggers a cache update.
  * @param firestore The Firestore database instance.
  * @param orderData The data for the new order.
  * @returns The newly created order document reference ID.
  */
-export async function processNewOrder(
+export async function createNewOrder(
   firestore: Firestore,
   orderData: NewOrderData
 ): Promise<string> {
   const collectionRef = collection(firestore, 'orders');
   
   try {
-    // Step 1: Add the new order to the main collection.
+    // Add the new order to the main collection.
     const newOrderRef = await addDoc(collectionRef, {
       ...orderData,
       createdAt: serverTimestamp(),
-    });
-
-    // Step 2: Immediately refresh the cache.
-    // This is an asynchronous operation, but we don't need to wait for it
-    // to complete before returning a response to the user.
-    updateOrderCache(firestore).catch(cacheError => {
-        // Log the error, but don't let it block the main flow.
-        // The user's order is placed; the cache update is a background task.
-        console.error("Background cache update failed after new order:", cacheError);
     });
 
     return newOrderRef.id;
