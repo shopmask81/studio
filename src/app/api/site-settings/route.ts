@@ -3,29 +3,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-// Define the path to the settings file
-const settingsFilePath = path.join(process.cwd(), 'src', 'data', 'siteSettings.json');
+// Define the path to the settings file in the new `appData` directory
+const settingsFilePath = path.join(process.cwd(), 'appData', 'siteSettings.json');
 
 export async function POST(request: NextRequest) {
   try {
     const newSettings = await request.json();
 
-    // Basic validation (you can expand this as needed)
+    // Basic validation
     if (!newSettings.siteName || !newSettings.contactEmail) {
       return NextResponse.json({ error: 'Missing required settings fields.' }, { status: 400 });
     }
 
-    // Convert the settings object to a formatted JSON string
     const jsonString = JSON.stringify(newSettings, null, 2);
 
     // Write the string to the file, overwriting it
     await fs.writeFile(settingsFilePath, jsonString, 'utf8');
 
-    return NextResponse.json({ success: true, message: 'Settings saved successfully. Changes will be visible on next build or server restart.' });
+    // Return a success response without terminating the process
+    return NextResponse.json({ success: true, message: 'Settings saved successfully.' });
 
   } catch (error) {
     console.error('API Error saving site settings:', error);
-    // Check for specific error types if needed
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: 'Invalid JSON in request body.' }, { status: 400 });
     }

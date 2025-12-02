@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import siteSettings from '@/data/siteSettings.json';
+import siteSettings from '@/../appData/siteSettings.json';
 import { ClientProviders } from '@/components/client-providers';
 
 export const metadata: Metadata = {

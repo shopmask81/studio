@@ -13,7 +13,7 @@ import { Loader2, UploadCloud, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { uploadImage, saveSettings } from './services/settings-service';
-import initialSettings from '@/data/siteSettings.json';
+import initialSettings from '@/../appData/siteSettings.json';
 
 const formSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -116,7 +116,7 @@ export default function AdminSettingsPage() {
       };
 
       await saveSettings(finalSettings);
-      toast({ title: 'Settings Saved', description: 'Your site settings have been updated. The server will restart to apply changes.' });
+      toast({ title: 'Settings Saved', description: 'Your site settings have been updated.' });
 
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
