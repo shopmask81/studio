@@ -65,11 +65,15 @@ export function HeroBanner() {
             setBanners(fetchedBanners);
             
             // The `createdAt` and `updatedAt` might be Timestamps. Convert to string for localStorage.
-            const serializableBanners = fetchedBanners.map(b => ({
-                ...b,
-                createdAt: b.createdAt.toDate().toISOString(),
-                updatedAt: b.updatedAt.toDate().toISOString(),
-            }));
+            const serializableBanners = fetchedBanners.map(b => {
+                const createdAtString = typeof b.createdAt === 'string' ? b.createdAt : (b.createdAt as any)?.toDate ? (b.createdAt as any).toDate().toISOString() : new Date().toISOString();
+                const updatedAtString = typeof b.updatedAt === 'string' ? b.updatedAt : (b.updatedAt as any)?.toDate ? (b.updatedAt as any).toDate().toISOString() : new Date().toISOString();
+                return {
+                    ...b,
+                    createdAt: createdAtString,
+                    updatedAt: updatedAtString,
+                }
+            });
             
             localStorage.setItem(CACHE_KEY, JSON.stringify(serializableBanners));
             localStorage.setItem(TIMESTAMP_KEY, now.toString());
@@ -151,11 +155,11 @@ export function HeroBanner() {
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 z-10 bg-black/30">
                       <div className="text-center flex flex-col items-center justify-center max-w-3xl mx-auto px-4">
-                        <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight">
+                        <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight text-center">
                           {banner.title}
                         </h2>
                         {banner.description && (
-                          <p className="mt-4 text-lg md:text-xl text-white/90">
+                          <p className="mt-4 text-lg md:text-xl text-center text-white/90">
                               {banner.description}
                           </p>
                         )}
