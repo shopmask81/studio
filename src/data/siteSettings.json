@@ -1,9 +1,9 @@
 {
   "siteName": "MaskShop",
   "siteDescription": "The finest handmade and vintage crafts, delivered.",
-  "logoUrl": "https://i.ibb.co/L1L1L1L/logo.png",
-  "faviconUrl": "https://i.ibb.co/K9K9K9K/favicon.png",
   "contactEmail": "support@maskshop.com",
   "contactPhone": "+1 (234) 567-890",
-  "storeAddress": "123 Artisan Alley, Venice, Italy"
+  "storeAddress": "123 Artisan Alley, Venice, Italy",
+  "logoUrl": "https://i.ibb.co/BKKRRLKc/1764682613245-removebg-preview-copy-256x256.png",
+  "faviconUrl": "https://i.ibb.co/K9K9K9K/favicon.png"
 }

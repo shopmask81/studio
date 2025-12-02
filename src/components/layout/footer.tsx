@@ -4,6 +4,8 @@ import { Theater } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "../auth/auth-provider";
 import { useTranslation } from "../language/language-provider";
+import siteSettings from '@/data/siteSettings.json';
+import Image from 'next/image';
 
 
 export function Footer() {
@@ -17,10 +19,14 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center text-center gap-6">
           
-          <div className="flex items-center space-x-2">
-            <Theater className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline text-lg">MaskShop</span>
-          </div>
+          <Link href="/" className="flex items-center space-x-2">
+            {siteSettings.logoUrl ? (
+              <Image src={siteSettings.logoUrl} alt={siteSettings.siteName} width={32} height={32} className="h-8 w-auto" />
+            ) : (
+              <Theater className="h-6 w-6 text-primary" />
+            )}
+            <span className="font-bold font-headline text-lg">{siteSettings.siteName}</span>
+          </Link>
 
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('about').text}</Link>
