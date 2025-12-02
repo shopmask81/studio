@@ -52,7 +52,7 @@ export type Category = {
 
 export type Banner = {
   id: string;
-  title: string;
+  title?: string;
   description?: string;
   imageUrl: string;
   deleteUrl: string;

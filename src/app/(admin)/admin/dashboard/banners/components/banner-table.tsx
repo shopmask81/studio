@@ -89,7 +89,7 @@ function DndBannerTable({
                                             </TableCell>
                                             <TableCell>
                                                 <div className="relative aspect-video w-full max-w-40 rounded-md overflow-hidden">
-                                                    <Image src={banner.imageUrl} alt={banner.title} fill className="object-cover" />
+                                                    <Image src={banner.imageUrl} alt={banner.title || 'Banner Image'} fill className="object-cover" />
                                                 </div>
                                             </TableCell>
                                             <TableCell className="font-medium">
@@ -183,7 +183,7 @@ export function BannerTable(props: BannerTableProps) {
                         <TableCell><GripVertical className="h-5 w-5 text-muted-foreground"/></TableCell>
                         <TableCell>
                             <div className="relative aspect-video w-full max-w-40 rounded-md overflow-hidden">
-                                <Image src={banner.imageUrl} alt={banner.title} fill className="object-cover" />
+                                <Image src={banner.imageUrl} alt={banner.title || 'Banner Image'} fill className="object-cover" />
                             </div>
                         </TableCell>
                         <TableCell>{banner.title}</TableCell>

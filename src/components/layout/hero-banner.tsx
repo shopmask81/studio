@@ -148,16 +148,18 @@ export function HeroBanner() {
                   <CardContent className="relative flex aspect-[16/7] items-center justify-center p-0">
                     <Image
                       src={banner.imageUrl}
-                      alt={banner.title}
+                      alt={banner.title || 'Promotional Banner'}
                       fill
                       priority={index === 0}
                       className="object-cover object-center brightness-75"
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 z-10 bg-black/30">
                       <div className="text-center flex flex-col items-center justify-center max-w-3xl mx-auto px-4">
-                        <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight text-center">
-                          {banner.title}
-                        </h2>
+                        {banner.title && (
+                          <h2 className="text-4xl md:text-6xl font-bold font-headline text-shadow-glow leading-tight text-center">
+                            {banner.title}
+                          </h2>
+                        )}
                         {banner.description && (
                           <p className="mt-4 text-lg md:text-xl text-center text-white/90">
                               {banner.description}

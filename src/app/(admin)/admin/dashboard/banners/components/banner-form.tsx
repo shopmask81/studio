@@ -30,7 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
+  title: z.string().optional(),
   description: z.string().optional(),
   targetUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   cta: z.string().optional(),
@@ -42,7 +42,7 @@ interface BannerFormProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   bannerToEdit: Banner | null;
-  onSubmit: (values: BannerFormValues, image: File | string) => Promise<void>;
+  onSubmit: (values: Partial<Banner>, image: File | string) => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -185,7 +185,7 @@ export function BannerForm({
               </div>
               <div className="space-y-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
-                  <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g. Summer Sale" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Title (Optional)</FormLabel><FormControl><Input placeholder="e.g. Summer Sale" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Short description..." {...field} /></FormControl><FormMessage /></FormItem>

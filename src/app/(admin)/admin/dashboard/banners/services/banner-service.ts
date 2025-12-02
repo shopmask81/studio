@@ -17,7 +17,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getAllBanners } from '@/firebase/queries/getBanners';
 
-type BannerData = Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>
+type BannerData = Partial<Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>>
 
 // This is a simplified upload function. In a real app, you'd use Firebase Storage.
 async function uploadImage(imageFile: File): Promise<{ url: string, delete_url: string }> {

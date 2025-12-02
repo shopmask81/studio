@@ -90,7 +90,7 @@ export default function AdminBannersPage() {
     setIsDeleteDialogOpen(false);
   };
 
-  const handleFormSubmit = async (values: Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>, image: File | string) => {
+  const handleFormSubmit = async (values: Partial<Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>>, image: File | string) => {
     if (!firestore) return;
     setIsSubmitting(true);
     try {

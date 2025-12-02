@@ -141,7 +141,6 @@
       },
       "required": [
         "id",
-        "title",
         "imageUrl",
         "deleteUrl",
         "active",
