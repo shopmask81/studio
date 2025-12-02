@@ -132,3 +132,13 @@ export type UserProfile = {
     createdAt: Timestamp;
     emailVerified: boolean;
 };
+
+export type SiteSettings = {
+  siteName: string;
+  siteDescription: string;
+  logoUrl: string;
+  faviconUrl: string;
+  contactEmail: string;
+  contactPhone: string;
+  storeAddress: string;
+};

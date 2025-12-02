@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -7,10 +8,14 @@ import { LanguageProvider } from '@/components/language/language-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ModalProvider } from '@/components/modals/modal-provider';
 import { AuthProvider } from '@/components/auth/auth-provider';
+import siteSettings from '@/data/siteSettings.json';
 
 export const metadata: Metadata = {
-  title: 'MaskShop',
-  description: 'The finest handmade and vintage crafts, delivered.',
+  title: siteSettings.siteName,
+  description: siteSettings.siteDescription,
+  icons: {
+    icon: siteSettings.faviconUrl,
+  },
 };
 
 const ThemeInitializer = () => (
@@ -41,6 +46,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Lato:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+        {siteSettings.faviconUrl && <link rel="icon" href={siteSettings.faviconUrl} sizes="any" />}
       </head>
       <body className={cn("font-body antialiased")}>
         <FirebaseClientProvider>

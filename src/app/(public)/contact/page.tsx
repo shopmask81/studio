@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Mail, Phone } from "lucide-react";
-import Link from "next/link";
+import siteSettings from "@/data/siteSettings.json";
 
 export default function ContactPage() {
   return (
@@ -18,8 +18,8 @@ export default function ContactPage() {
                 <h2 className="text-2xl font-semibold mb-1">Email Us</h2>
                 <p className="text-muted-foreground mb-3">For general inquiries, support, and feedback.</p>
                 <Button variant="link" asChild>
-                    <a href="mailto:support@maskshop.com" className="text-accent text-lg hover:underline">
-                        support@maskshop.com
+                    <a href={`mailto:${siteSettings.contactEmail}`} className="text-accent text-lg hover:underline">
+                        {siteSettings.contactEmail}
                     </a>
                 </Button>
             </div>
@@ -28,8 +28,8 @@ export default function ContactPage() {
                 <Phone className="h-10 w-10 text-primary mb-3" />
                 <h2 className="text-2xl font-semibold mb-1">Call Us</h2>
                 <p className="text-muted-foreground mb-3">For urgent matters, you can reach us by phone.</p>
-                 <a href="tel:+1234567890" className="text-accent text-lg hover:underline">
-                    +1 (234) 567-890
+                 <a href={`tel:${siteSettings.contactPhone}`} className="text-accent text-lg hover:underline">
+                    {siteSettings.contactPhone}
                 </a>
             </div>
         </div>

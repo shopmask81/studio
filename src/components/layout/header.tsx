@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -7,6 +8,8 @@ import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
 import { LanguageSwitcher } from '../language/language-switcher';
 import { ClientOnly } from './client-only';
+import siteSettings from '@/data/siteSettings.json';
+import Image from 'next/image';
 
 export function Header() {
 
@@ -15,9 +18,13 @@ export function Header() {
       <div className="container flex h-14 items-center justify-between" suppressHydrationWarning>
         {/* Left side - Logo */}
         <Link href="/" className="flex items-center space-x-2" suppressHydrationWarning>
-          <Theater className="h-6 w-6 text-primary" />
+          {siteSettings.logoUrl ? (
+            <Image src={siteSettings.logoUrl} alt={siteSettings.siteName} width={32} height={32} className="h-8 w-auto" />
+          ) : (
+            <Theater className="h-6 w-6 text-primary" />
+          )}
           <span className="font-bold sm:inline-block font-headline">
-            MaskShop
+            {siteSettings.siteName}
           </span>
         </Link>
         
