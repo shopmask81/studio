@@ -1,14 +1,9 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Providers } from '@/components/providers';
-import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { LanguageProvider } from '@/components/language/language-provider';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { ModalProvider } from '@/components/modals/modal-provider';
-import { AuthProvider } from '@/components/auth/auth-provider';
 import siteSettings from '@/data/siteSettings.json';
+import { ClientProviders } from '@/components/client-providers';
 
 export const metadata: Metadata = {
   title: siteSettings.siteName,
@@ -49,18 +44,9 @@ export default function RootLayout({
         {siteSettings.faviconUrl && <link rel="icon" href={siteSettings.faviconUrl} sizes="any" />}
       </head>
       <body className={cn("font-body antialiased")}>
-        <FirebaseClientProvider>
-          <LanguageProvider>
-            <AuthProvider>
-              <Providers>
-                <ModalProvider>
-                  {children}
-                </ModalProvider>
-                <Toaster />
-              </Providers>
-            </AuthProvider>
-          </LanguageProvider>
-        </FirebaseClientProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );
