@@ -30,12 +30,22 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'httpshttps',
         hostname: 'i.ibb.co',
         port: '',
         pathname: '/**',
       },
     ],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Ignore the appData directory on the client side
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: /appData/,
+      };
+    }
+    return config;
   },
 };
 
