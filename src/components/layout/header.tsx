@@ -8,7 +8,7 @@ import { UserNav } from '@/components/auth/user-nav';
 import { CartIcon } from '@/components/cart/cart-icon';
 import { LanguageSwitcher } from '../language/language-switcher';
 import { ClientOnly } from './client-only';
-import siteSettings from '@/data/siteSettings.json';
+import siteSettings from '@/data/siteSettings.json' assert { type: 'json' };
 import Image from 'next/image';
 
 export function Header() {

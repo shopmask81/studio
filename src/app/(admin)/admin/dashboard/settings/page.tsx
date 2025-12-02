@@ -13,7 +13,7 @@ import { Loader2, UploadCloud, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { uploadImage, saveSettings } from './services/settings-service';
-import initialSettings from '@/data/siteSettings.json';
+import initialSettings from '@/data/siteSettings.json' assert { type: 'json' };
 
 const formSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),

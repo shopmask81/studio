@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Mail, Phone } from "lucide-react";
-import siteSettings from "@/data/siteSettings.json";
+import siteSettings from "@/data/siteSettings.json" assert { type: 'json' };
 
 export default function ContactPage() {
   return (
