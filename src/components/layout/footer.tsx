@@ -5,7 +5,7 @@ import { Theater } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "../auth/auth-provider";
 import { useTranslation } from "../language/language-provider";
-import siteSettings from '@/data/siteSettings.json' assert { type: 'json' };
+import siteSettings from '@/data/siteSettings.json';
 import Image from 'next/image';
 
 

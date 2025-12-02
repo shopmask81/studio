@@ -21,7 +21,13 @@ export async function POST(request: NextRequest) {
     // Write the string to the file, overwriting it
     await fs.writeFile(settingsFilePath, jsonString, 'utf8');
 
-    return NextResponse.json({ success: true, message: 'Settings saved successfully.' });
+    // In a development environment, programmatically restart the server
+    // to ensure the new JSON settings are loaded correctly on all pages.
+    if (process.env.NODE_ENV === 'development') {
+      process.exit();
+    }
+
+    return NextResponse.json({ success: true, message: 'Settings saved successfully. The server is restarting to apply changes.' });
 
   } catch (error) {
     console.error('API Error saving site settings:', error);
