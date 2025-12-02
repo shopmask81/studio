@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, UploadCloud, X } from 'lucide-react';
@@ -127,10 +127,12 @@ export default function AdminSettingsPage() {
 
   const ImageUploader = ({
     title,
+    description,
     imageState,
     onFileChange,
   }: {
     title: string;
+    description: string;
     imageState: ImageState;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   }) => (
@@ -154,6 +156,7 @@ export default function AdminSettingsPage() {
           <input type="file" className="hidden" onChange={onFileChange} accept="image/png, image/jpeg, image/svg+xml, image/ico" />
         </label>
       </div>
+      <FormDescription>{description}</FormDescription>
     </div>
   );
 
@@ -189,8 +192,18 @@ export default function AdminSettingsPage() {
                 </div>
                 {/* Image Fields */}
                 <div className="space-y-6">
-                  <ImageUploader title="Site Logo" imageState={logo} onFileChange={(e) => handleFileChange(e, setLogo)} />
-                  <ImageUploader title="Favicon" imageState={favicon} onFileChange={(e) => handleFileChange(e, setFavicon)} />
+                  <ImageUploader 
+                    title="Site Logo" 
+                    description="Recommended: PNG or SVG, 256x256px."
+                    imageState={logo} 
+                    onFileChange={(e) => handleFileChange(e, setLogo)} 
+                  />
+                  <ImageUploader 
+                    title="Favicon" 
+                    description="Recommended: .ico or PNG, 32x32px or 16x16px."
+                    imageState={favicon} 
+                    onFileChange={(e) => handleFileChange(e, setFavicon)} 
+                  />
                 </div>
               </div>
 
