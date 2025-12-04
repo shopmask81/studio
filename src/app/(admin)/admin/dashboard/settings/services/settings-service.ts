@@ -28,7 +28,15 @@ export async function uploadImage(imageFile: File): Promise<{ url: string; delet
   return { url: result.data.url, delete_url: result.data.delete_url };
 }
 
-export async function saveSettings(settings: SiteSettings): Promise<void> {
+type SettingsPayload = {
+    general: SiteSettings;
+    content: {
+        en: Record<string, string>;
+        ar: Record<string, string>;
+    }
+}
+
+export async function saveSettings(settings: SettingsPayload): Promise<void> {
   const response = await fetch('/api/site-settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,3 +48,5 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
     throw new Error(errorData.error || 'Failed to save settings.');
   }
 }
+
+    

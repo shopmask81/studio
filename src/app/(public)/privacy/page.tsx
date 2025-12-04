@@ -7,6 +7,8 @@ import Link from "next/link";
 
 export default function PrivacyPolicyPage() {
   const { t } = useTranslation();
+  const intro = t('privacy_p_intro');
+
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">
       <div className="max-w-3xl mx-auto">
@@ -17,8 +19,8 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 className="text-foreground" {...t('privacy_h2_intro')}>{t('privacy_h2_intro').text}</h2>
-          <p {...t('privacy_p_intro')}>
-            {t('privacy_p_intro').text}
+          <p dir={intro.dir}>
+            {intro.text}
           </p>
 
           <h2 className="text-foreground" {...t('privacy_h2_info')}>{t('privacy_h2_info').text}</h2>
@@ -54,3 +56,5 @@ export default function PrivacyPolicyPage() {
     </div>
   );
 }
+
+    

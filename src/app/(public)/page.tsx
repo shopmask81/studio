@@ -88,6 +88,8 @@ export default function Home() {
     return <ProductGrid products={filteredProducts} isLoading={isLoading} />;
   }
 
+  const { text: exploreText, dir: exploreDir } = t('explore_collection');
+
   return (
     <>
       <HeroBanner />
@@ -97,8 +99,8 @@ export default function Home() {
                   <h1 className="font-headline text-4xl md:text-6xl font-bold mb-4" {...t('discover_persona')}>
                   {t('discover_persona').text}
                   </h1>
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto" {...t('explore_collection')}>
-                  {t('explore_collection').text}
+                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto" dir={exploreDir}>
+                  {exploreText}
                   </p>
               </header>
           </ClientOnly>
@@ -148,3 +150,5 @@ export default function Home() {
     </>
   );
 }
+
+    

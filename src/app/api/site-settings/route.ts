@@ -3,24 +3,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-// Define the path to the settings file in the new `appData` directory
 const settingsFilePath = path.join(process.cwd(), 'appData', 'siteSettings.json');
+const enLocalePath = path.join(process.cwd(), 'src', 'locales', 'en.json');
+const arLocalePath = path.join(process.cwd(), 'src', 'locales', 'ar.json');
 
 export async function POST(request: NextRequest) {
   try {
-    const newSettings = await request.json();
+    const body = await request.json();
+    const { general: newSettings, content: newContent } = body;
 
-    // Basic validation
+    // Validate general settings
     if (!newSettings.siteName || !newSettings.contactEmail) {
-      return NextResponse.json({ error: 'Missing required settings fields.' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required general settings fields.' }, { status: 400 });
     }
 
-    const jsonString = JSON.stringify(newSettings, null, 2);
+    // Validate content
+    if (!newContent || !newContent.en || !newContent.ar) {
+        return NextResponse.json({ error: 'Missing required content fields.' }, { status: 400 });
+    }
 
-    // Write the string to the file, overwriting it
-    await fs.writeFile(settingsFilePath, jsonString, 'utf8');
+    // Write general settings
+    const generalSettingsString = JSON.stringify(newSettings, null, 2);
+    await fs.writeFile(settingsFilePath, generalSettingsString, 'utf8');
 
-    // Return a success response without terminating the process
+    // Write content settings
+    const enContentString = JSON.stringify(newContent.en, null, 2);
+    await fs.writeFile(enLocalePath, enContentString, 'utf8');
+
+    const arContentString = JSON.stringify(newContent.ar, null, 2);
+    await fs.writeFile(arLocalePath, arContentString, 'utf8');
+
     return NextResponse.json({ success: true, message: 'Settings saved successfully.' });
 
   } catch (error) {
@@ -31,3 +43,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
   }
 }
+
+    
