@@ -221,9 +221,9 @@ export default function AdminSettingsPage() {
         </Button>
       </div>
 
-      <Accordion type="multiple" defaultValue={['general-info', 'homepage-content']} className="w-full">
-        <AccordionItem value="general-info">
-            <AccordionTrigger className="text-xl font-semibold">General Information</AccordionTrigger>
+      <Accordion type="multiple" defaultValue={['general-info']} className="w-full space-y-4">
+        <AccordionItem value="general-info" className="border rounded-lg">
+            <AccordionTrigger className="text-xl font-semibold px-6">General Information</AccordionTrigger>
             <AccordionContent>
                 <Card className="border-none">
                     <CardContent className="pt-6">
@@ -248,21 +248,29 @@ export default function AdminSettingsPage() {
                 </Card>
             </AccordionContent>
         </AccordionItem>
-
-        <AccordionItem value="homepage-content">
-            <AccordionTrigger className="text-xl font-semibold">Static Content</AccordionTrigger>
-            <AccordionContent>
-                <Card className="border-none">
-                     <CardContent className="pt-6">
-                        <Form {...contentForm}>
-                            <form className="space-y-8">
-                                <div className="space-y-4 p-4 border rounded-lg">
-                                    <h3 className="font-semibold">Homepage Banner Description</h3>
+        
+        <Form {...contentForm}>
+            <form>
+                <AccordionItem value="homepage-content" className="border rounded-lg">
+                    <AccordionTrigger className="text-xl font-semibold px-6">Homepage Content</AccordionTrigger>
+                    <AccordionContent>
+                        <Card className="border-none">
+                            <CardContent className="pt-6">
+                                <div className="space-y-4">
                                     <FormField control={contentForm.control} name="explore_collection" render={({ field }) => (<FormItem><FormLabel>Description (English)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="explore_collection_ar" render={({ field }) => (<FormItem><FormLabel>Description (Arabic)</FormLabel><FormControl><Textarea dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                <div className="space-y-4 p-4 border rounded-lg">
-                                    <h3 className="font-semibold">About Page</h3>
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="about-page" className="border rounded-lg">
+                    <AccordionTrigger className="text-xl font-semibold px-6">About Page</AccordionTrigger>
+                    <AccordionContent>
+                        <Card className="border-none">
+                            <CardContent className="pt-6">
+                                <div className="space-y-6">
                                     <FormField control={contentForm.control} name="about_p1" render={({ field }) => (<FormItem><FormLabel>Paragraph 1 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="about_p1_ar" render={({ field }) => (<FormItem><FormLabel>Paragraph 1 (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="about_p2" render={({ field }) => (<FormItem><FormLabel>Paragraph 2 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -270,22 +278,40 @@ export default function AdminSettingsPage() {
                                     <FormField control={contentForm.control} name="about_p3" render={({ field }) => (<FormItem><FormLabel>Paragraph 3 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="about_p3_ar" render={({ field }) => (<FormItem><FormLabel>Paragraph 3 (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                <div className="space-y-4 p-4 border rounded-lg">
-                                    <h3 className="font-semibold">Terms of Use Page</h3>
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="terms-page" className="border rounded-lg">
+                    <AccordionTrigger className="text-xl font-semibold px-6">Terms of Use Page</AccordionTrigger>
+                    <AccordionContent>
+                        <Card className="border-none">
+                            <CardContent className="pt-6">
+                                <div className="space-y-6">
                                     <FormField control={contentForm.control} name="terms_en" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><Textarea rows={10} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="terms_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><Textarea rows={10} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                               <div className="space-y-4 p-4 border rounded-lg">
-                                    <h3 className="font-semibold">Privacy Policy Page</h3>
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="privacy-page" className="border rounded-lg">
+                    <AccordionTrigger className="text-xl font-semibold px-6">Privacy Policy Page</AccordionTrigger>
+                    <AccordionContent>
+                        <Card className="border-none">
+                            <CardContent className="pt-6">
+                                <div className="space-y-6">
                                     <FormField control={contentForm.control} name="privacy_p_intro" render={({ field }) => (<FormItem><FormLabel>Intro Content (English)</FormLabel><FormControl><Textarea rows={10} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={contentForm.control} name="privacy_p_intro_ar" render={({ field }) => (<FormItem><FormLabel>Intro Content (Arabic)</FormLabel><FormControl><Textarea rows={10} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                            </form>
-                        </Form>
-                     </CardContent>
-                </Card>
-            </AccordionContent>
-        </AccordionItem>
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
+            </form>
+        </Form>
       </Accordion>
     </div>
   );
