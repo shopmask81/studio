@@ -53,7 +53,7 @@ const contentFormSchema = z.object({
     privacy_p_info_ar: z.string().min(1, "Arabic content is required."),
     
     privacy_h2_use: z.string().min(1, "English title is required."),
-    privacy_h2_use_ar: z.string().min(1, "Arabic title is required."),
+    privacy_h2_use_ar: zstring().min(1, "Arabic title is required."),
     privacy_p_use: z.string().min(1, "English content is required."),
     privacy_p_use_ar: z.string().min(1, "Arabic content is required."),
 
@@ -82,6 +82,7 @@ type ImageState = {
   isUploading: boolean;
 };
 
+// Properly defined standalone helper component
 const ImageUploader = ({ title, description, imageState, onFileChange }: { title: string; description: string; imageState: ImageState; onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }) => {
   return (
     <div className="space-y-2">
@@ -291,7 +292,7 @@ export default function AdminSettingsPage() {
             onSubmit(generalData, contentData);
         })();
     })();
-  }
+  };
   
   return (
     <div className="space-y-6">
@@ -409,7 +410,7 @@ export default function AdminSettingsPage() {
                                         <FormField control={contentForm.control} name="privacy_h2_use_ar" render={({ field }) => (<FormItem><FormLabel>How We Use Title (Arabic)</FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
                                     <FormField control={contentForm.control} name="privacy_p_use" render={({ field }) => (<FormItem><FormLabel>How We Use Information (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="privacy_p_use_ar" render={({ field }) => (<FormItem><FormLabel>How We Use Information (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_use_ar" render={({ field }) => (<FormItem><FormLabel>How We Use Information (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormMessage>)} />
                                     <hr />
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <FormField control={contentForm.control} name="privacy_h2_security" render={({ field }) => (<FormItem><FormLabel>Data Security Title (English)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -442,3 +443,5 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
+    
