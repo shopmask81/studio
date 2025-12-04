@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -39,6 +40,16 @@ const contentFormSchema = z.object({
     terms_ar: z.string().min(1, "Arabic content is required."),
     privacy_p_intro: z.string().min(1, "English content is required."),
     privacy_p_intro_ar: z.string().min(1, "Arabic content is required."),
+    privacy_p_info: z.string().min(1, "English content is required."),
+    privacy_p_info_ar: z.string().min(1, "Arabic content is required."),
+    privacy_p_use: z.string().min(1, "English content is required."),
+    privacy_p_use_ar: z.string().min(1, "Arabic content is required."),
+    privacy_p_security: z.string().min(1, "English content is required."),
+    privacy_p_security_ar: z.string().min(1, "Arabic content is required."),
+    privacy_p_cookies: z.string().min(1, "English content is required."),
+    privacy_p_cookies_ar: z.string().min(1, "Arabic content is required."),
+    privacy_p_concerns_1: z.string().min(1, "English content is required."),
+    privacy_p_concerns_1_ar: z.string().min(1, "Arabic content is required."),
 });
 
 type GeneralFormValues = z.infer<typeof generalFormSchema>;
@@ -85,7 +96,17 @@ export default function AdminSettingsPage() {
         terms_en: initialEn.terms_en,
         terms_ar: initialAr.terms_ar,
         privacy_p_intro: initialEn.privacy_p_intro,
-        privacy_p_intro_ar: initialAr.privacy_p_intro,
+        privacy_p_intro_ar: initialAr.privacy_p_intro_ar,
+        privacy_p_info: initialEn.privacy_p_info,
+        privacy_p_info_ar: initialAr.privacy_p_info_ar,
+        privacy_p_use: initialEn.privacy_p_use,
+        privacy_p_use_ar: initialAr.privacy_p_use_ar,
+        privacy_p_security: initialEn.privacy_p_security,
+        privacy_p_security_ar: initialAr.privacy_p_security_ar,
+        privacy_p_cookies: initialEn.privacy_p_cookies,
+        privacy_p_cookies_ar: initialAr.privacy_p_cookies_ar,
+        privacy_p_concerns_1: initialEn.privacy_p_concerns_1,
+        privacy_p_concerns_1_ar: initialAr.privacy_p_concerns_1_ar,
     },
   });
 
@@ -155,6 +176,11 @@ export default function AdminSettingsPage() {
               about_p3: contentData.about_p3,
               terms_en: contentData.terms_en,
               privacy_p_intro: contentData.privacy_p_intro,
+              privacy_p_info: contentData.privacy_p_info,
+              privacy_p_use: contentData.privacy_p_use,
+              privacy_p_security: contentData.privacy_p_security,
+              privacy_p_cookies: contentData.privacy_p_cookies,
+              privacy_p_concerns_1: contentData.privacy_p_concerns_1,
           },
           ar: {
               ...initialAr, // Preserve other keys
@@ -163,7 +189,12 @@ export default function AdminSettingsPage() {
               about_p2: contentData.about_p2_ar,
               about_p3: contentData.about_p3_ar,
               terms_ar: contentData.terms_ar,
-              privacy_p_intro: contentData.privacy_p_intro_ar,
+              privacy_p_intro_ar: contentData.privacy_p_intro_ar,
+              privacy_p_info_ar: contentData.privacy_p_info_ar,
+              privacy_p_use_ar: contentData.privacy_p_use_ar,
+              privacy_p_security_ar: contentData.privacy_p_security_ar,
+              privacy_p_cookies_ar: contentData.privacy_p_cookies_ar,
+              privacy_p_concerns_1_ar: contentData.privacy_p_concerns_1_ar,
           }
       };
 
@@ -303,8 +334,18 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-6">
-                                    <FormField control={contentForm.control} name="privacy_p_intro" render={({ field }) => (<FormItem><FormLabel>Intro Content (English)</FormLabel><FormControl><Textarea rows={10} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="privacy_p_intro_ar" render={({ field }) => (<FormItem><FormLabel>Intro Content (Arabic)</FormLabel><FormControl><Textarea rows={10} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_intro" render={({ field }) => (<FormItem><FormLabel>Intro Content (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_intro_ar" render={({ field }) => (<FormItem><FormLabel>Intro Content (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_info" render={({ field }) => (<FormItem><FormLabel>Information Collection (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_info_ar" render={({ field }) => (<FormItem><FormLabel>Information Collection (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_use" render={({ field }) => (<FormItem><FormLabel>How We Use Information (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_use_ar" render={({ field }) => (<FormItem><FormLabel>How We Use Information (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_security" render={({ field }) => (<FormItem><FormLabel>Data Security (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_security_ar" render={({ field }) => (<FormItem><FormLabel>Data Security (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_cookies" render={({ field }) => (<FormItem><FormLabel>Cookies & Tracking (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_cookies_ar" render={({ field }) => (<FormItem><FormLabel>Cookies & Tracking (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_concerns_1" render={({ field }) => (<FormItem><FormLabel>Contact/Concerns (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={contentForm.control} name="privacy_p_concerns_1_ar" render={({ field }) => (<FormItem><FormLabel>Contact/Concerns (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -316,3 +357,5 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
+    
