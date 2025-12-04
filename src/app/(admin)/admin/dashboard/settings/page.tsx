@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -38,40 +38,34 @@ const contentFormSchema = z.object({
     about_p3_ar: z.string().min(1, "Arabic content is required."),
     terms_en: z.string().min(1, "English content is required."),
     terms_ar: z.string().min(1, "Arabic content is required."),
-
     privacy_policy_title: z.string().min(1, "English title is required."),
     privacy_policy_title_ar: z.string().min(1, "Arabic title is required."),
-
     privacy_h2_intro: z.string().min(1, "English title is required."),
     privacy_h2_intro_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_intro: z.string().min(1, "English content is required."),
     privacy_p_intro_ar: z.string().min(1, "Arabic content is required."),
-
     privacy_h2_info: z.string().min(1, "English title is required."),
     privacy_h2_info_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_info: z.string().min(1, "English content is required."),
     privacy_p_info_ar: z.string().min(1, "Arabic content is required."),
-    
     privacy_h2_use: z.string().min(1, "English title is required."),
-    privacy_h2_use_ar: zstring().min(1, "Arabic title is required."),
+    privacy_h2_use_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_use: z.string().min(1, "English content is required."),
     privacy_p_use_ar: z.string().min(1, "Arabic content is required."),
-
     privacy_h2_security: z.string().min(1, "English title is required."),
     privacy_h2_security_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_security: z.string().min(1, "English content is required."),
     privacy_p_security_ar: z.string().min(1, "Arabic content is required."),
-
     privacy_h2_cookies: z.string().min(1, "English title is required."),
     privacy_h2_cookies_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_cookies: z.string().min(1, "English content is required."),
     privacy_p_cookies_ar: z.string().min(1, "Arabic content is required."),
-
     privacy_h2_concerns: z.string().min(1, "English title is required."),
     privacy_h2_concerns_ar: z.string().min(1, "Arabic title is required."),
     privacy_p_concerns_1: z.string().min(1, "English content is required."),
     privacy_p_concerns_1_ar: z.string().min(1, "Arabic content is required."),
 });
+
 
 type GeneralFormValues = z.infer<typeof generalFormSchema>;
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -206,8 +200,22 @@ export default function AdminSettingsPage() {
     }
   };
 
-  async function onSubmit(generalData: GeneralFormValues, contentData: ContentFormValues) {
+  const handleSave = async () => {
     setIsSaving(true);
+    
+    const isGeneralValid = await generalForm.trigger();
+    const isContentValid = await contentForm.trigger();
+
+    if (!isGeneralValid || !isContentValid) {
+        toast({
+            variant: 'destructive',
+            title: 'Validation Failed',
+            description: 'Please check all fields and try again.',
+        });
+        setIsSaving(false);
+        return;
+    }
+
     let finalLogoUrl = logo.previewUrl;
     let finalFaviconUrl = favicon.previewUrl;
 
@@ -224,6 +232,9 @@ export default function AdminSettingsPage() {
         if (uploadedUrl) finalFaviconUrl = uploadedUrl;
         else throw new Error("Favicon upload failed.");
       }
+
+      const generalData = generalForm.getValues();
+      const contentData = contentForm.getValues();
 
       const finalSettings = {
         ...generalData,
@@ -285,20 +296,12 @@ export default function AdminSettingsPage() {
       setIsSaving(false);
     }
   }
-
-  const handleFormSubmit = () => {
-    generalForm.handleSubmit((generalData) => {
-        contentForm.handleSubmit((contentData) => {
-            onSubmit(generalData, contentData);
-        })();
-    })();
-  };
   
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Site Settings</h1>
-        <Button onClick={handleFormSubmit} disabled={isSaving || logo.isUploading || favicon.isUploading}>
+        <Button onClick={handleSave} disabled={isSaving || logo.isUploading || favicon.isUploading}>
             {(isSaving || logo.isUploading || favicon.isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save All Changes
         </Button>
@@ -442,6 +445,5 @@ export default function AdminSettingsPage() {
       </Accordion>
     </div>
   );
-}
 
     
