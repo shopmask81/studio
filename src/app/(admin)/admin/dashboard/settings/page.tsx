@@ -2,13 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -16,8 +16,8 @@ import { uploadImage, saveSettings } from './services/settings-service';
 import initialSettings from '@/../appData/siteSettings.json';
 import initialEn from '@/locales/en.json';
 import initialAr from '@/locales/ar.json';
-import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -32,10 +32,6 @@ const contentFormSchema = z.object({
     explore_collection_ar: z.string().min(1, "Arabic description is required."),
     about_p1: z.string().min(1, "English content is required."),
     about_p1_ar: z.string().min(1, "Arabic content is required."),
-    about_p2: z.string().min(1, "English content is required."),
-    about_p2_ar: z.string().min(1, "Arabic content is required."),
-    about_p3: z.string().min(1, "English content is required."),
-    about_p3_ar: z.string().min(1, "Arabic content is required."),
     terms_en: z.string().min(1, "English content is required."),
     terms_ar: z.string().min(1, "Arabic content is required."),
     privacy_policy_title: z.string().min(1, "English title is required."),
@@ -43,7 +39,6 @@ const contentFormSchema = z.object({
     privacy_policy_content: z.string().min(1, "English content is required."),
     privacy_policy_content_ar: z.string().min(1, "Arabic content is required."),
 });
-
 
 type GeneralFormValues = z.infer<typeof generalFormSchema>;
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -111,10 +106,6 @@ export default function AdminSettingsPage() {
         explore_collection_ar: initialAr.explore_collection,
         about_p1: initialEn.about_p1,
         about_p1_ar: initialAr.about_p1_ar,
-        about_p2: initialEn.about_p2,
-        about_p2_ar: initialAr.about_p2_ar,
-        about_p3: initialEn.about_p3,
-        about_p3_ar: initialAr.about_p3_ar,
         terms_en: initialEn.terms_en,
         terms_ar: initialAr.terms_ar,
         privacy_policy_title: initialEn.privacy_policy_title,
@@ -203,8 +194,6 @@ export default function AdminSettingsPage() {
               ...initialEn, // Preserve other keys
               explore_collection: contentData.explore_collection,
               about_p1: contentData.about_p1,
-              about_p2: contentData.about_p2,
-              about_p3: contentData.about_p3,
               terms_en: contentData.terms_en,
               privacy_policy_title: contentData.privacy_policy_title,
               privacy_policy_content: contentData.privacy_policy_content,
@@ -213,8 +202,6 @@ export default function AdminSettingsPage() {
               ...initialAr, // Preserve other keys
               explore_collection: contentData.explore_collection_ar,
               about_p1: contentData.about_p1_ar,
-              about_p2: contentData.about_p2_ar,
-              about_p3: contentData.about_p3_ar,
               terms_ar: contentData.terms_ar,
               privacy_policy_title: contentData.privacy_policy_title_ar,
               privacy_policy_content: contentData.privacy_policy_content_ar,
@@ -277,8 +264,28 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-4">
-                                    <FormField control={contentForm.control} name="explore_collection" render={({ field }) => (<FormItem><FormLabel>Description (English)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="explore_collection_ar" render={({ field }) => (<FormItem><FormLabel>Description (Arabic)</FormLabel><FormControl><Textarea dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                     <Controller
+                                        control={contentForm.control}
+                                        name="explore_collection"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Description (English)</FormLabel>
+                                                <FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Controller
+                                        control={contentForm.control}
+                                        name="explore_collection_ar"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Description (Arabic)</FormLabel>
+                                                <FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -291,12 +298,8 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-6">
-                                    <FormField control={contentForm.control} name="about_p1" render={({ field }) => (<FormItem><FormLabel>Paragraph 1 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="about_p1_ar" render={({ field }) => (<FormItem><FormLabel>Paragraph 1 (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="about_p2" render={({ field }) => (<FormItem><FormLabel>Paragraph 2 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="about_p2_ar" render={({ field }) => (<FormItem><FormLabel>Paragraph 2 (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="about_p3" render={({ field }) => (<FormItem><FormLabel>Paragraph 3 (English)</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="about_p3_ar" render={({ field }) => (<FormItem><FormLabel>Paragraph 3 (Arabic)</FormLabel><FormControl><Textarea rows={5} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="about_p1" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="about_p1_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -309,8 +312,8 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-6">
-                                    <FormField control={contentForm.control} name="terms_en" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><Textarea rows={10} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="terms_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><Textarea rows={10} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="terms_en" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="terms_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -328,8 +331,8 @@ export default function AdminSettingsPage() {
                                         <FormField control={contentForm.control} name="privacy_policy_title_ar" render={({ field }) => (<FormItem><FormLabel>Main Title (Arabic)</FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
                                     <hr />
-                                    <FormField control={contentForm.control} name="privacy_policy_content" render={({ field }) => (<FormItem><FormLabel>Full Content (English)</FormLabel><FormControl><Textarea rows={15} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={contentForm.control} name="privacy_policy_content_ar" render={({ field }) => (<FormItem><FormLabel>Full Content (Arabic)</FormLabel><FormControl><Textarea rows={15} dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="privacy_policy_content" render={({ field }) => (<FormItem><FormLabel>Full Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="privacy_policy_content_ar" render={({ field }) => (<FormItem><FormLabel>Full Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>

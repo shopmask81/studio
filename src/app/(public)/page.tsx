@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { CategoryDrawer } from '@/components/products/category-drawer';
 import { HeroBanner } from '@/components/layout/hero-banner';
 import { useProductCache } from '@/components/products/product-cache-provider';
+import DOMPurify from 'isomorphic-dompurify';
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -88,7 +89,10 @@ export default function Home() {
     return <ProductGrid products={filteredProducts} isLoading={isLoading} />;
   }
 
-  const { text: exploreText, dir: exploreDir } = t('explore_collection');
+  const exploreText = language === 'ar' ? t('explore_collection_ar').text : t('explore_collection').text;
+  const sanitizedExploreText = DOMPurify.sanitize(exploreText);
+  const dir = language === 'ar' ? 'rtl' : 'ltr';
+
 
   return (
     <>
@@ -99,9 +103,11 @@ export default function Home() {
                   <h1 className="font-headline text-4xl md:text-6xl font-bold mb-4" {...t('discover_persona')}>
                   {t('discover_persona').text}
                   </h1>
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto" dir={exploreDir}>
-                  {exploreText}
-                  </p>
+                  <div
+                    className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto prose dark:prose-invert"
+                    dir={dir}
+                    dangerouslySetInnerHTML={{ __html: sanitizedExploreText }}
+                  />
               </header>
           </ClientOnly>
         

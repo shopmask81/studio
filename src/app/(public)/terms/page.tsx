@@ -2,16 +2,19 @@
 'use client';
 
 import { useTranslation } from "@/components/language/language-provider";
+import DOMPurify from 'isomorphic-dompurify';
 
 function EnglishTerms({ content }: { content: string }) {
+  const sanitizedContent = DOMPurify.sanitize(content);
   return (
-    <div className="prose prose-lg dark:prose-invert mx-auto text-muted-foreground space-y-6" dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br />') }} />
+    <div className="prose prose-lg dark:prose-invert mx-auto text-muted-foreground space-y-6" dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
   );
 }
 
 function ArabicTerms({ content }: { content: string }) {
+    const sanitizedContent = DOMPurify.sanitize(content);
     return (
-        <div dir="rtl" className="prose prose-lg dark:prose-invert mx-auto text-muted-foreground space-y-6 text-right" dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br />') }} />
+        <div dir="rtl" className="prose prose-lg dark:prose-invert mx-auto text-muted-foreground space-y-6 text-right" dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
     );
 }
 
@@ -34,5 +37,3 @@ export default function TermsOfUsePage() {
     </div>
   );
 }
-
-    

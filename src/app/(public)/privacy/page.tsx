@@ -3,11 +3,13 @@
 
 import { ClientOnly } from "@/components/layout/client-only";
 import { useTranslation } from "@/components/language/language-provider";
+import DOMPurify from 'isomorphic-dompurify';
 
 export default function PrivacyPolicyPage() {
   const { language, t } = useTranslation();
   
   const content = language === 'ar' ? t('privacy_policy_content_ar').text : t('privacy_policy_content').text;
+  const sanitizedContent = DOMPurify.sanitize(content);
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">
@@ -17,7 +19,10 @@ export default function PrivacyPolicyPage() {
             <p {...t('last_updated')}>
                 {t('last_updated').text}: <ClientOnly>{new Date().toLocaleDateString()}</ClientOnly>
             </p>
-            <div dir={language === 'ar' ? 'rtl' : 'ltr'} dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br />') }} />
+            <div 
+              dir={language === 'ar' ? 'rtl' : 'ltr'} 
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }} 
+            />
         </div>
       </div>
     </div>
