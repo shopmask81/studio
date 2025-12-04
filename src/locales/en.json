@@ -146,21 +146,9 @@
   "about_title": "About MaskShop",
   "privacy_policy_title": "Privacy Policy",
   "last_updated": "Last Updated",
-  "privacy_h2_intro": "Introduction",
-  "privacy_h2_info": "Information We Collect",
-  "privacy_p_info": "We may collect personal information such as your name, email address, shipping address, and payment information when you place an order. We also collect non-personal information, such as browser type and pages visited, to improve our services.",
-  "privacy_h2_use": "How We Use Your Information",
-  "privacy_p_use": "We use the information we collect to process your orders, communicate with you about your purchases, improve our website and services, and for marketing purposes, provided we have your consent.",
-  "privacy_h2_security": "Data Protection and Security",
-  "privacy_p_security": "We implement a variety of security measures to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems.",
-  "privacy_h2_cookies": "Cookies and Tracking",
-  "privacy_p_cookies": "Our website uses cookies to enhance your experience. Cookies are small files that a site or its service provider transfers to your computer's hard drive through your Web browser that enables the site's or service provider's systems to recognize your browser and capture and remember certain information.",
-  "privacy_h2_concerns": "Contact for Privacy Concerns",
-  "privacy_p_concerns_1": "If you have any questions or concerns about our privacy policy or data handling practices, please visit our",
-  "privacy_p_concerns_link": "contact page",
-  "terms_en": "Your Terms of Use content here. Test",
   "about_p1": "MaskShop is a curated online marketplace dedicated to **vintage, handmade, and traditional craft products**. Our mission is to preserve cultural heritage by connecting talented artisans with people who appreciate timeless craftsmanship and authenticity.",
   "about_p2": "Each item in MaskShop carries a story — crafted with care, tradition, and passion. From **handmade pottery and woven fabrics** to **antique-inspired decor and jewelry**, we bring together the charm of the past with the beauty of modern design.",
   "about_p3": "We believe that every handmade product is a piece of art, carrying the soul of its maker. By supporting MaskShop, you’re supporting local artisans, traditional craftsmanship, and the preservation of artistic heritage.",
-  "privacy_p_intro": "Welcome to MaskShop. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website."
+  "terms_en": "Your Terms of Use content here. Test",
+  "privacy_policy_content": "<h2>Introduction</h2><p>Welcome to MaskShop. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.</p><h2>Information We Collect</h2><p>We may collect personal information such as your name, email address, shipping address, and payment information when you place an order. We also collect non-personal information, such as browser type and pages visited, to improve our services.</p><h2>How We Use Your Information</h2><p>We use the information we collect to process your orders, communicate with you about your purchases, improve our website and services, and for marketing purposes, provided we have your consent.</p><h2>Data Protection and Security</h2><p>We implement a variety of security measures to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems.</p><h2>Cookies and Tracking</h2><p>Our website uses cookies to enhance your experience. Cookies are small files that a site or its service provider transfers to your computer's hard drive through your Web browser that enables the site's or service provider's systems to recognize your browser and capture and remember certain information.</p><h2>Contact for Privacy Concerns</h2><p>If you have any questions or concerns about our privacy policy or data handling practices, please visit our contact page."
 }
