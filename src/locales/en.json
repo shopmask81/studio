@@ -1,4 +1,3 @@
-
 {
     "discover_persona": "Artistry in Every Artifact",
     "explore_collection": "Explore our exclusive collection of vintage, handmade, and traditional crafts. Each piece tells a story, waiting to be part of yours.",
@@ -144,13 +143,9 @@
     "load_wishlist_error_title": "Error Loading Wishlist",
     "load_wishlist_error_desc": "We couldn’t load your wishlist right now. Please try again later.",
     "about_title": "About MaskShop",
-    "about_p1": "MaskShop is a curated online marketplace dedicated to **vintage, handmade, and traditional craft products**.  \nOur mission is to preserve cultural heritage by connecting talented artisans with people who appreciate timeless craftsmanship and authenticity.",
-    "about_p2": "Each item in MaskShop carries a story — crafted with care, tradition, and passion.  \nFrom **handmade pottery and woven fabrics** to **antique-inspired decor and jewelry**, we bring together the charm of the past with the beauty of modern design.",
-    "about_p3": "We believe that every handmade product is a piece of art, carrying the soul of its maker.  \nBy supporting MaskShop, you’re supporting local artisans, traditional craftsmanship, and the preservation of artistic heritage.",
     "privacy_policy_title": "Privacy Policy",
     "last_updated": "Last Updated",
     "privacy_h2_intro": "Introduction",
-    "privacy_p_intro": "Welcome to MaskShop. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.",
     "privacy_h2_info": "Information We Collect",
     "privacy_p_info": "We may collect personal information such as your name, email address, shipping address, and payment information when you place an order. We also collect non-personal information, such as browser type and pages visited, to improve our services.",
     "privacy_h2_use": "How We Use Your Information",
@@ -163,7 +158,8 @@
     "privacy_p_concerns_1": "If you have any questions or concerns about our privacy policy or data handling practices, please visit our",
     "privacy_p_concerns_link": "contact page",
     "terms_en": "Your Terms of Use content here.",
-    "terms_ar": "محتوى الشروط والأحكام باللغة العربية"
+    "about_p1": "MaskShop is a curated online marketplace dedicated to **vintage, handmade, and traditional craft products**. Our mission is to preserve cultural heritage by connecting talented artisans with people who appreciate timeless craftsmanship and authenticity.",
+    "about_p2": "Each item in MaskShop carries a story — crafted with care, tradition, and passion. From **handmade pottery and woven fabrics** to **antique-inspired decor and jewelry**, we bring together the charm of the past with the beauty of modern design.",
+    "about_p3": "We believe that every handmade product is a piece of art, carrying the soul of its maker. By supporting MaskShop, you’re supporting local artisans, traditional craftsmanship, and the preservation of artistic heritage.",
+    "privacy_p_intro": "Welcome to MaskShop. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website."
 }
-
-    

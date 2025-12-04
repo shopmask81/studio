@@ -1,4 +1,3 @@
-
 'use client';
 import { useTranslation } from "@/components/language/language-provider";
 import { ClientOnly } from "@/components/layout/client-only";
@@ -27,5 +26,3 @@ export default function AboutPage() {
     </ClientOnly>
   );
 }
-
-    

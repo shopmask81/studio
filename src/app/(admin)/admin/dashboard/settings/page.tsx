@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -163,7 +162,7 @@ export default function AdminSettingsPage() {
               about_p1: contentData.about_p1_ar,
               about_p2: contentData.about_p2_ar,
               about_p3: contentData.about_p3_ar,
-              terms_en: contentData.terms_ar,
+              terms_ar: contentData.terms_ar,
               privacy_p_intro: contentData.privacy_p_intro_ar,
           }
       };
@@ -291,5 +290,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-
-    

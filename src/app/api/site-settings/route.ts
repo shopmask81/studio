@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
@@ -43,5 +42,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
   }
 }
-
-    
