@@ -82,7 +82,8 @@ export default {
       boxShadow: {
         glow: '0 8px 20px rgba(112, 184, 158, 0.4)',
         'accent-glow': '0 0 10px rgba(112, 184, 158, 0.4)',
-        'card-warm': '0 4px 14px rgba(0,0,0,0.06)',
+        'card-warm': '0 2px 4px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.06)',
+        'card-warm-hover': '0 4px 8px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.07)',
       },
       textShadow: {
         glow: '0 0 10px rgba(255, 255, 255, 0.7)',
