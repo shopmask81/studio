@@ -5,34 +5,34 @@
 
 @layer base {
   :root {
-    --background: 36 100% 97%; /* #FFF8F0 - Warm Cream */
-    --foreground: 22 25% 24%; /* #4C3A2F - Deep Coffee Brown */
-    --card: 33 69% 91%; /* #F7E8D5 - Warm Beige for sections/cards */
-    --card-foreground: 22 25% 24%; /* #4C3A2F */
-    --popover: 33 69% 91%; /* Using card color for popovers */
-    --popover-foreground: 22 25% 24%;
-    --primary: 19 50% 44%; /* #A75D39 - Vibrant Vintage Clay */
-    --primary-foreground: 36 100% 97%; /* #FFF8F0 */
-    --secondary: 34 58% 66%; /* #D9A679 - Warm Golden Beige */
-    --secondary-foreground: 22 25% 24%; /* #4C3A2F */
-    --muted: 31 29% 79%; /* #D6C6B5 - for muted text/elements */
-    --muted-foreground: 31 16% 41%; /* #7A6A58 - Soft Earthy Brown */
-    --accent: 3 46% 55%; /* #C25B56 - Artisanal Terracotta */
-    --accent-foreground: 36 100% 97%; /* #FFF8F0 */
+    --background: 45 25% 95%; /* #F6F4EF - Warm Cream Beige */
+    --foreground: 60 2% 22%; /* #3A3A38 - Deep Warm Gray */
+    --card: 40 22% 94%; /* #F2EFEA - Subtle Layered Cream */
+    --card-foreground: 60 2% 22%;
+    --popover: 40 22% 94%;
+    --popover-foreground: 60 2% 22%;
+    --primary: 130 15% 68%; /* #9DBFA4 - Soft Green */
+    --primary-foreground: 60 2% 22%; /* #3A3A38 for contrast */
+    --secondary: 34 82% 81%; /* #F5CBA7 - Pale Orange Accent */
+    --secondary-foreground: 60 2% 22%;
+    --muted: 141 13% 88%; /* #DCE4DD - Light Gray-Green */
+    --muted-foreground: 60 2% 47%; /* #7A7A76 - Muted Text */
+    --accent: 34 82% 81%; /* Using Pale Orange as main accent */
+    --accent-foreground: 60 2% 22%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 32 38% 88%; /* #E2D3C4 - Light Warm Beige */
-    --input: 33 100% 99%; /* #FFFDF8 */
-    --ring: 19 50% 44%; /* #A75D39 - Same as primary for focus */
+    --border: 48 7% 81%; /* #D4D2CC */
+    --input: 40 22% 94%; /* Using card background for inputs */
+    --ring: 130 24% 50%; /* #6F9277 - Deep Muted Green for focus */
     --radius: 1rem;
     --font-body: 'Lato';
 
-    --sidebar-background: 33 69% 91%;
-    --sidebar-foreground: 22 25% 24%;
-    --sidebar-border: 32 38% 88%;
-    --sidebar-accent: 19 50% 44%;
-    --sidebar-accent-foreground: 36 100% 97%;
-    --sidebar-ring: 19 50% 44%;
+    --sidebar-background: 40 22% 94%;
+    --sidebar-foreground: 60 2% 22%;
+    --sidebar-border: 48 7% 81%;
+    --sidebar-accent: 130 15% 68%;
+    --sidebar-accent-foreground: 60 2% 22%;
+    --sidebar-ring: 130 24% 50%;
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
   }
