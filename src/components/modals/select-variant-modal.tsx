@@ -19,6 +19,7 @@ import type { Product } from '@/lib/types';
 import { useCart } from '../cart/cart-provider';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '../language/language-provider';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface SelectVariantModalProps {
   isOpen: boolean;
@@ -62,14 +63,15 @@ export function SelectVariantModal({ isOpen, onOpenChange, product }: SelectVari
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl grid grid-rows-[auto_1fr_auto] p-0 max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle className="text-2xl font-headline" dir={dir} style={style}>
             {displayName}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid md:grid-cols-2 gap-6 py-4">
-          <div className="relative aspect-square w-full rounded-lg overflow-hidden">
+
+        <div className="grid md:grid-cols-2 gap-6 px-6 overflow-y-auto">
+          <div className="relative aspect-square w-full rounded-lg overflow-hidden self-start">
             <Image src={product.mainImage} alt={product.name} fill className="object-cover" />
           </div>
           <div className="space-y-4">
@@ -135,7 +137,8 @@ export function SelectVariantModal({ isOpen, onOpenChange, product }: SelectVari
             </div>
           </div>
         </div>
-        <DialogFooter>
+        
+        <DialogFooter className="p-6 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
