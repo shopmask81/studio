@@ -121,14 +121,14 @@ export default function Home() {
                <Button
                   variant="outline"
                   size="icon"
-                  className="h-12 w-12 flex-shrink-0 bg-card/50 dark:bg-transparent"
+                  className="h-12 w-12 flex-shrink-0 bg-white dark:bg-transparent border-[#C7B8A2] dark:border-input text-[#5A493A] dark:text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-none"
                   onClick={() => setIsDrawerOpen(true)}
                   aria-label="Open categories menu"
               >
                   <Menu className="h-6 w-6" />
               </Button>
               <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5A493A] dark:text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder={
@@ -136,7 +136,7 @@ export default function Home() {
                       ? `Search in ${selectedCategory.name}...`
                       : 'Search masks by name, description, category...'
                   }
-                  className="w-full pl-10 h-12 text-base bg-card/50 dark:bg-background"
+                  className="w-full pl-10 h-12 text-base bg-white dark:bg-background border-[#C7B8A2] dark:border-input text-[#5A493A] dark:text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-none"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
