@@ -7,9 +7,9 @@
   :root {
     --background: 40 33% 97%; /* Creamy Off-White */
     --foreground: 30 5% 17%; /* Dark Charcoal */
-    --card: 90 20% 95%; /* Soft Sage */
+    --card: 40 25% 94%; /* Muted Clay Light */
     --card-foreground: 30 5% 17%;
-    --popover: 90 20% 95%;
+    --popover: 40 25% 94%;
     --popover-foreground: 30 5% 17%;
     --primary: 95 25% 45%; /* Warm Green */
     --primary-foreground: 90 20% 98%;
@@ -27,9 +27,9 @@
     --radius: 1rem;
     --font-body: 'Lato';
 
-    --sidebar-background: 90 20% 97%; /* Lighter Sage */
+    --sidebar-background: 40 33% 97%; /* Lighter Sage */
     --sidebar-foreground: 0 0% 15%;
-    --sidebar-border: 90 15% 90%;
+    --sidebar-border: 40 20% 90%;
     --sidebar-accent: 95 25% 90%; /* Light Pistachio */
     --sidebar-accent-foreground: 95 25% 20%;
     --sidebar-ring: 95 25% 45%;
