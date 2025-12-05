@@ -65,7 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
-        <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out dark:bg-gradient-to-br dark:from-[#232a26] dark:to-[#1b201d] dark:shadow-[0_4px_14px_rgba(0,0,0,0.4)] group-hover:dark:shadow-[0_8px_20px_rgba(0,0,0,0.5)] group-hover:dark:-translate-y-1 group-hover:dark:from-[#272e2a] group-hover:dark:to-[#1f2522] group-hover:dark:border-primary/30">
+        <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out shadow-card-warm hover:shadow-lg hover:-translate-y-1">
             <CardHeader className="p-0">
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
                 <Image
@@ -86,14 +86,14 @@ export function ProductCard({ product }: ProductCardProps) {
                     {isFromPrice && <span className="text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-xl font-bold text-accent dark:text-shadow-glow">${displayPrice.toFixed(2)}</p>
-                            <p className="text-sm font-medium text-muted-foreground line-through">${originalPrice?.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
+                            <p className="text-sm font-medium text-accent line-through">${originalPrice?.toFixed(2)}</p>
                         </>
                     ) : (
-                        <p className="text-xl font-bold text-accent dark:text-shadow-glow">${displayPrice.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
                     )}
                 </div>
-                 <Button onClick={handleAddToCart} variant="secondary" className="bg-primary text-primary-foreground font-semibold hover:bg-ring hover:shadow-accent-glow transition-all duration-200 ease-in-out">
+                 <Button onClick={handleAddToCart} className="font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
                     <ShoppingCart className="h-4 w-4 me-2" />
                     {hasVariants ? 'Select Options' : t('add_to_cart').text}
                 </Button>

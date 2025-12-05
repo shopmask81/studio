@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -81,6 +82,7 @@ export default {
       boxShadow: {
         glow: '0 8px 20px rgba(112, 184, 158, 0.4)',
         'accent-glow': '0 0 10px rgba(112, 184, 158, 0.4)',
+        'card-warm': '0 4px 14px rgba(0,0,0,0.06)',
       },
       textShadow: {
         glow: '0 0 10px rgba(255, 255, 255, 0.7)',

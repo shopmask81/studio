@@ -5,25 +5,25 @@
 
 @layer base {
   :root {
-    --background: 41 50% 96%; /* #F6F4EF -> #FFF8F0 */
-    --foreground: 30 5% 17%; /* #4A3F35 -> #4C3A2F */
-    --card: 38 43% 97%; /* #FAF3E8 */
-    --card-foreground: 30 5% 17%; /* #4A3F35 -> #4C3A2F */
-    --popover: 38 43% 97%; /* #FAF3E8 */
-    --popover-foreground: 30 5% 17%;
-    --primary: 25 58% 39%; /* #A75D39 */
+    --background: 40 100% 97%; /* #FFF8F0 - Main page background */
+    --foreground: 30 5% 17%; /* #4A3F35 - Main Text */
+    --card: 45 33% 96%; /* #FAF8F3 - Card Background */
+    --card-foreground: 85 11% 21%; /* #2F3E2E - Card Title Text */
+    --popover: 45 33% 96%; /* Matches card */
+    --popover-foreground: 85 11% 21%;
+    --primary: 159 75% 24%; /* #0F6A50 - Primary Button/Price Green */
     --primary-foreground: 0 0% 100%;
-    --secondary: 35 56% 63%; /* #D9A679 */
-    --secondary-foreground: 22 17% 24%; /* #4A3F35 */
-    --muted: 33 26% 83%; /* #E2D3C4 */
-    --muted-foreground: 33 13% 45%; /* #8F7E6B -> #7A6A58 */
-    --accent: 3 45% 55%; /* #C25B56 */
+    --secondary: 159 75% 24%; /* Using primary green for secondary buttons too */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 45 10% 84%; /* #D8D5C8 - Border */
+    --muted-foreground: 100 8% 41%; /* #6F6F6F - Muted Text */
+    --accent: 19 50% 57%; /* #B86F4B - Old Price Orange */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 33 26% 83%; /* #E2D3C4 */
-    --input: 40 100% 99%; /* #FFFDF8 */
-    --ring: 25 58% 39%; /* #A75D39 */
+    --border: 45 10% 84%; /* #D8D5C8 */
+    --input: 45 33% 96%;
+    --ring: 159 75% 24%; /* Primary Green for focus rings */
     --radius: 1rem;
     --font-body: 'Lato';
 
