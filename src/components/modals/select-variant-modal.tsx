@@ -62,90 +62,92 @@ export function SelectVariantModal({ isOpen, onOpenChange, product }: SelectVari
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl grid-rows-[auto_1fr_auto] p-0 max-h-[90vh] flex flex-col">
-        <DialogHeader className="p-6 pb-2">
+      <DialogContent className="sm:max-w-3xl flex flex-col p-0 max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle className="text-2xl font-headline" dir={dir} style={style}>
             {displayName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6 px-6 overflow-y-auto flex-grow">
-          <div className="relative aspect-square w-full rounded-lg overflow-hidden self-start">
-            <Image src={product.mainImage} alt={product.name} fill className="object-cover" />
-          </div>
-          <div className="flex flex-col gap-4">
-              {product.variantOptions?.colors && product.variantOptions.colors.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Color: <span className="text-muted-foreground font-normal">{selectedColor}</span></Label>
-                  <RadioGroup value={selectedColor || undefined} onValueChange={setSelectedColor} className="flex flex-wrap gap-2">
-                    {product.variantOptions.colors.map(color => (
-                      <RadioGroupItem key={color} value={color} id={`modal-color-${color}`} className="sr-only" />
-                    ))}
-                    {product.variantOptions.colors.map(color => (
-                      <Label key={`label-${color}`} htmlFor={`modal-color-${color}`} className={cn("cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted", selectedColor === color ? "border-primary bg-primary/10" : "border-border")}>
-                        {color}
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
-              {product.variantOptions?.sizes && product.variantOptions.sizes.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Size: <span className="text-muted-foreground font-normal">{selectedSize}</span></Label>
-                  <RadioGroup value={selectedSize || undefined} onValueChange={setSelectedSize} className="flex flex-wrap gap-2">
-                    {product.variantOptions.sizes.map(size => (
-                      <RadioGroupItem key={size} value={size} id={`modal-size-${size}`} className="sr-only" />
-                    ))}
-                    {product.variantOptions.sizes.map(size => (
-                      <Label key={`label-${size}`} htmlFor={`modal-size-${size}`} className={cn("cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted", selectedSize === size ? "border-primary bg-primary/10" : "border-border")}>
-                        {size}
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
-
-              <div className="pt-4 space-y-2">
-                <div className="flex items-baseline gap-3 min-h-[40px]">
-                  {selectedVariant ? (
-                    <>
-                      {(selectedVariant.discountPrice && selectedVariant.discountPrice < selectedVariant.price) ? (
-                          <>
-                              <p className="text-3xl font-bold text-primary">${selectedVariant.discountPrice.toFixed(2)}</p>
-                              <p className="text-xl font-medium text-muted-foreground line-through">${selectedVariant.price.toFixed(2)}</p>
-                          </>
-                      ) : (
-                          <p className="text-3xl font-bold text-primary">${selectedVariant.price.toFixed(2)}</p>
-                      )}
-                    </>
-                  ) : product.variantsEnabled ? (
-                      <p className="text-muted-foreground">Select options to see price</p>
-                  ) : (
-                     <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                  )}
-                </div>
-                <div>
-                  {selectedVariant ? (
-                      selectedVariant.stock > 0 ? (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">In Stock</Badge>
-                      ) : (
-                          <Badge variant="destructive">Out of Stock</Badge>
-                      )
-                  ) : product.variantsEnabled ? (
-                      <p className="text-sm text-muted-foreground h-6"></p>
-                  ) : (
-                    product.stock > 0 ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">In Stock</Badge>
-                    ) : (
-                        <Badge variant="destructive">Out of Stock</Badge>
-                    )
-                  )}
-                </div>
+        <div className="flex-grow overflow-y-auto px-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="relative aspect-square w-full rounded-lg overflow-hidden self-start">
+                <Image src={product.mainImage} alt={product.name} fill className="object-cover" />
               </div>
-          </div>
+              <div className="flex flex-col gap-4">
+                  {product.variantOptions?.colors && product.variantOptions.colors.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-semibold">Color: <span className="text-muted-foreground font-normal">{selectedColor}</span></Label>
+                      <RadioGroup value={selectedColor || undefined} onValueChange={setSelectedColor} className="flex flex-wrap gap-2">
+                        {product.variantOptions.colors.map(color => (
+                          <RadioGroupItem key={color} value={color} id={`modal-color-${color}`} className="sr-only" />
+                        ))}
+                        {product.variantOptions.colors.map(color => (
+                          <Label key={`label-${color}`} htmlFor={`modal-color-${color}`} className={cn("cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted", selectedColor === color ? "border-primary bg-primary/10" : "border-border")}>
+                            {color}
+                          </Label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+                  {product.variantOptions?.sizes && product.variantOptions.sizes.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-semibold">Size: <span className="text-muted-foreground font-normal">{selectedSize}</span></Label>
+                      <RadioGroup value={selectedSize || undefined} onValueChange={setSelectedSize} className="flex flex-wrap gap-2">
+                        {product.variantOptions.sizes.map(size => (
+                          <RadioGroupItem key={size} value={size} id={`modal-size-${size}`} className="sr-only" />
+                        ))}
+                        {product.variantOptions.sizes.map(size => (
+                          <Label key={`label-${size}`} htmlFor={`modal-size-${size}`} className={cn("cursor-pointer rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted", selectedSize === size ? "border-primary bg-primary/10" : "border-border")}>
+                            {size}
+                          </Label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+
+                  <div className="pt-4 space-y-2">
+                    <div className="flex items-baseline gap-3 min-h-[40px]">
+                      {selectedVariant ? (
+                        <>
+                          {(selectedVariant.discountPrice && selectedVariant.discountPrice < selectedVariant.price) ? (
+                              <>
+                                  <p className="text-3xl font-bold text-primary">${selectedVariant.discountPrice.toFixed(2)}</p>
+                                  <p className="text-xl font-medium text-muted-foreground line-through">${selectedVariant.price.toFixed(2)}</p>
+                              </>
+                          ) : (
+                              <p className="text-3xl font-bold text-primary">${selectedVariant.price.toFixed(2)}</p>
+                          )}
+                        </>
+                      ) : product.variantsEnabled ? (
+                          <p className="text-muted-foreground">Select options to see price</p>
+                      ) : (
+                        <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                      )}
+                    </div>
+                    <div>
+                      {selectedVariant ? (
+                          selectedVariant.stock > 0 ? (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">In Stock</Badge>
+                          ) : (
+                              <Badge variant="destructive">Out of Stock</Badge>
+                          )
+                      ) : product.variantsEnabled ? (
+                          <p className="text-sm text-muted-foreground h-6"></p>
+                      ) : (
+                        product.stock > 0 ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">In Stock</Badge>
+                        ) : (
+                            <Badge variant="destructive">Out of Stock</Badge>
+                        )
+                      )}
+                    </div>
+                  </div>
+              </div>
+            </div>
         </div>
         
-        <DialogFooter className="p-6 pt-4 border-t mt-auto">
+        <DialogFooter className="p-6 pt-4 border-t shrink-0">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
