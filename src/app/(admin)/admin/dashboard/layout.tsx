@@ -12,7 +12,7 @@ export default function AdminDashboardLayout({
   return (
     <AdminRoute>
       <SidebarProvider>
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] group-data-[collapsible=icon]:md:grid-cols-[5rem_1fr]">
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] group-data-[collapsible=icon]:md:grid-cols-[var(--sidebar-width-icon)_1fr]">
           <AdminSidebar />
           <div className="flex flex-col">
             <AdminHeader />

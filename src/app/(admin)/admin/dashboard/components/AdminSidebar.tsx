@@ -43,9 +43,7 @@ const settingsNavItem = { href: '/admin/dashboard/settings', label: 'Settings', 
 export function AdminSidebar() {
     const pathname = usePathname();
     const { user, isLoading } = useAuth();
-    const { state, setOpen } = useSidebar();
-
-    const isCollapsed = state === 'collapsed';
+    const { setOpen } = useSidebar();
 
     return (
         <Sidebar>
@@ -62,8 +60,8 @@ export function AdminSidebar() {
                 </button>
             </SidebarHeader>
 
-            {!isCollapsed && !isLoading && user && (
-                 <div className="flex flex-col p-2">
+            {!isLoading && user && (
+                 <div className="flex flex-col p-2 group-data-[collapsible=icon]:hidden">
                     <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground">
                         <Avatar className="h-9 w-9">
                             <AvatarImage src={user.photoURL ?? undefined} alt={`@${user.displayName}`} />
@@ -90,7 +88,7 @@ export function AdminSidebar() {
                                 >
                                 <Link href={item.href}>
                                     <item.icon />
-                                    <span>{item.label}</span>
+                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -110,7 +108,7 @@ export function AdminSidebar() {
                         >
                             <Link href={settingsNavItem.href}>
                                 <settingsNavItem.icon />
-                                <span>{settingsNavItem.label}</span>
+                                <span className="group-data-[collapsible=icon]:hidden">{settingsNavItem.label}</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
