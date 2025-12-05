@@ -121,7 +121,7 @@ export default function Home() {
                <Button
                   variant="outline"
                   size="icon"
-                  className="h-12 w-12 flex-shrink-0"
+                  className="h-12 w-12 flex-shrink-0 bg-card/50 dark:bg-transparent"
                   onClick={() => setIsDrawerOpen(true)}
                   aria-label="Open categories menu"
               >
@@ -136,7 +136,7 @@ export default function Home() {
                       ? `Search in ${selectedCategory.name}...`
                       : 'Search masks by name, description, category...'
                   }
-                  className="w-full pl-10 h-12 text-base"
+                  className="w-full pl-10 h-12 text-base bg-card/50 dark:bg-background"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
