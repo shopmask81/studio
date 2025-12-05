@@ -5,26 +5,26 @@
 
 @layer base {
   :root {
-    --background: 48 33% 96%; /* #F3F1EB */
-    --foreground: 0 0% 12%; /* #1E1E1E */
-    --card: 40 25% 98%; /* #F9F8F4 */
-    --card-foreground: 0 0% 12%;
-    --popover: 40 25% 98%;
-    --popover-foreground: 0 0% 12%;
-    --primary: 154 30% 35%; /* #3E7660 */
+    --background: 38 33% 96%;
+    --foreground: 30 5% 20%;
+    --card: 38 42% 98%;
+    --card-foreground: 30 5% 20%;
+    --popover: 38 42% 98%;
+    --popover-foreground: 30 5% 20%;
+    --primary: 154 30% 35%;
     --primary-foreground: 45 35% 95%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 36%; /* #5C5C5C */
-    --accent: 154 30% 52%; /* #5FAF8E */
+    --secondary: 40 10% 95%;
+    --secondary-foreground: 30 5% 15%;
+    --muted: 40 10% 95%;
+    --muted-foreground: 30 5% 45%;
+    --accent: 154 30% 52%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 45 14% 88%; /* #E0DED5 */
-    --input: 45 14% 88%;
+    --border: 38 15% 88%;
+    --input: 38 15% 88%;
     --ring: 154 30% 35%;
-    --radius: 1rem; /* 16px */
+    --radius: 1rem;
     --font-body: 'Lato';
 
     --sidebar-background: 45 20% 99%;
@@ -88,7 +88,7 @@
   }
 
   body {
-    background: linear-gradient(135deg, #F3F1EB, #E8E5DC, #F5F2E8);
+    background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--card)));
     background-size: 400% 400%;
     animation: gradientLight 25s ease infinite;
   }
