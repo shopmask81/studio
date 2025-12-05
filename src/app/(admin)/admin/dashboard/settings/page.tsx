@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -30,8 +29,12 @@ const generalFormSchema = z.object({
 const contentFormSchema = z.object({
     explore_collection: z.string().min(1, "English description is required."),
     explore_collection_ar: z.string().min(1, "Arabic description is required."),
+    about_title: z.string().min(1, "English title is required."),
+    about_title_ar: z.string().min(1, "Arabic title is required."),
     about_p1: z.string().min(1, "English content is required."),
     about_p1_ar: z.string().min(1, "Arabic content is required."),
+    terms_title: z.string().min(1, "English title is required."),
+    terms_title_ar: z.string().min(1, "Arabic title is required."),
     terms_en: z.string().min(1, "English content is required."),
     terms_ar: z.string().min(1, "Arabic content is required."),
     privacy_policy_title: z.string().min(1, "English title is required."),
@@ -39,6 +42,7 @@ const contentFormSchema = z.object({
     privacy_policy_content: z.string().min(1, "English content is required."),
     privacy_policy_content_ar: z.string().min(1, "Arabic content is required."),
 });
+
 
 type GeneralFormValues = z.infer<typeof generalFormSchema>;
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -104,8 +108,12 @@ export default function AdminSettingsPage() {
     defaultValues: {
         explore_collection: initialEn.explore_collection,
         explore_collection_ar: initialAr.explore_collection,
+        about_title: initialEn.about_title,
+        about_title_ar: initialAr.about_title_ar,
         about_p1: initialEn.about_p1,
         about_p1_ar: initialAr.about_p1_ar,
+        terms_title: initialEn.terms_title,
+        terms_title_ar: initialAr.terms_title_ar,
         terms_en: initialEn.terms_en,
         terms_ar: initialAr.terms_ar,
         privacy_policy_title: initialEn.privacy_policy_title,
@@ -193,7 +201,9 @@ export default function AdminSettingsPage() {
           en: {
               ...initialEn, // Preserve other keys
               explore_collection: contentData.explore_collection,
+              about_title: contentData.about_title,
               about_p1: contentData.about_p1,
+              terms_title: contentData.terms_title,
               terms_en: contentData.terms_en,
               privacy_policy_title: contentData.privacy_policy_title,
               privacy_policy_content: contentData.privacy_policy_content,
@@ -201,10 +211,12 @@ export default function AdminSettingsPage() {
           ar: {
               ...initialAr, // Preserve other keys
               explore_collection: contentData.explore_collection_ar,
-              about_p1: contentData.about_p1_ar,
+              about_title_ar: contentData.about_title_ar,
+              about_p1_ar: contentData.about_p1_ar,
+              terms_title_ar: contentData.terms_title_ar,
               terms_ar: contentData.terms_ar,
-              privacy_policy_title: contentData.privacy_policy_title_ar,
-              privacy_policy_content: contentData.privacy_policy_content_ar,
+              privacy_policy_title_ar: contentData.privacy_policy_title_ar,
+              privacy_policy_content_ar: contentData.privacy_policy_content_ar,
           }
       };
 
@@ -298,8 +310,13 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-6">
-                                    <Controller control={contentForm.control} name="about_p1" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
-                                    <Controller control={contentForm.control} name="about_p1_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField control={contentForm.control} name="about_title" render={({ field }) => (<FormItem><FormLabel>Main Title (English)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={contentForm.control} name="about_title_ar" render={({ field }) => (<FormItem><FormLabel>Main Title (Arabic)</FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                    <hr/>
+                                    <Controller control={contentForm.control} name="about_p1" render={({ field }) => (<FormItem><FormLabel>Full Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="about_p1_ar" render={({ field }) => (<FormItem><FormLabel>Full Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -312,8 +329,13 @@ export default function AdminSettingsPage() {
                         <Card className="border-none">
                             <CardContent className="pt-6">
                                 <div className="space-y-6">
-                                    <Controller control={contentForm.control} name="terms_en" render={({ field }) => (<FormItem><FormLabel>Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
-                                    <Controller control={contentForm.control} name="terms_ar" render={({ field }) => (<FormItem><FormLabel>Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField control={contentForm.control} name="terms_title" render={({ field }) => (<FormItem><FormLabel>Main Title (English)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={contentForm.control} name="terms_title_ar" render={({ field }) => (<FormItem><FormLabel>Main Title (Arabic)</FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                    <hr/>
+                                    <Controller control={contentForm.control} name="terms_en" render={({ field }) => (<FormItem><FormLabel>Full Content (English)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                                    <Controller control={contentForm.control} name="terms_ar" render={({ field }) => (<FormItem><FormLabel>Full Content (Arabic)</FormLabel><FormControl><RichTextEditor content={field.value} onChange={field.onChange} dir="rtl" /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </CardContent>
                         </Card>
