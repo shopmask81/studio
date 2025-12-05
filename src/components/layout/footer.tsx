@@ -7,15 +7,22 @@ import { useAuth } from "../auth/auth-provider";
 import { useTranslation } from "../language/language-provider";
 import siteSettings from '@/../appData/siteSettings.json';
 import Image from 'next/image';
+import { useState, useEffect } from "react";
 
 
 export function Footer() {
   const { userProfile } = useAuth();
   const { t } = useTranslation();
+  const [copyrightText, setCopyrightText] = useState('');
 
   const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
-  const currentYear = new Date().getFullYear();
-  const copyrightText = t('copyright_text').text.replace('{year}', currentYear.toString()).replace('{siteName}', siteSettings.siteName);
+  
+  useEffect(() => {
+    // This code runs only on the client, after hydration
+    const currentYear = new Date().getFullYear();
+    const dynamicCopyrightText = t('copyright_text').text.replace('{year}', currentYear.toString()).replace('{siteName}', siteSettings.siteName);
+    setCopyrightText(dynamicCopyrightText);
+  }, [t]);
 
 
   return (
@@ -42,7 +49,7 @@ export function Footer() {
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('privacy_policy').text}</Link>
           </nav>
 
-          <div className="text-sm text-muted-foreground mt-4">
+          <div className="text-sm text-muted-foreground mt-4 h-5">
             {copyrightText}
           </div>
         </div>
