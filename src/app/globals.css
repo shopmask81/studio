@@ -5,25 +5,25 @@
 
 @layer base {
   :root {
-    --background: 45 25% 95%; /* #F6F4EF - Warm Cream Beige */
-    --foreground: 60 2% 22%; /* #3A3A38 - Deep Warm Gray */
-    --card: 40 22% 94%; /* #F2EFEA - Subtle Layered Cream */
-    --card-foreground: 60 2% 22%;
-    --popover: 40 22% 94%;
-    --popover-foreground: 60 2% 22%;
-    --primary: 94 11% 39%; /* #5B6B4F - Olive Green */
-    --primary-foreground: 48 44% 94%; /* #F5F3E9 - Off-white */
-    --secondary: 34 59% 61%; /* #D9A066 - Light Warm Orange */
-    --secondary-foreground: 60 2% 22%;
-    --muted: 141 13% 88%; /* #DCE4DD - Light Gray-Green */
-    --muted-foreground: 0 0% 65%; /* #A7A7A7 - Muted Gray for old price */
-    --accent: 94 11% 39%; /* #5B6B4F - Using Olive Green for prices */
-    --accent-foreground: 48 44% 94%;
+    --background: 41 50% 96%; /* #F6F4EF -> #FFF8F0 */
+    --foreground: 30 5% 17%; /* #4A3F35 -> #4C3A2F */
+    --card: 38 43% 97%; /* #FAF3E8 */
+    --card-foreground: 30 5% 17%; /* #4A3F35 -> #4C3A2F */
+    --popover: 38 43% 97%; /* #FAF3E8 */
+    --popover-foreground: 30 5% 17%;
+    --primary: 25 58% 39%; /* #A75D39 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 56% 63%; /* #D9A679 */
+    --secondary-foreground: 22 17% 24%; /* #4A3F35 */
+    --muted: 33 26% 83%; /* #E2D3C4 */
+    --muted-foreground: 33 13% 45%; /* #8F7E6B -> #7A6A58 */
+    --accent: 3 45% 55%; /* #C25B56 */
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 48 7% 81%; /* #D4D2CC */
-    --input: 40 22% 94%; /* Using card background for inputs */
-    --ring: 94 11% 43%; /* #6F7F5C - Brighter Olive for focus ring */
+    --border: 33 26% 83%; /* #E2D3C4 */
+    --input: 40 100% 99%; /* #FFFDF8 */
+    --ring: 25 58% 39%; /* #A75D39 */
     --radius: 1rem;
     --font-body: 'Lato';
 
