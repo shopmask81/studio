@@ -5,34 +5,34 @@
 
 @layer base {
   :root {
-    --background: 39 44% 94%; /* #F6F1E7 */
-    --foreground: 30 15% 25%; /* #4A3F35 */
-    --card: 39 31% 90%; /* #ECE5D8 */
-    --card-foreground: 30 15% 25%; /* #4A3F35 */
-    --popover: 40 28% 83%; /* #E2D7C3 */
-    --popover-foreground: 30 15% 25%; /* #4A3F35 */
-    --primary: 38 52% 58%; /* #C89B5D */
-    --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 100 13% 82%; /* #A6B29F */
-    --secondary-foreground: 30 15% 25%; /* #4A3F35 */
-    --muted: 40 28% 83%; /* #E2D7C3 */
-    --muted-foreground: 31 12% 40%; /* #6A5C50 */
-    --accent: 100 13% 82%; /* #A6B29F */
-    --accent-foreground: 30 15% 25%; /* #4A3F35 */
+    --background: 36 100% 97%; /* #FFF8F0 - Warm Cream */
+    --foreground: 22 25% 24%; /* #4C3A2F - Deep Coffee Brown */
+    --card: 33 69% 91%; /* #F7E8D5 - Warm Beige for sections/cards */
+    --card-foreground: 22 25% 24%; /* #4C3A2F */
+    --popover: 33 69% 91%; /* Using card color for popovers */
+    --popover-foreground: 22 25% 24%;
+    --primary: 19 50% 44%; /* #A75D39 - Vibrant Vintage Clay */
+    --primary-foreground: 36 100% 97%; /* #FFF8F0 */
+    --secondary: 34 58% 66%; /* #D9A679 - Warm Golden Beige */
+    --secondary-foreground: 22 25% 24%; /* #4C3A2F */
+    --muted: 31 29% 79%; /* #D6C6B5 - for muted text/elements */
+    --muted-foreground: 31 16% 41%; /* #7A6A58 - Soft Earthy Brown */
+    --accent: 3 46% 55%; /* #C25B56 - Artisanal Terracotta */
+    --accent-foreground: 36 100% 97%; /* #FFF8F0 */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 37 25% 77%; /* #D5C7B3 */
-    --input: 37 25% 77%; /* #D5C7B3 */
-    --ring: 38 52% 58%; /* #C89B5D */
+    --border: 32 38% 88%; /* #E2D3C4 - Light Warm Beige */
+    --input: 33 100% 99%; /* #FFFDF8 */
+    --ring: 19 50% 44%; /* #A75D39 - Same as primary for focus */
     --radius: 1rem;
     --font-body: 'Lato';
 
-    --sidebar-background: 39 31% 90%; /* Light Beige */
-    --sidebar-foreground: 30 15% 25%;
-    --sidebar-border: 37 25% 77%;
-    --sidebar-accent: 38 52% 58%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-ring: 38 52% 58%;
+    --sidebar-background: 33 69% 91%;
+    --sidebar-foreground: 22 25% 24%;
+    --sidebar-border: 32 38% 88%;
+    --sidebar-accent: 19 50% 44%;
+    --sidebar-accent-foreground: 36 100% 97%;
+    --sidebar-ring: 19 50% 44%;
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
   }
