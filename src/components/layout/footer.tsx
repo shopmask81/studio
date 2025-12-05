@@ -14,6 +14,9 @@ export function Footer() {
   const { t } = useTranslation();
 
   const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
+  const currentYear = new Date().getFullYear();
+  const copyrightText = t('copyright_text').text.replace('{year}', currentYear.toString()).replace('{siteName}', siteSettings.siteName);
+
 
   return (
     <footer className="border-t mt-16 bg-card/50">
@@ -39,8 +42,8 @@ export function Footer() {
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors tracking-wide">{t('privacy_policy').text}</Link>
           </nav>
 
-          <div className="text-sm text-muted-foreground mt-4" {...t('copyright', { year: new Date().getFullYear() })}>
-            {t('copyright', { year: new Date().getFullYear() }).text}
+          <div className="text-sm text-muted-foreground mt-4">
+            {copyrightText}
           </div>
         </div>
       </div>
