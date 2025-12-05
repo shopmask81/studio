@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -27,6 +28,8 @@ const generalFormSchema = z.object({
 });
 
 const contentFormSchema = z.object({
+    discover_persona: z.string().min(1, "English title is required."),
+    discover_persona_ar: z.string().min(1, "Arabic title is required."),
     explore_collection: z.string().min(1, "English description is required."),
     explore_collection_ar: z.string().min(1, "Arabic description is required."),
     about_title: z.string().min(1, "English title is required."),
@@ -106,6 +109,8 @@ export default function AdminSettingsPage() {
   const contentForm = useForm<ContentFormValues>({
     resolver: zodResolver(contentFormSchema),
     defaultValues: {
+        discover_persona: initialEn.discover_persona,
+        discover_persona_ar: initialAr.discover_persona,
         explore_collection: initialEn.explore_collection,
         explore_collection_ar: initialAr.explore_collection,
         about_title: initialEn.about_title,
@@ -200,6 +205,7 @@ export default function AdminSettingsPage() {
       const finalContent = {
           en: {
               ...initialEn, // Preserve other keys
+              discover_persona: contentData.discover_persona,
               explore_collection: contentData.explore_collection,
               about_title: contentData.about_title,
               about_p1: contentData.about_p1,
@@ -210,6 +216,7 @@ export default function AdminSettingsPage() {
           },
           ar: {
               ...initialAr, // Preserve other keys
+              discover_persona: contentData.discover_persona_ar,
               explore_collection: contentData.explore_collection_ar,
               about_title_ar: contentData.about_title_ar,
               about_p1_ar: contentData.about_p1_ar,
@@ -275,8 +282,13 @@ export default function AdminSettingsPage() {
                     <AccordionContent>
                         <Card className="border-none">
                             <CardContent className="pt-6">
-                                <div className="space-y-4">
-                                     <Controller
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField control={contentForm.control} name="discover_persona" render={({ field }) => (<FormItem><FormLabel>Main Title (English)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={contentForm.control} name="discover_persona_ar" render={({ field }) => (<FormItem><FormLabel>Main Title (Arabic)</FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                    <hr/>
+                                    <Controller
                                         control={contentForm.control}
                                         name="explore_collection"
                                         render={({ field }) => (
