@@ -5,34 +5,34 @@
 
 @layer base {
   :root {
-    --background: 40 33% 97%; /* Creamy Off-White */
-    --foreground: 30 5% 17%; /* Dark Charcoal */
-    --card: 40 25% 94%; /* Muted Clay Light */
-    --card-foreground: 30 5% 17%;
-    --popover: 40 25% 94%;
-    --popover-foreground: 30 5% 17%;
-    --primary: 95 25% 45%; /* Warm Green */
-    --primary-foreground: 90 20% 98%;
-    --secondary: 40 25% 94%; /* Muted Clay Light */
-    --secondary-foreground: 95 25% 25%;
-    --muted: 40 25% 94%;
-    --muted-foreground: 30 5% 45%;
-    --accent: 40 30% 65%; /* Muted Clay */
-    --accent-foreground: 30 5% 15%;
+    --background: 39 44% 94%; /* #F6F1E7 */
+    --foreground: 30 15% 25%; /* #4A3F35 */
+    --card: 39 31% 90%; /* #ECE5D8 */
+    --card-foreground: 30 15% 25%; /* #4A3F35 */
+    --popover: 40 28% 83%; /* #E2D7C3 */
+    --popover-foreground: 30 15% 25%; /* #4A3F35 */
+    --primary: 38 52% 58%; /* #C89B5D */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 100 13% 82%; /* #A6B29F */
+    --secondary-foreground: 30 15% 25%; /* #4A3F35 */
+    --muted: 40 28% 83%; /* #E2D7C3 */
+    --muted-foreground: 31 12% 40%; /* #6A5C50 */
+    --accent: 100 13% 82%; /* #A6B29F */
+    --accent-foreground: 30 15% 25%; /* #4A3F35 */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 40 20% 88%; /* Clay Border */
-    --input: 40 20% 88%;
-    --ring: 95 25% 45%;
+    --border: 37 25% 77%; /* #D5C7B3 */
+    --input: 37 25% 77%; /* #D5C7B3 */
+    --ring: 38 52% 58%; /* #C89B5D */
     --radius: 1rem;
     --font-body: 'Lato';
 
-    --sidebar-background: 40 33% 97%; /* Lighter Sage */
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-border: 40 20% 90%;
-    --sidebar-accent: 95 25% 90%; /* Light Pistachio */
-    --sidebar-accent-foreground: 95 25% 20%;
-    --sidebar-ring: 95 25% 45%;
+    --sidebar-background: 39 31% 90%; /* Light Beige */
+    --sidebar-foreground: 30 15% 25%;
+    --sidebar-border: 37 25% 77%;
+    --sidebar-accent: 38 52% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-ring: 38 52% 58%;
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
   }
