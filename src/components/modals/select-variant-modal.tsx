@@ -19,6 +19,7 @@ import type { Product } from '@/lib/types';
 import { useCart } from '../cart/cart-provider';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '../language/language-provider';
+import { useCurrency } from '../currency/currency-provider';
 
 interface SelectVariantModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ interface SelectVariantModalProps {
 export function SelectVariantModal({ isOpen, onOpenChange, product }: SelectVariantModalProps) {
   const { addToCart } = useCart();
   const { t, language } = useTranslation();
+  const { formatPrice } = useCurrency();
 
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -112,17 +114,17 @@ export function SelectVariantModal({ isOpen, onOpenChange, product }: SelectVari
                         <>
                           {(selectedVariant.discountPrice && selectedVariant.discountPrice < selectedVariant.price) ? (
                               <>
-                                  <p className="text-3xl font-bold text-primary">${selectedVariant.discountPrice.toFixed(2)}</p>
-                                  <p className="text-xl font-medium text-muted-foreground line-through">${selectedVariant.price.toFixed(2)}</p>
+                                  <p className="text-3xl font-bold text-primary">{formatPrice(selectedVariant.discountPrice)}</p>
+                                  <p className="text-xl font-medium text-muted-foreground line-through">{formatPrice(selectedVariant.price)}</p>
                               </>
                           ) : (
-                              <p className="text-3xl font-bold text-primary">${selectedVariant.price.toFixed(2)}</p>
+                              <p className="text-3xl font-bold text-primary">{formatPrice(selectedVariant.price)}</p>
                           )}
                         </>
                       ) : product.variantsEnabled ? (
                           <p className="text-muted-foreground">Select options to see price</p>
                       ) : (
-                        <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                        <p className="text-3xl font-bold text-primary">{formatPrice(product.price)}</p>
                       )}
                     </div>
                     <div>

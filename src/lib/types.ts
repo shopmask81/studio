@@ -133,6 +133,8 @@ export type UserProfile = {
     emailVerified: boolean;
 };
 
+export type Currency = "AED" | "MAD" | "USD" | "EUR";
+
 export type SiteSettings = {
   siteName: string;
   siteDescription: string;
@@ -142,4 +144,5 @@ export type SiteSettings = {
   contactPhone: string;
   storeAddress: string;
   defaultThemeMode: 'light' | 'dark';
+  defaultCurrency: Currency;
 };

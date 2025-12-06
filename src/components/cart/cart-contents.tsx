@@ -12,12 +12,14 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '../language/language-provider';
 import { Badge } from '../ui/badge';
+import { useCurrency } from '../currency/currency-provider';
 
 function CartDisplay() {
     const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, shippingTotal, itemCount } = useCart();
     const router = useRouter();
     const { toast } = useToast();
     const { t, language } = useTranslation();
+    const { formatPrice } = useCurrency();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     const handleCheckout = () => {
@@ -96,11 +98,11 @@ function CartDisplay() {
                                         <div className="text-sm mt-1">
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
-                                                    <p className="text-primary font-semibold">${price.toFixed(2)}</p>
-                                                    <p className="text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
+                                                    <p className="text-primary font-semibold">{formatPrice(price)}</p>
+                                                    <p className="text-muted-foreground line-through">{formatPrice(originalPrice!)}</p>
                                                 </div>
                                             ) : (
-                                                <p className="text-primary">${price.toFixed(2)}</p>
+                                                <p className="text-primary">{formatPrice(price)}</p>
                                             )}
                                         </div>
                                     </div>
@@ -119,7 +121,7 @@ function CartDisplay() {
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     </div>
-                                    <p className="font-semibold w-20 text-right text-base">${(price * item.quantity).toFixed(2)}</p>
+                                    <p className="font-semibold w-20 text-right text-base">{formatPrice(price * item.quantity)}</p>
                                 </div>
                             )
                         })}
@@ -134,15 +136,15 @@ function CartDisplay() {
                     <CardContent className="space-y-4">
                         <div className="flex justify-between text-muted-foreground">
                             <span {...t('subtotal')}>{t('subtotal').text}</span>
-                            <span>${cartTotal.toFixed(2)}</span>
+                            <span>{formatPrice(cartTotal)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                             <span {...t('shipping')}>{t('shipping').text}</span>
-                             <span>{shippingTotal > 0 ? `$${shippingTotal.toFixed(2)}` : 'Free'}</span>
+                             <span>{shippingTotal > 0 ? formatPrice(shippingTotal) : 'Free'}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg pt-4 border-t">
                             <span {...t('total')}>{t('total').text}</span>
-                            <span>${(cartTotal + shippingTotal).toFixed(2)}</span>
+                            <span>{formatPrice(cartTotal + shippingTotal)}</span>
                         </div>
                     </CardContent>
                     <CardFooter>

@@ -13,6 +13,7 @@ import { useTranslation } from '../language/language-provider';
 import { useModal } from '../modals/modal-provider';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useCurrency } from '../currency/currency-provider';
 
 interface ProductCardProps {
   product: Product;
@@ -25,6 +26,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
+  const { formatPrice, convertPrice } = useCurrency();
 
   useEffect(() => {
     // Reset loading state if the path changes (navigation completes)
@@ -107,11 +109,11 @@ export function ProductCard({ product }: ProductCardProps) {
                     {isFromPrice && <span className="text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
-                            <p className="text-sm font-medium text-accent line-through">${originalPrice?.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                            <p className="text-sm font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
                         </>
                     ) : (
-                        <p className="text-xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
                     )}
                 </div>
                  <Button onClick={handleAddToCart} className="font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">

@@ -21,6 +21,7 @@ import { useTranslation } from '../language/language-provider';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { useProductCache } from './product-cache-provider';
+import { useCurrency } from '../currency/currency-provider';
 
 interface ProductDetailsProps {
   productId: string;
@@ -30,6 +31,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { addToCart } = useCart();
   const { t, language } = useTranslation();
   const { findProductById, isLoading: isCacheLoading } = useProductCache();
+  const { formatPrice, convertPrice } = useCurrency();
   
   const product = useMemo(() => findProductById(productId), [findProductById, productId]);
 
@@ -272,11 +274,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             <div className="flex items-baseline gap-3 mb-6 min-h-[48px]">
                 {hasDiscount ? (
                     <>
-                        <p className="text-4xl font-bold text-primary">${displayDiscountPrice?.toFixed(2)}</p>
-                        <p className="text-2xl font-medium text-muted-foreground line-through">${displayPrice?.toFixed(2)}</p>
+                        <p className="text-4xl font-bold text-primary">{formatPrice(displayDiscountPrice!)}</p>
+                        <p className="text-2xl font-medium text-muted-foreground line-through">{formatPrice(displayPrice!)}</p>
                     </>
                 ) : (
-                    <p className="text-4xl font-bold text-primary">${displayPrice?.toFixed(2)}</p>
+                    <p className="text-4xl font-bold text-primary">{formatPrice(displayPrice!)}</p>
                 )}
             </div>
 

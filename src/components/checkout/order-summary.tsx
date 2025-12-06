@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { useTranslation } from '../language/language-provider';
 import { Badge } from '../ui/badge';
+import { useCurrency } from '../currency/currency-provider';
 
 export function OrderSummary() {
   const { cartItems, cartTotal, shippingTotal } = useCart();
   const { t, language } = useTranslation();
+  const { formatPrice } = useCurrency();
   const total = cartTotal + shippingTotal;
 
   return (
@@ -54,7 +56,7 @@ export function OrderSummary() {
                             )}
                         </div>
                     </div>
-                    <p className="font-medium">${(price * item.quantity).toFixed(2)}</p>
+                    <p className="font-medium">{formatPrice(price * item.quantity)}</p>
                 </div>
             )
           })}
@@ -65,11 +67,11 @@ export function OrderSummary() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-muted-foreground">
             <span {...t('subtotal')}>{t('subtotal').text}</span>
-            <span>${cartTotal.toFixed(2)}</span>
+            <span>{formatPrice(cartTotal)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span {...t('shipping')}>{t('shipping').text}</span>
-            <span>{shippingTotal > 0 ? `$${shippingTotal.toFixed(2)}` : 'Free'}</span>
+            <span>{shippingTotal > 0 ? formatPrice(shippingTotal) : 'Free'}</span>
           </div>
         </div>
 
@@ -77,7 +79,7 @@ export function OrderSummary() {
 
         <div className="flex justify-between font-bold text-lg">
           <span {...t('total')}>{t('total').text}</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatPrice(total)}</span>
         </div>
       </CardContent>
     </Card>

@@ -19,6 +19,7 @@ import initialAr from '@/locales/ar.json';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Currency } from '@/lib/types';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -27,6 +28,7 @@ const generalFormSchema = z.object({
   contactPhone: z.string().min(1, 'Contact phone is required.'),
   storeAddress: z.string().min(10, 'Store address is required.'),
   defaultThemeMode: z.enum(['light', 'dark']),
+  defaultCurrency: z.enum(['AED', 'MAD', 'USD', 'EUR']),
 });
 
 const contentFormSchema = z.object({
@@ -57,6 +59,13 @@ type ImageState = {
   previewUrl: string | null;
   isUploading: boolean;
 };
+
+const currencies: { code: Currency; name: string }[] = [
+  { code: 'AED', name: 'United Arab Emirates Dirham' },
+  { code: 'MAD', name: 'Moroccan Dirham' },
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+];
 
 // Properly defined standalone helper component
 const ImageUploader = ({ title, description, imageState, onFileChange }: { title: string; description: string; imageState: ImageState; onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }) => {
@@ -108,6 +117,7 @@ export default function AdminSettingsPage() {
     defaultValues: {
       ...initialSettings,
       defaultThemeMode: initialSettings.defaultThemeMode || 'light',
+      defaultCurrency: initialSettings.defaultCurrency || 'AED',
     },
   });
   
@@ -286,6 +296,31 @@ export default function AdminSettingsPage() {
                                                     </Select>
                                                     <FormDescription>
                                                         This is the default theme applied to visitors on first load.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                         <FormField
+                                            control={generalForm.control}
+                                            name="defaultCurrency"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Default Currency</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a default currency" />
+                                                        </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {currencies.map(c => (
+                                                                <SelectItem key={c.code} value={c.code}>{c.name} ({c.code})</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormDescription>
+                                                        This is the default currency displayed on the website.
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
