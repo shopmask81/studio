@@ -60,7 +60,7 @@ export function AdminSidebar() {
 
     const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
         e.preventDefault();
-        setOpen(false);
+        setOpen(false); // Close sidebar on mobile
         if (pathname !== href) {
             setIsNavigating(true);
             router.push(href);
