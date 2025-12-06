@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import Image from 'next/image';
+import { useCurrency } from '@/components/currency/currency-provider';
 
 const statusStyles: { [key: string]: string } = {
     pending: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
@@ -45,6 +46,7 @@ export function OrderTable({
   onSelectAll,
 }: OrderTableProps) {
   const allOnPageSelected = orders ? selectedOrderIds.length === orders.length && orders.length > 0 : false;
+  const { formatPrice } = useCurrency();
 
   if (isLoading) {
     return (
@@ -134,7 +136,7 @@ export function OrderTable({
                 <TableCell className="font-medium truncate">{order.name}</TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground truncate">{order.email}</TableCell>
                 <TableCell className="text-right font-medium">
-                  ${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}
+                  {formatPrice(order.total)}
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge variant="outline" className={cn("capitalize border text-xs", statusStyles[order.status])}>

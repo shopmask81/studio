@@ -9,7 +9,6 @@ import { collection, deleteDoc, doc, getDocs, writeBatch, setDoc } from 'firebas
 import { useTranslation } from '../language/language-provider';
 import { useProductCache } from '../products/product-cache-provider';
 import { useAuth } from '../auth/auth-provider';
-import { useCurrency } from '../currency/currency-provider';
 
 type AddToCartOptions = {
   color?: string | null;
@@ -60,7 +59,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const firestore = useFirestore();
   const { t } = useTranslation();
   const { findProductById, isLoading: isProductsLoading } = useProductCache();
-  const { convertPrice } = useCurrency();
   
   const getCartCollectionRef = useCallback((userId: string) => {
     if (!firestore) return null;
@@ -234,17 +232,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         } else if (item.product.discountPrice) {
             price = item.product.discountPrice;
         }
-        return total + convertPrice(price) * item.quantity;
+        return total + price * item.quantity;
     }, 0);
-  }, [cartItems, convertPrice]);
+  }, [cartItems]);
   
   const shippingTotal = useMemo(() => {
-    const totalShipping = cartItems.reduce((total, item) => {
+    return cartItems.reduce((total, item) => {
       const itemShipping = item.product.shippingPrice ?? 0;
       return total + itemShipping;
     }, 0);
-    return convertPrice(totalShipping);
-  }, [cartItems, convertPrice]);
+  }, [cartItems]);
 
 
   const itemCount = useMemo(() => {

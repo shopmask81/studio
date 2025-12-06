@@ -31,7 +31,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const { addToCart } = useCart();
   const { t, language } = useTranslation();
   const { findProductById, isLoading: isCacheLoading } = useProductCache();
-  const { formatPrice, convertPrice } = useCurrency();
+  const { formatPrice } = useCurrency();
   
   const product = useMemo(() => findProductById(productId), [findProductById, productId]);
 
@@ -278,7 +278,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                         <p className="text-2xl font-medium text-muted-foreground line-through">{formatPrice(displayPrice!)}</p>
                     </>
                 ) : (
-                    <p className="text-4xl font-bold text-primary">{formatPrice(displayPrice!)}</p>
+                   displayPrice !== undefined && <p className="text-4xl font-bold text-primary">{formatPrice(displayPrice)}</p>
                 )}
             </div>
 

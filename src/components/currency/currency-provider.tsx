@@ -1,57 +1,39 @@
-
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useCallback } from 'react';
 import type { Currency } from '@/lib/types';
 import siteSettings from '@/../appData/siteSettings.json';
 
-const CONVERSION_RATES: Record<Currency, number> = {
-  AED: 1, // Base currency
-  USD: 3.67,
-  MAD: 10,
-  EUR: 0.92,
-};
-
 type CurrencyContextType = {
   currency: Currency;
-  convertPrice: (priceInAed: number) => number;
   formatPrice: (price: number) => string;
 };
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  // The currency is now globally determined by the site settings.
-  // There is no client-side state to manage it anymore.
+  // The currency is globally determined by the site settings.
   const currency = useMemo(() => siteSettings.defaultCurrency as Currency || 'AED', []);
 
-  const convertPrice = useCallback((priceInAed: number): number => {
-    const rate = CONVERSION_RATES[currency];
-    // Since AED is the base, we need to divide to get the target currency value.
-    return priceInAed / rate;
-  }, [currency]);
-  
+  // This function now ONLY formats the price with the correct symbol, without any conversion.
   const formatPrice = useCallback((price: number): string => {
-    const convertedPrice = convertPrice(price);
-    
     switch (currency) {
       case 'USD':
-        return `$${convertedPrice.toFixed(2)}`;
+        return `$${price.toFixed(2)}`;
       case 'EUR':
-        return `€${convertedPrice.toFixed(2)}`;
+        return `€${price.toFixed(2)}`;
       case 'AED':
-        return `AED ${convertedPrice.toFixed(2)}`;
+        return `AED ${price.toFixed(2)}`;
       case 'MAD':
-        return `MAD ${convertedPrice.toFixed(2)}`;
+        return `MAD ${price.toFixed(2)}`;
       default:
-        return `${convertedPrice.toFixed(2)} ${currency}`;
+        // Fallback for any other currency codes
+        return `${price.toFixed(2)} ${currency}`;
     }
-  }, [currency, convertPrice]);
-
+  }, [currency]);
 
   const value = {
     currency,
-    convertPrice,
     formatPrice,
   };
 

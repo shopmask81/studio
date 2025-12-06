@@ -26,7 +26,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
-  const { formatPrice, convertPrice } = useCurrency();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     // Reset loading state if the path changes (navigation completes)

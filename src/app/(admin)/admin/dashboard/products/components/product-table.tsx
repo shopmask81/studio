@@ -41,11 +41,13 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { updateProductCache } from '../cache-service';
+import { useCurrency } from '@/components/currency/currency-provider';
 
 export function ProductTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { formatPrice } = useCurrency();
 
   const cachedProductsRef = useMemo(() => {
     if (!firestore) return null;
@@ -141,7 +143,7 @@ export function ProductTable() {
               </TableCell>
               <TableCell>{product.category}</TableCell>
               <TableCell className="hidden md:table-cell">
-                ${product.price ? product.price.toFixed(2) : 'N/A'}
+                {product.price ? formatPrice(product.price) : 'N/A'}
               </TableCell>
               <TableCell className="hidden md:table-cell">{product.stock}</TableCell>
               <TableCell>
