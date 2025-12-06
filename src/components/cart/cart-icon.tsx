@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingBag, Loader2 } from 'lucide-react';
 import { useCart } from '@/components/cart/cart-provider';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,27 @@ import { Button } from '@/components/ui/button';
 export function CartIcon() {
   const { itemCount } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    router.push('/cart');
+    // Prevent default only if we are not already on the cart page
+    if (pathname !== '/cart') {
+      e.preventDefault();
+      setIsLoading(true);
+      router.push('/cart');
+    }
+    // If we are already on the cart page, let the link do a normal refresh.
   };
+  
+  // Effect to turn off loading state when navigation completes
+  useEffect(() => {
+    if (isLoading) {
+      setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
 
   return (
     <Button 
