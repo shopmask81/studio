@@ -13,7 +13,7 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undef
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'dark',
+  defaultTheme = 'light',
   storageKey = 'vite-ui-theme',
 }: {
   children: ReactNode;
@@ -21,8 +21,13 @@ export function ThemeProvider({
   storageKey?: string;
 }) {
   const [theme, setTheme] = useState<Theme>(() => {
+    // This function runs only on the client, once, to determine the initial state.
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+      const storedTheme = localStorage.getItem(storageKey) as Theme | null;
+      // If a user has manually set a theme, respect it. Otherwise, use the default from props.
+      if (storedTheme && (storedTheme === 'light' || storedTheme === 'dark')) {
+        return storedTheme;
+      }
     }
     return defaultTheme;
   });
