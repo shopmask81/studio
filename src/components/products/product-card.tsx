@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Loader2 } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/components/cart/cart-provider';
 import { useTranslation } from '../language/language-provider';
 import { useModal } from '../modals/modal-provider';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface ProductCardProps {
   product: Product;
@@ -20,7 +22,21 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { showModal } = useModal();
   const { t, language } = useTranslation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isNavigating, setIsNavigating] = useState(false);
 
+  useEffect(() => {
+    // Reset loading state if the path changes (navigation completes)
+    setIsNavigating(false);
+  }, [pathname]);
+
+  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setIsNavigating(true);
+    router.push(`/products/${product.id}`);
+  };
+  
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -64,7 +80,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const hasVariants = product.variantsEnabled && product.variants && product.variants.length > 0;
 
   return (
-    <Link href={`/products/${product.id}`} className="group block">
+    <Link href={`/products/${product.id}`} onClick={handleCardClick} className="group block relative">
+      {isNavigating && (
+        <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-20 rounded-lg">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      )}
         <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5">
             <CardHeader className="p-0">
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
