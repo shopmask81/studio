@@ -48,7 +48,7 @@ export function AdminSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, isLoading } = useAuth();
-    const { setOpen } = useSidebar();
+    const { setOpen, setOpenMobile } = useSidebar();
     const [isNavigating, setIsNavigating] = useState(false);
 
     useEffect(() => {
@@ -60,7 +60,7 @@ export function AdminSidebar() {
 
     const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
         e.preventDefault();
-        setOpen(false); // Close sidebar on mobile
+        setOpenMobile(false); // Close sidebar on mobile
         if (pathname !== href) {
             setIsNavigating(true);
             router.push(href);
