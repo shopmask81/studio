@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import { useCart } from './cart-provider';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -18,8 +18,10 @@ function CartDisplay() {
     const router = useRouter();
     const { toast } = useToast();
     const { t, language } = useTranslation();
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     const handleCheckout = () => {
+        setIsCheckingOut(true);
         router.push('/checkout');
     };
 
@@ -144,7 +146,10 @@ function CartDisplay() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                         <Button className="w-full" onClick={handleCheckout}>{t('proceed_to_checkout').text}</Button>
+                         <Button className="w-full" onClick={handleCheckout} disabled={isCheckingOut}>
+                            {isCheckingOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t('proceed_to_checkout').text}
+                         </Button>
                     </CardFooter>
                 </Card>
             </div>
