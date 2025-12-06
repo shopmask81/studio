@@ -50,7 +50,7 @@ export function AdminSidebar() {
     return (
         <Sidebar>
             <SidebarHeader>
-                 <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
+                 <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold" onClick={() => setOpen(false)}>
                     {siteSettings.logoUrl ? (
                         <Image src={siteSettings.logoUrl} alt={siteSettings.siteName} width={24} height={24} className="h-6 w-auto" />
                     ) : (
@@ -92,7 +92,7 @@ export function AdminSidebar() {
                                 isActive={pathname === item.href}
                                 tooltip={{children: item.label}}
                                 >
-                                <Link href={item.href}>
+                                <Link href={item.href} onClick={() => setOpen(false)}>
                                     <item.icon />
                                     <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </Link>
@@ -112,7 +112,7 @@ export function AdminSidebar() {
                             isActive={pathname === settingsNavItem.href}
                             tooltip={{ children: settingsNavItem.label }}
                         >
-                            <Link href={settingsNavItem.href}>
+                            <Link href={settingsNavItem.href} onClick={() => setOpen(false)}>
                                 <settingsNavItem.icon />
                                 <span className="group-data-[collapsible=icon]:hidden">{settingsNavItem.label}</span>
                             </Link>
