@@ -30,9 +30,9 @@ interface BannerTableProps {
   banners: Banner[];
   onEdit: (banner: Banner) => void;
   onDelete: (banner: Banner) => void;
-  onStatusChange: (banner: Banner, active: boolean) => void;
+  onStatusChange: (banner: Banner, active: boolean) => Promise<void>;
   onOrderChange: (banners: Banner[]) => void;
-  isUpdating: boolean;
+  isUpdatingOrder: boolean;
 }
 
 function DndBannerTable({
@@ -41,8 +41,10 @@ function DndBannerTable({
     onDelete,
     onStatusChange,
     onOrderChange,
-    isUpdating
-}: BannerTableProps) {
+    isUpdatingOrder
+}: Omit<BannerTableProps, 'isUpdating'> & { isUpdatingOrder: boolean }) {
+    const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
         const items = Array.from(banners);
@@ -51,9 +53,18 @@ function DndBannerTable({
         onOrderChange(items);
     };
 
+    const handleStatusChange = async (banner: Banner, active: boolean) => {
+        setUpdatingStatusId(banner.id);
+        try {
+            await onStatusChange(banner, active);
+        } finally {
+            setUpdatingStatusId(null);
+        }
+    }
+
     return (
         <div className="border rounded-lg overflow-hidden relative">
-            {isUpdating && (
+            {isUpdatingOrder && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
@@ -97,11 +108,15 @@ function DndBannerTable({
                                                 {banner.cta && <Badge variant="secondary" className="ml-2">{banner.cta}</Badge>}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <Switch
-                                                    checked={banner.active}
-                                                    onCheckedChange={(checked) => onStatusChange(banner, checked)}
-                                                    aria-label="Toggle banner status"
-                                                />
+                                                {updatingStatusId === banner.id ? (
+                                                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                                                ) : (
+                                                    <Switch
+                                                        checked={banner.active}
+                                                        onCheckedChange={(checked) => handleStatusChange(banner, checked)}
+                                                        aria-label="Toggle banner status"
+                                                    />
+                                                )}
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell">
                                                 {banner.createdAt ? format(banner.createdAt.toDate(), 'PPP') : 'N/A'}
@@ -139,7 +154,7 @@ function DndBannerTable({
     )
 }
 
-export function BannerTable(props: BannerTableProps) {
+export function BannerTable(props: Omit<BannerTableProps, 'isUpdating'>) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -158,7 +173,7 @@ export function BannerTable(props: BannerTableProps) {
   // Render the drag-and-drop table only on the client side.
   // This helps prevent hydration errors with libraries like react-beautiful-dnd.
   if (isClient) {
-    return <DndBannerTable {...props} />;
+    return <DndBannerTable {...props} isUpdatingOrder={props.isUpdating} />;
   }
 
   // Fallback for SSR: a non-interactive table.

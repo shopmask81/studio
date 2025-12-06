@@ -43,7 +43,7 @@ export default function AdminBannersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [isCaching, setIsCaching] = useState(false);
 
   const fetchBanners = async () => {
@@ -128,29 +128,26 @@ export default function AdminBannersPage() {
   
   const handleStatusChange = async (banner: Banner, active: boolean) => {
     if (!firestore) return;
-    setIsUpdating(true);
     try {
         await updateBanner(firestore, banner.id, { active });
         // Optimistically update UI
         setBanners(prev => prev.map(b => b.id === banner.id ? { ...b, active } : b));
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
-    } finally {
-        setIsUpdating(false);
     }
   };
 
   const handleOrderChange = async (reorderedBanners: Banner[]) => {
     if (!firestore) return;
     setBanners(reorderedBanners); // Optimistically update UI
-    setIsUpdating(true);
+    setIsUpdatingOrder(true);
     try {
         await updateBannerOrder(firestore, reorderedBanners);
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Order Update Failed', description: error.message });
         fetchBanners(); // Revert on failure
     } finally {
-        setIsUpdating(false);
+        setIsUpdatingOrder(false);
     }
   }
 
@@ -197,7 +194,7 @@ export default function AdminBannersPage() {
           onDelete={handleOpenDeleteDialog}
           onStatusChange={handleStatusChange}
           onOrderChange={handleOrderChange}
-          isUpdating={isUpdating}
+          isUpdating={isUpdatingOrder}
         />
       )}
 
