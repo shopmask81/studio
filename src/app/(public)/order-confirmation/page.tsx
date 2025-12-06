@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CheckCircle, UserCheck, Package, Truck } from 'lucide-react';
+import { CheckCircle, UserCheck, Package, Truck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -11,6 +11,12 @@ import { useTranslation } from '@/components/language/language-provider';
 
 export default function OrderConfirmationPage() {
   const { language } = useTranslation();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    // This effect runs only on the client side after the component mounts
+    setIsClient(true);
+  }, []);
 
   const t = {
     en: {
@@ -45,6 +51,16 @@ export default function OrderConfirmationPage() {
     <Package key={2} className="h-8 w-8 text-primary" />,
     <Truck key={3} className="h-8 w-8 text-primary" />
   ];
+  
+  // Before client-side hydration is complete, show a loader
+  if (!isClient) {
+    return (
+      <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-15rem)]">
