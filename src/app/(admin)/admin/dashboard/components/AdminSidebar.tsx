@@ -2,6 +2,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
     LayoutDashboard, 
@@ -27,6 +28,7 @@ import {
 import { useAuth } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import siteSettings from "@/../appData/siteSettings.json";
 
 const sidebarNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,8 +51,12 @@ export function AdminSidebar() {
         <Sidebar>
             <SidebarHeader>
                  <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-                    <Theater className="h-6 w-6 text-primary" />
-                    <span className="duration-200 group-data-[collapsible=icon]:opacity-0">MaskShop Admin</span>
+                    {siteSettings.logoUrl ? (
+                        <Image src={siteSettings.logoUrl} alt={siteSettings.siteName} width={24} height={24} className="h-6 w-auto" />
+                    ) : (
+                        <Theater className="h-6 w-6 text-primary" />
+                    )}
+                    <span className="duration-200 group-data-[collapsible=icon]:opacity-0">{siteSettings.siteName} Admin</span>
                 </Link>
                 <button 
                     onClick={() => setOpen(false)}
