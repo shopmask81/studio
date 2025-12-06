@@ -51,21 +51,9 @@ export function UserNav() {
     return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
+  // If the user is not logged in, render nothing.
   if (!user) {
-    return (
-        <Button 
-            asChild 
-            variant="ghost" 
-            size="icon" 
-            className="group transition-all duration-300 ease-in-out"
-            aria-label={t('login').text}
-        >
-            <Link href="/login">
-                <User className="h-5 w-5 text-foreground/80 group-hover:text-primary transition-colors duration-300" />
-                <span className="sr-only">{t('login').text}</span>
-            </Link>
-        </Button>
-    );
+    return null;
   }
 
   const isAffiliate = userProfile?.role === 'affiliate';
