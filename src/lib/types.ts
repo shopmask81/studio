@@ -141,4 +141,5 @@ export type SiteSettings = {
   contactEmail: string;
   contactPhone: string;
   storeAddress: string;
+  defaultThemeMode: 'light' | 'dark';
 };

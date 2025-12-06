@@ -18,6 +18,7 @@ import initialEn from '@/locales/en.json';
 import initialAr from '@/locales/ar.json';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -25,6 +26,7 @@ const generalFormSchema = z.object({
   contactEmail: z.string().email('Invalid email address.'),
   contactPhone: z.string().min(1, 'Contact phone is required.'),
   storeAddress: z.string().min(10, 'Store address is required.'),
+  defaultThemeMode: z.enum(['light', 'dark']),
 });
 
 const contentFormSchema = z.object({
@@ -103,7 +105,10 @@ export default function AdminSettingsPage() {
 
   const generalForm = useForm<GeneralFormValues>({
     resolver: zodResolver(generalFormSchema),
-    defaultValues: initialSettings,
+    defaultValues: {
+      ...initialSettings,
+      defaultThemeMode: initialSettings.defaultThemeMode || 'light',
+    },
   });
   
   const contentForm = useForm<ContentFormValues>({
@@ -262,6 +267,30 @@ export default function AdminSettingsPage() {
                                         <FormField control={generalForm.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={generalForm.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Contact Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={generalForm.control} name="storeAddress" render={({ field }) => (<FormItem><FormLabel>Store Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField
+                                            control={generalForm.control}
+                                            name="defaultThemeMode"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Default Theme Mode</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a default theme" />
+                                                        </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="light">Light</SelectItem>
+                                                            <SelectItem value="dark">Dark</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormDescription>
+                                                        This is the default theme applied to visitors on first load.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
                                     <div className="space-y-6">
                                         <ImageUploader title="Site Logo" description="Recommended: PNG or SVG, 256x256px." imageState={logo} onFileChange={(e) => handleFileChange(e, setLogo)} />

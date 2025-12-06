@@ -19,10 +19,21 @@ const ThemeInitializer = () => (
       __html: `
         (function() {
           const themeStorageKey = 'maskshop-theme';
-          const theme = localStorage.getItem(themeStorageKey);
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const mode = theme === 'light' || theme === 'dark' ? theme : (prefersDark ? 'dark' : 'light');
-          document.documentElement.classList.add(mode);
+          const defaultThemeFromServer = "${siteSettings.defaultThemeMode || 'light'}";
+          const themeFromLocalStorage = localStorage.getItem(themeStorageKey);
+          
+          let mode;
+          if (themeFromLocalStorage === 'light' || themeFromLocalStorage === 'dark') {
+            // 1. User's manually selected theme takes highest priority
+            mode = themeFromLocalStorage;
+          } else {
+            // 2. If no manual override, use the admin-defined default
+            mode = defaultThemeFromServer;
+          }
+          
+          const root = document.documentElement;
+          root.classList.remove('light', 'dark'); // Clear any previous class
+          root.classList.add(mode);
         })();
       `,
     }}
