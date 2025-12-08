@@ -101,22 +101,24 @@ export function ProductCard({ product }: ProductCardProps) {
                 />
                 </div>
             </CardHeader>
-            <CardContent className="p-4 flex-grow">
-                <CardTitle className="font-headline text-2xl mb-2 group-hover:text-primary transition-colors" dir={dir} style={style}>{displayName}</CardTitle>
+            <CardContent className="p-3 md:p-4 flex-grow">
+                <CardTitle className="font-headline text-xl md:text-2xl mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]" dir={dir} style={style}>
+                    {displayName}
+                </CardTitle>
             </CardContent>
-            <CardFooter className="p-4 flex justify-between items-center mt-auto">
+            <CardFooter className="p-3 md:p-4 flex flex-col items-start gap-3 mt-auto">
                 <div className="flex items-baseline gap-2">
-                    {isFromPrice && <span className="text-sm text-muted-foreground mr-1">From</span>}
+                    {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
-                            <p className="text-sm font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
+                            <p className="text-lg md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                            <p className="text-xs md:text-sm font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
                         </>
                     ) : (
-                        <p className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                        <p className="text-lg md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
                     )}
                 </div>
-                 <Button onClick={handleAddToCart} className="font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
+                 <Button onClick={handleAddToCart} className="w-full h-9 text-xs md:h-10 md:text-sm font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
                     <ShoppingCart className="h-4 w-4 me-2" />
                     {hasVariants ? 'Select Options' : t('add_to_cart').text}
                 </Button>
