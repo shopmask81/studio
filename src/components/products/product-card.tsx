@@ -107,7 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 </CardTitle>
             </CardContent>
             <CardFooter className="p-3 md:p-4 flex flex-col items-start gap-3 mt-auto">
-                <div className="flex items-baseline gap-2 flex-nowrap whitespace-nowrap">
+                <div className="flex items-baseline gap-2 flex-wrap">
                     {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
@@ -127,4 +127,3 @@ export function ProductCard({ product }: ProductCardProps) {
     </Link>
   );
 }
-
