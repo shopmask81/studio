@@ -111,11 +111,11 @@ export function ProductCard({ product }: ProductCardProps) {
                     {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-lg md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                            <p className="text-base md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
                             <p className="text-xs md:text-sm font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
                         </>
                     ) : (
-                        <p className="text-lg md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                        <p className="text-base md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
                     )}
                 </div>
                  <Button onClick={handleAddToCart} className="w-full h-9 text-xs md:h-10 md:text-sm font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
