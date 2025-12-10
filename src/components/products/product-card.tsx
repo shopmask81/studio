@@ -107,15 +107,15 @@ export function ProductCard({ product }: ProductCardProps) {
                 </CardTitle>
             </CardContent>
             <CardFooter className="p-3 md:p-4 flex flex-col items-start gap-3 mt-auto">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 flex-nowrap whitespace-nowrap">
                     {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
                     {hasDiscount ? (
                         <>
-                            <p className="text-base md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
-                            <p className="text-xs md:text-sm font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
+                            <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
+                            <p className="text-sm md:text-base font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
                         </>
                     ) : (
-                        <p className="text-base md:text-xl font-bold text-primary">{formatPrice(displayPrice)}</p>
+                        <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
                     )}
                 </div>
                  <Button onClick={handleAddToCart} className="w-full h-9 text-xs md:h-10 md:text-sm font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
@@ -127,3 +127,4 @@ export function ProductCard({ product }: ProductCardProps) {
     </Link>
   );
 }
+
