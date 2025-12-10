@@ -11,6 +11,7 @@ import type { Order, Product } from '@/lib/types';
 import { useFirestore } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { useCurrency } from '@/components/currency/currency-provider';
 
 interface OrderPDFGeneratorProps {
   orders: Order[];
@@ -57,6 +58,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
   const [progressMessage, setProgressMessage] = useState('');
   const firestore = useFirestore();
   const [productImages, setProductImages] = useState<ProductImageMap>({});
+  const { formatPrice } = useCurrency();
   
   const preloadAllImages = useCallback(async (ordersToExport: Order[]): Promise<ProductImageMap> => {
       if (!firestore) return {};
@@ -225,7 +227,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
             currently being processed for PDF generation. */}
         <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
           {orders.map((order, index) => (
-            <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} />
+            <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} formatPrice={formatPrice} />
           ))}
         </div>
       </>
@@ -241,7 +243,7 @@ const shorten = (text: string, words = 5) => {
     return splitText.slice(0, words).join(' ') + (splitText.length > words ? '...' : '');
 }
 
-function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, orderNumber: number, productImages: ProductImageMap }) {
+function PdfCardTemplate({ order, orderNumber, productImages, formatPrice }: { order: Order, orderNumber: number, productImages: ProductImageMap, formatPrice: (price: number) => string }) {
     const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
     // The 'order' object passed here has `createdAt` as a JS Date object from the useMemo in AdminOrdersPage.
@@ -271,7 +273,7 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                         <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0, color: '#2F3E46' }}>Order: #{orderNumber}</h3>
                          <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 'bold' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Customer:</span> {order.name}</p>
                     </div>
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: ${typeof order.total === 'number' ? order.total.toFixed(2) : '0.00'}</p>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, color: '#2F3E46' }}>Total: {formatPrice(order.total)}</p>
                 </div>
                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', fontWeight: 'bold' }}>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
@@ -311,7 +313,7 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
                             )}
                         </div>
                         <p style={{ fontSize: '12px', color: '#4F5B62', margin: 0 }}><span style={{fontSize: '14px', fontWeight: 'bold'}}>QTY:</span> <span style={{fontWeight: 'bold'}}>{item.quantity}</span></p>
-                        <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0, minWidth: '55px', textAlign: 'right', color: '#3A464B' }}>{formatPrice(item.price * item.quantity)}</p>
                     </div>
                 ))}
             </div>
@@ -323,4 +325,5 @@ function PdfCardTemplate({ order, orderNumber, productImages }: { order: Order, 
 
 
     
+
 
