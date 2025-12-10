@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useMemo, useCallback } from 'react';
@@ -19,13 +20,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const formatPrice = useCallback((price: number): string => {
     switch (currency) {
       case 'USD':
-        return `$${price.toFixed(2)}`;
+        return `${price.toFixed(2)} $`;
       case 'EUR':
-        return `€${price.toFixed(2)}`;
+        return `${price.toFixed(2)} €`;
       case 'AED':
-        return `AED ${price.toFixed(2)}`;
+        return `${price.toFixed(2)} AED`;
       case 'MAD':
-        return `MAD ${price.toFixed(2)}`;
+        return `${price.toFixed(2)} MAD`;
       default:
         // Fallback for any other currency codes
         return `${price.toFixed(2)} ${currency}`;
