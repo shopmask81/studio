@@ -5,11 +5,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/admin/:path*',
+        source: '/:path*',
         headers: [
           {
             key: 'X-Robots-Tag',
             value: 'noindex, nofollow',
+          },
+        ],
+        has: [
+          {
+            type: 'route',
+            key: 'path',
+            value: '(?<path>/admin/.*|/account/.*|/login|/signup|/cart|/checkout|/order-confirmation)',
           },
         ],
       },
