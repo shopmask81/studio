@@ -16,14 +16,15 @@ import type { Banner } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getAllBanners } from '@/firebase/queries/getBanners';
+import siteSettings from '@/../appData/siteSettings.json';
 
 type BannerData = Partial<Omit<Banner, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'imageUrl' | 'deleteUrl' | 'active'>>
 
 // This is a simplified upload function. In a real app, you'd use Firebase Storage.
 async function uploadImage(imageFile: File): Promise<{ url: string, delete_url: string }> {
-  const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
+  const apiKey = siteSettings.imgbbApiKey;
   if (!apiKey) {
-    throw new Error('ImgBB API key is not configured.');
+    throw new Error('ImgBB API key is not configured in site settings.');
   }
 
   const formData = new FormData();

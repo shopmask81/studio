@@ -150,4 +150,5 @@ export type SiteSettings = {
     paypal: boolean;
     cod: boolean;
   };
+  imgbbApiKey: string;
 };

@@ -7,10 +7,11 @@
   "logoUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
   "faviconUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
   "defaultThemeMode": "light",
-  "defaultCurrency": "MAD",
+  "defaultCurrency": "USD",
   "payments": {
     "creditCard": false,
     "paypal": false,
     "cod": true
-  }
+  },
+  "imgbbApiKey": "518d3cdcaedf3c5ade143a41de38c554"
 }

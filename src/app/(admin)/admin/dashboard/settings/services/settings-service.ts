@@ -1,8 +1,7 @@
 
 import type { SiteSettings } from '@/lib/types';
 
-export async function uploadImage(imageFile: File): Promise<{ url: string; delete_url: string }> {
-  const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY || '518d3cdcaedf3c5ade143a41de38c554';
+export async function uploadImage(imageFile: File, apiKey: string): Promise<{ url: string; delete_url: string }> {
   if (!apiKey) {
     throw new Error('ImgBB API key is not configured.');
   }
@@ -48,5 +47,3 @@ export async function saveSettings(settings: SettingsPayload): Promise<void> {
     throw new Error(errorData.error || 'Failed to save settings.');
   }
 }
-
-    

@@ -35,6 +35,7 @@ const generalFormSchema = z.object({
     paypal: z.boolean().default(false),
     cod: z.boolean().default(true),
   }),
+  imgbbApiKey: z.string().min(1, 'ImgBB API key is required.'),
 });
 
 const contentFormSchema = z.object({
@@ -51,7 +52,7 @@ const contentFormSchema = z.object({
     terms_en: z.string().min(1, "English content is required."),
     terms_ar: z.string().min(1, "Arabic content is required."),
     privacy_policy_title: z.string().min(1, "English title is required."),
-    privacy_policy_title_ar: z.string().min(1, "Arabic title is required."),
+    privacy_policy_title_ar: zstring().min(1, "Arabic title is required."),
     privacy_policy_content: z.string().min(1, "English content is required."),
     privacy_policy_content_ar: z.string().min(1, "Arabic content is required."),
 });
@@ -125,6 +126,7 @@ export default function AdminSettingsPage() {
       defaultThemeMode: initialSettings.defaultThemeMode || 'light',
       defaultCurrency: initialSettings.defaultCurrency || 'AED',
       payments: initialSettings.payments || { creditCard: false, paypal: false, cod: true },
+      imgbbApiKey: initialSettings.imgbbApiKey || '',
     },
   });
   
@@ -166,12 +168,13 @@ export default function AdminSettingsPage() {
 
   const handleUpload = async (
     imageState: ImageState,
-    setter: React.Dispatch<React.SetStateAction<ImageState>>
+    setter: React.Dispatch<React.SetStateAction<ImageState>>,
+    apiKey: string
   ) => {
     if (!imageState.file) return null;
     setter(prev => ({ ...prev, isUploading: true }));
     try {
-      const { url } = await uploadImage(imageState.file);
+      const { url } = await uploadImage(imageState.file, apiKey);
       setter(prev => ({ ...prev, previewUrl: url, file: null, isUploading: false }));
       toast({ title: 'Image Uploaded', description: 'The image has been successfully uploaded.' });
       return url;
@@ -198,24 +201,24 @@ export default function AdminSettingsPage() {
         return;
     }
 
+    const generalData = generalForm.getValues();
     let finalLogoUrl = logo.previewUrl;
     let finalFaviconUrl = favicon.previewUrl;
 
     try {
-      // Handle image uploads first
+      // Handle image uploads first, using the newly entered API key
       if (logo.file) {
-        const uploadedUrl = await handleUpload(logo, setLogo);
+        const uploadedUrl = await handleUpload(logo, setLogo, generalData.imgbbApiKey);
         if (uploadedUrl) finalLogoUrl = uploadedUrl;
         else throw new Error("Logo upload failed.");
       }
 
       if (favicon.file) {
-        const uploadedUrl = await handleUpload(favicon, setFavicon);
+        const uploadedUrl = await handleUpload(favicon, setFavicon, generalData.imgbbApiKey);
         if (uploadedUrl) finalFaviconUrl = uploadedUrl;
         else throw new Error("Favicon upload failed.");
       }
 
-      const generalData = generalForm.getValues();
       const contentData = contentForm.getValues();
 
       const finalSettings = {
@@ -337,6 +340,7 @@ export default function AdminSettingsPage() {
                                     <div className="space-y-6">
                                         <ImageUploader title="Site Logo" description="Recommended: PNG or SVG, 256x256px." imageState={logo} onFileChange={(e) => handleFileChange(e, setLogo)} />
                                         <ImageUploader title="Favicon" description="Recommended: .ico or PNG, 32x32px or 16x16px." imageState={favicon} onFileChange={(e) => handleFileChange(e, setFavicon)} />
+                                        <FormField control={generalForm.control} name="imgbbApiKey" render={({ field }) => (<FormItem><FormLabel>Image Upload API Key (imgbb)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
                                 </div>
                             </form>

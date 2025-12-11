@@ -34,7 +34,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Category, VariantDetail } from '@/lib/types';
-import { Loader2, Upload, X, Trash2, PlusCircle, HelpCircle } from 'lucide-react';
+import { Loader2, Upload, X, Trash2, PlusCircle, HelpCircle, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -49,6 +49,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import siteSettings from '@/../appData/siteSettings.json';
 
 type UploadedImage = {
   id: string;
@@ -108,7 +110,10 @@ type VariantOption = { id: string; value: string };
 
 
 async function uploadToImgBB(file: File): Promise<Omit<UploadedImage, 'id'>> {
-    const apiKey = '518d3cdcaedf3c5ade143a41de38c554';
+    const apiKey = siteSettings.imgbbApiKey;
+    if (!apiKey) {
+      throw new Error('ImgBB API key is not configured in site settings.');
+    }
     const formData = new FormData();
     formData.append('image', file);
 
@@ -634,6 +639,14 @@ export function ProductForm({ productToEdit, onSubmit, isSubmitting }: ProductFo
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div>
+                         {!siteSettings.imgbbApiKey && (
+                            <Alert variant="destructive" className="mb-4">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription>
+                                    Image upload may fail — ImgBB API key is not configured in settings.
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <label 
                             className="flex flex-col items-center justify-center w-full min-h-[150px] border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors"
                             onDragOver={(e) => e.preventDefault()}
