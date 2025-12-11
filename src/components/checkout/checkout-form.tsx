@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
 import { useAuth } from '../auth/auth-provider';
+import siteSettings from '@/../appData/siteSettings.json';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -59,6 +60,7 @@ export function CheckoutForm() {
     const { cartItems, cartTotal, shippingTotal, clearCart } = useCart();
     const { t } = useTranslation();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const paymentSettings = siteSettings.payments;
     
     const addressesRef = useMemoFirebase(() => {
         if (!user || !firestore) return null;
@@ -78,7 +80,7 @@ export function CheckoutForm() {
             city: '',
             postalCode: '',
             country: '',
-            paymentMethod: 'card',
+            paymentMethod: 'cod',
             cardNumber: '',
             expiryDate: '',
             cvv: '',
@@ -294,27 +296,33 @@ export function CheckoutForm() {
                                             defaultValue={field.value}
                                             className="flex flex-col space-y-1"
                                         >
-                                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 transition-colors data-[state=checked]:border-primary">
-                                                <FormControl><RadioGroupItem value="card" /></FormControl>
-                                                <FormLabel className="font-normal flex-grow" {...t('credit_debit_card')}>{t('credit_debit_card').text}</FormLabel>
-                                                <CreditCard className="h-5 w-5 text-muted-foreground" />
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 data-[state=checked]:border-primary">
-                                                <FormControl><RadioGroupItem value="paypal" /></FormControl>
-                                                <FormLabel className="font-normal flex-grow" {...t('paypal')}>{t('paypal').text}</FormLabel>
-                                                <svg role="img" viewBox="0 0 24 24" className="h-5 w-5 text-muted-foreground fill-current"><path d="M7.483 5.343c.271-1.556 1.55-2.736 3.018-2.736h5.22c3.214 0 4.735 2.015 4.194 5.093-.33 1.884-1.485 2.935-2.924 2.935h-2.936c-.846 0-1.513.25-1.748.91-.252.697.16 1.253.903 1.253h.646c.396 0 .713.21.84.552l.216.924c.126.54.51 1.038.996 1.038h.493c1.233 0 2.228.937 2.228 2.126 0 1.254-1.07 2.26-2.39 2.26h-4.32c-3.15 0-4.665-1.99-4.13-5.013.31-1.77 1.48-2.858 2.87-2.858h2.93c.84 0 1.524-.26 1.76-.93.252-.71-.16-1.284-.91-1.284h-.54c-.42 0-.75-.22-.88-.58l-.21-.92c-.12-.53-.51-1.01-1.002-1.01H9.42c-1.26 0-2.22-.93-2.22-2.12 0-1.14.83-2.07 1.95-2.14.12-.01.21-.01.29-.01z"/></svg>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 data-[state=checked]:border-primary">
-                                                <FormControl><RadioGroupItem value="cod" /></FormControl>
-                                                <FormLabel className="font-normal flex-grow" {...t('cash_on_delivery')}>{t('cash_on_delivery').text}</FormLabel>
-                                            </FormItem>
+                                            {paymentSettings.creditCard && (
+                                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 transition-colors data-[state=checked]:border-primary">
+                                                    <FormControl><RadioGroupItem value="card" /></FormControl>
+                                                    <FormLabel className="font-normal flex-grow" {...t('credit_debit_card')}>{t('credit_debit_card').text}</FormLabel>
+                                                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                                                </FormItem>
+                                            )}
+                                            {paymentSettings.paypal && (
+                                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 data-[state=checked]:border-primary">
+                                                    <FormControl><RadioGroupItem value="paypal" /></FormControl>
+                                                    <FormLabel className="font-normal flex-grow" {...t('paypal')}>{t('paypal').text}</FormLabel>
+                                                    <svg role="img" viewBox="0 0 24 24" className="h-5 w-5 text-muted-foreground fill-current"><path d="M7.483 5.343c.271-1.556 1.55-2.736 3.018-2.736h5.22c3.214 0 4.735 2.015 4.194 5.093-.33 1.884-1.485 2.935-2.924 2.935h-2.936c-.846 0-1.513.25-1.748.91-.252.697.16 1.253.903 1.253h.646c.396 0 .713.21.84.552l.216.924c.126.54.51 1.038.996 1.038h.493c1.233 0 2.228.937 2.228 2.126 0 1.254-1.07 2.26-2.39 2.26h-4.32c-3.15 0-4.665-1.99-4.13-5.013.31-1.77 1.48-2.858 2.87-2.858h2.93c.84 0 1.524-.26 1.76-.93.252-.71-.16-1.284-.91-1.284h-.54c-.42 0-.75-.22-.88-.58l-.21-.92c-.12-.53-.51-1.01-1.002-1.01H9.42c-1.26 0-2.22-.93-2.22-2.12 0-1.14.83-2.07 1.95-2.14.12-.01.21-.01.29-.01z"/></svg>
+                                                </FormItem>
+                                            )}
+                                            {paymentSettings.cod && (
+                                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4 data-[state=checked]:border-primary">
+                                                    <FormControl><RadioGroupItem value="cod" /></FormControl>
+                                                    <FormLabel className="font-normal flex-grow" {...t('cash_on_delivery')}>{t('cash_on_delivery').text}</FormLabel>
+                                                </FormItem>
+                                            )}
                                         </RadioGroup>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
                                 />
-                                {paymentMethod === 'card' && (
+                                {paymentMethod === 'card' && paymentSettings.creditCard && (
                                     <div className="space-y-4 pt-4 border-t mt-4">
                                         <FormField control={form.control} name="cardNumber" render={({ field }) => (
                                             <FormItem><FormLabel {...t('card_number')}>{t('card_number').text}</FormLabel><FormControl><Input placeholder="1111 2222 3333 4444" {...field} /></FormControl><FormMessage /></FormItem>

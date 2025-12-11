@@ -145,4 +145,9 @@ export type SiteSettings = {
   storeAddress: string;
   defaultThemeMode: 'light' | 'dark';
   defaultCurrency: Currency;
+  payments: {
+    creditCard: boolean;
+    paypal: boolean;
+    cod: boolean;
+  };
 };

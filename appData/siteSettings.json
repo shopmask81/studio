@@ -6,6 +6,11 @@
   "storeAddress": "123 Artisan Alley, Venice, Italy",
   "logoUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
   "faviconUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
-  "defaultThemeMode": "dark",
-  "defaultCurrency": "MAD"
+  "defaultThemeMode": "light",
+  "defaultCurrency": "MAD",
+  "payments": {
+    "creditCard": false,
+    "paypal": false,
+    "cod": true
+  }
 }

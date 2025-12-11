@@ -20,6 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Currency } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -29,6 +30,11 @@ const generalFormSchema = z.object({
   storeAddress: z.string().min(10, 'Store address is required.'),
   defaultThemeMode: z.enum(['light', 'dark']),
   defaultCurrency: z.enum(['AED', 'MAD', 'USD', 'EUR']),
+  payments: z.object({
+    creditCard: z.boolean().default(false),
+    paypal: z.boolean().default(false),
+    cod: z.boolean().default(true),
+  }),
 });
 
 const contentFormSchema = z.object({
@@ -118,6 +124,7 @@ export default function AdminSettingsPage() {
       ...initialSettings,
       defaultThemeMode: initialSettings.defaultThemeMode || 'light',
       defaultCurrency: initialSettings.defaultCurrency || 'AED',
+      payments: initialSettings.payments || { creditCard: false, paypal: false, cod: true },
     },
   });
   
@@ -339,6 +346,65 @@ export default function AdminSettingsPage() {
             </AccordionContent>
         </AccordionItem>
         
+        <AccordionItem value="payment-methods" className="border rounded-lg">
+          <AccordionTrigger className="text-xl font-semibold px-6">Checkout Payment Methods</AccordionTrigger>
+          <AccordionContent>
+            <Card className="border-none">
+              <CardContent className="pt-6">
+                <Form {...generalForm}>
+                    <div className="space-y-6">
+                      <FormField
+                        control={generalForm.control}
+                        name="payments.creditCard"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Enable Credit Card</FormLabel>
+                              <FormDescription>Allow customers to pay with credit or debit cards.</FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={generalForm.control}
+                        name="payments.paypal"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Enable PayPal</FormLabel>
+                              <FormDescription>Allow customers to pay using their PayPal account.</FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={generalForm.control}
+                        name="payments.cod"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Enable Cash on Delivery</FormLabel>
+                              <FormDescription>Allow customers to pay upon delivery of their order.</FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                </Form>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
         <Form {...contentForm}>
             <form>
                 <AccordionItem value="homepage-content" className="border rounded-lg">
