@@ -52,7 +52,7 @@ const contentFormSchema = z.object({
     terms_en: z.string().min(1, "English content is required."),
     terms_ar: z.string().min(1, "Arabic content is required."),
     privacy_policy_title: z.string().min(1, "English title is required."),
-    privacy_policy_title_ar: zstring().min(1, "Arabic title is required."),
+    privacy_policy_title_ar: z.string().min(1, "Arabic title is required."),
     privacy_policy_content: z.string().min(1, "English content is required."),
     privacy_policy_content_ar: z.string().min(1, "Arabic content is required."),
 });
