@@ -5,18 +5,40 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
         headers: [
           {
             key: 'X-Robots-Tag',
             value: 'noindex, nofollow',
           },
         ],
-        has: [
+        missing: [
           {
-            type: 'route',
-            key: 'path',
-            value: '(?<path>/admin/.*|/account/.*|/login|/signup|/cart|/checkout|/order-confirmation)',
+            type: 'header',
+            key: 'next-router-prefetch',
+          },
+          {
+            type: 'header',
+            key: 'purpose',
+            value: 'prefetch',
+          },
+        ],
+      },
+      {
+        source: '/(admin|account)/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow',
+          },
+        ],
+      },
+      {
+        source: '/(login|signup|cart|checkout|order-confirmation)',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow',
           },
         ],
       },
