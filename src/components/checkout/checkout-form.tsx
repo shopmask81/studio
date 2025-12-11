@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { useTranslation } from '../language/language-provider';
 import { useAuth } from '../auth/auth-provider';
 import siteSettings from '@/../appData/siteSettings.json';
+import { ClientOnly } from '../layout/client-only';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
@@ -342,7 +343,9 @@ export function CheckoutForm() {
                     </div>
                     
                     <div className="md:col-span-1">
-                        <OrderSummary />
+                        <ClientOnly>
+                            <OrderSummary />
+                        </ClientOnly>
                         <Button type="submit" size="lg" className="w-full mt-6" disabled={isSubmitting || cartItems.length === 0}>
                             {isSubmitting ? (
                                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
