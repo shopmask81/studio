@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -14,6 +13,7 @@ import {
     Theater,
     ChevronLeft,
     ImageIcon,
+    Search,
 } from "lucide-react";
 import { 
     Sidebar, 
@@ -41,7 +41,10 @@ const sidebarNavItems = [
     { href: '/admin/dashboard/users', label: 'Users', icon: Users },
 ];
 
-const settingsNavItem = { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings };
+const bottomNavItems = [
+    { href: '/admin/dashboard/seo', label: 'SEO Settings', icon: Search },
+    { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings }
+];
 
 
 export function AdminSidebar() {
@@ -128,18 +131,20 @@ export function AdminSidebar() {
 
                 <SidebarFooter>
                     <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                asChild
-                                isActive={pathname === settingsNavItem.href}
-                                tooltip={{ children: settingsNavItem.label }}
-                            >
-                                <Link href={settingsNavItem.href} onClick={(e) => handleLinkClick(e, settingsNavItem.href)}>
-                                    <settingsNavItem.icon />
-                                    <span className="group-data-[collapsible=icon]:hidden">{settingsNavItem.label}</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
+                        {bottomNavItems.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={pathname === item.href}
+                                    tooltip={{ children: item.label }}
+                                >
+                                    <Link href={item.href} onClick={(e) => handleLinkClick(e, item.href)}>
+                                        <item.icon />
+                                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
                     </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
