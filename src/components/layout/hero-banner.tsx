@@ -116,7 +116,7 @@ export function HeroBanner() {
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-[16/7]">
+      <div className="w-full aspect-video">
         <Skeleton className="w-full h-full" />
       </div>
     );
@@ -124,7 +124,7 @@ export function HeroBanner() {
 
   if (!banners || banners.length === 0) {
     return (
-        <div className="w-full aspect-[16/7] bg-muted/50 flex items-center justify-center">
+        <div className="w-full aspect-video bg-muted/50 flex items-center justify-center">
             <div className="text-center text-muted-foreground">
                 <p>Banners will be displayed here.</p>
             </div>
@@ -145,7 +145,7 @@ export function HeroBanner() {
             <CarouselItem key={banner.id}>
               <div className="p-0">
                 <Card className="border-none rounded-none shadow-none">
-                  <CardContent className="relative flex aspect-[16/7] items-center justify-center p-0">
+                  <CardContent className="relative flex aspect-[4/3] md:aspect-video items-center justify-center p-0">
                     <Image
                       src={banner.imageUrl}
                       alt={banner.title || 'Promotional Banner'}
