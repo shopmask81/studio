@@ -184,114 +184,145 @@ export default function SeoSettingsPage() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-            <Tabs defaultValue="en" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="en">English Content</TabsTrigger>
-                <TabsTrigger value="ar">Arabic Content</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="en">
-                <Form {...enForm}>
-                    <Card>
-                        <CardContent className="pt-6 space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <FormField control={enForm.control} name="focusKeyword" render={({ field }) => (
-                                <FormItem><FormLabel>Focus Keyword</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <Controller control={enForm.control} name="relatedKeywords" render={({ field }) => (
-                                <FormItem><FormLabel>Related Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
-                        <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Meta Title ({field.value?.length || 0} / {MAX_TITLE_LENGTH})</FormLabel>
-                                <FormControl><Input {...field} /></FormControl><FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={enForm.control} name="metaDescription" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Meta Description ({field.value?.length || 0} / {MAX_DESC_LENGTH})</FormLabel>
-                                <FormControl><Textarea rows={4} {...field} /></FormControl>
-                                {focusKeywordWarning && (
-                                    <Alert variant="destructive" className="mt-2 text-xs flex items-start gap-2">
-                                        <AlertTriangle className="h-4 w-4 mt-0.5" />
-                                        <AlertDescription>Warning: The meta description does not contain the focus keyword.</AlertDescription>
-                                    </Alert>
-                                )}
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={enForm.control} name="ogTitle" render={({ field }) => (
-                            <FormItem><FormLabel>OpenGraph Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={enForm.control} name="ogDescription" render={({ field }) => (
-                            <FormItem><FormLabel>OpenGraph Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        </CardContent>
-                    </Card>
-                </Form>
-                </TabsContent>
-                
-                <TabsContent value="ar">
-                    <Form {...arForm}>
-                    <Card>
-                        <CardContent className="pt-6 space-y-6" dir="rtl">
+      <Tabs defaultValue="en" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="en">English Content</TabsTrigger>
+            <TabsTrigger value="ar">Arabic Content</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="en">
+            <Form {...enForm}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <Card>
+                            <CardContent className="pt-6 space-y-6">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <FormField control={arForm.control} name="focusKeyword" render={({ field }) => (
-                                    <FormItem><FormLabel>الكلمة المفتاحية الرئيسية</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormField control={enForm.control} name="focusKeyword" render={({ field }) => (
+                                    <FormItem><FormLabel>Focus Keyword</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
-                                <Controller control={arForm.control} name="relatedKeywords" render={({ field }) => (
-                                    <FormItem><FormLabel>الكلمات المفتاحية ذات الصلة</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                <Controller control={enForm.control} name="relatedKeywords" render={({ field }) => (
+                                    <FormItem><FormLabel>Related Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
-                            <FormField control={arForm.control} name="metaTitle" render={({ field }) => (
-                                <FormItem><FormLabel>عنوان الميتا</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Meta Title ({field.value?.length || 0} / {MAX_TITLE_LENGTH})</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl><FormMessage />
+                                </FormItem>
                             )} />
-                            <FormField control={arForm.control} name="metaDescription" render={({ field }) => (
-                                <FormItem><FormLabel>وصف الميتا</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormField control={enForm.control} name="metaDescription" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Meta Description ({field.value?.length || 0} / {MAX_DESC_LENGTH})</FormLabel>
+                                    <FormControl><Textarea rows={4} {...field} /></FormControl>
+                                    {focusKeywordWarning && (
+                                        <Alert variant="destructive" className="mt-2 text-xs flex items-start gap-2">
+                                            <AlertTriangle className="h-4 w-4 mt-0.5" />
+                                            <AlertDescription>Warning: The meta description does not contain the focus keyword.</AlertDescription>
+                                        </Alert>
+                                    )}
+                                    <FormMessage />
+                                </FormItem>
                             )} />
-                             <FormField control={arForm.control} name="ogTitle" render={({ field }) => (
-                               <FormItem><FormLabel>عنوان OpenGraph (العربية)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                             )} />
-                             <FormField control={arForm.control} name="ogDescription" render={({ field }) => (
-                               <FormItem><FormLabel>وصف OpenGraph (العربية)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                             )} />
-                        </CardContent>
-                    </Card>
-                    </Form>
-                </TabsContent>
-            </Tabs>
-        </div>
-        <div className="lg:col-span-1">
-            <Card>
-                <CardHeader>
-                    <CardTitle>OpenGraph Image</CardTitle>
-                    <CardDescription>Shared across all languages.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {ogImage.previewUrl ? (
-                        <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
-                        <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
-                        </div>
-                    ) : (
-                        <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
-                        <p>No Image</p>
-                        </div>
-                    )}
-                    <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
-                        <div className="flex flex-col items-center justify-center text-center p-4">
-                        <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Click to upload image</p>
-                        </div>
-                        <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                    </label>
-                    <FormDescription>Recommended: 1200x630px image.</FormDescription>
-                </CardContent>
-            </Card>
-        </div>
-      </div>
+                            <FormField control={enForm.control} name="ogTitle" render={({ field }) => (
+                                <FormItem><FormLabel>OpenGraph Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={enForm.control} name="ogDescription" render={({ field }) => (
+                                <FormItem><FormLabel>OpenGraph Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="lg:col-span-1">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>OpenGraph Image</CardTitle>
+                                <CardDescription>Shared across all languages.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {ogImage.previewUrl ? (
+                                    <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
+                                    <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
+                                    </div>
+                                ) : (
+                                    <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
+                                    <p>No Image</p>
+                                    </div>
+                                )}
+                                <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                                    <div className="flex flex-col items-center justify-center text-center p-4">
+                                    <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">Click to upload image</p>
+                                    </div>
+                                    <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
+                                </label>
+                                <FormDescription>Recommended: 1200x630px image.</FormDescription>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </Form>
+          </TabsContent>
+          
+          <TabsContent value="ar">
+            <Form {...arForm}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                     <div className="lg:col-span-2 space-y-6">
+                        <Card>
+                            <CardContent className="pt-6 space-y-6" dir="rtl">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <FormField control={arForm.control} name="focusKeyword" render={({ field }) => (
+                                        <FormItem><FormLabel>الكلمة المفتاحية الرئيسية</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <Controller control={arForm.control} name="relatedKeywords" render={({ field }) => (
+                                        <FormItem><FormLabel>الكلمات المفتاحية ذات الصلة</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                </div>
+                                <FormField control={arForm.control} name="metaTitle" render={({ field }) => (
+                                    <FormItem><FormLabel>عنوان الميتا</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={arForm.control} name="metaDescription" render={({ field }) => (
+                                    <FormItem><FormLabel>وصف الميتا</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={arForm.control} name="ogTitle" render={({ field }) => (
+                                <FormItem><FormLabel>عنوان OpenGraph (العربية)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={arForm.control} name="ogDescription" render={({ field }) => (
+                                <FormItem><FormLabel>وصف OpenGraph (العربية)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </CardContent>
+                        </Card>
+                    </div>
+                     <div className="lg:col-span-1">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>OpenGraph Image</CardTitle>
+                                <CardDescription>Shared across all languages.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {ogImage.previewUrl ? (
+                                    <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
+                                    <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
+                                    </div>
+                                ) : (
+                                    <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
+                                    <p>No Image</p>
+                                    </div>
+                                )}
+                                <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                                    <div className="flex flex-col items-center justify-center text-center p-4">
+                                    <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">Click to upload image</p>
+                                    </div>
+                                    <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
+                                </label>
+                                <FormDescription>Recommended: 1200x630px image.</FormDescription>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </Form>
+          </TabsContent>
+      </Tabs>
     </div>
   );
 }
