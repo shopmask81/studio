@@ -6,6 +6,12 @@ import siteSettings from '@/../appData/siteSettings.json';
 
 const enSeoPath = path.join(process.cwd(), 'src', 'data', 'seo.json');
 const arSeoPath = path.join(process.cwd(), 'src', 'data', 'seo-ar.json');
+const robotsPath = path.join(process.cwd(), 'src', 'data', 'seo', 'robots.txt');
+const sitemapPath = path.join(process.cwd(), 'src', 'data', 'seo', 'sitemap.xml');
+
+// For serving live files
+const publicRobotsPath = path.join(process.cwd(), 'public', 'robots.txt');
+const publicSitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
 
 
 async function uploadToImgBB(file: File): Promise<{ url: string }> {
@@ -22,7 +28,8 @@ async function uploadToImgBB(file: File): Promise<{ url: string }> {
     });
 
     if (!response.ok) {
-        throw new Error(`Image upload failed with status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Image upload failed: ${errorText}`);
     }
 
     const result = await response.json();
@@ -33,16 +40,19 @@ async function uploadToImgBB(file: File): Promise<{ url: string }> {
     return { url: result.data.url };
 }
 
-
 // GET handler to read the current SEO files
 export async function GET(request: NextRequest) {
   try {
     const enContent = await fs.readFile(enSeoPath, 'utf8').catch(() => '{}');
     const arContent = await fs.readFile(arSeoPath, 'utf8').catch(() => '{}');
+    const robotsContent = await fs.readFile(robotsPath, 'utf8').catch(() => '');
+    const sitemapContent = await fs.readFile(sitemapPath, 'utf8').catch(() => '');
 
     return NextResponse.json({
       en: JSON.parse(enContent),
       ar: JSON.parse(arContent),
+      robots: robotsContent,
+      sitemap: sitemapContent,
     });
   } catch (error) {
     console.error('API Error fetching SEO settings:', error);
@@ -54,29 +64,53 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const enDataString = formData.get('en') as string | null;
-    const arDataString = formData.get('ar') as string | null;
+    const enDataString = formData.get('enHomepage') as string | null;
+    const arDataString = formData.get('arHomepage') as string | null;
     const ogImageFile = formData.get('ogImageFile') as File | null;
+    const robotsFileContent = formData.get('robots') as string | null;
+    const sitemapFileContent = formData.get('sitemap') as string | null;
     
-    if (!enDataString || !arDataString) {
-        return NextResponse.json({ error: 'Missing SEO data.' }, { status: 400 });
+    // Handle Homepage SEO saving
+    if (enDataString && arDataString) {
+        let enData = JSON.parse(enDataString);
+        const arData = JSON.parse(arDataString);
+
+        if (ogImageFile) {
+            const { url } = await uploadToImgBB(ogImageFile);
+            enData.ogImage = url;
+        }
+        
+        // Read existing files to preserve other potential settings
+        const existingEnSeo = JSON.parse(await fs.readFile(enSeoPath, 'utf8').catch(() => '{}'));
+        const existingArSeo = JSON.parse(await fs.readFile(arSeoPath, 'utf8').catch(() => '{}'));
+
+        const finalEnData = { ...existingEnSeo, homepage: enData };
+        const finalArData = { ...existingArSeo, homepage: arData };
+
+        await fs.writeFile(enSeoPath, JSON.stringify(finalEnData, null, 2), 'utf8');
+        await fs.writeFile(arSeoPath, JSON.stringify(finalArData, null, 2), 'utf8');
     }
 
-    let enData = JSON.parse(enDataString);
-    const arData = JSON.parse(arDataString);
-
-    if (ogImageFile) {
-        const { url } = await uploadToImgBB(ogImageFile);
-        enData.ogImage = url;
+    // Handle robots.txt saving
+    if (robotsFileContent !== null) {
+        await fs.writeFile(robotsPath, robotsFileContent, 'utf8');
+        await fs.writeFile(publicRobotsPath, robotsFileContent, 'utf8');
     }
-    
-    await fs.writeFile(enSeoPath, JSON.stringify(enData, null, 2), 'utf8');
-    await fs.writeFile(arSeoPath, JSON.stringify(arData, null, 2), 'utf8');
+
+    // Handle sitemap.xml saving
+    if (sitemapFileContent !== null) {
+        await fs.writeFile(sitemapPath, sitemapFileContent, 'utf8');
+        await fs.writeFile(publicSitemapPath, sitemapFileContent, 'utf8');
+    }
+
 
     return NextResponse.json({ success: true, message: 'SEO settings saved successfully.' });
 
   } catch (error) {
     console.error('API Error saving SEO file:', error);
+    if (error instanceof SyntaxError) {
+        return NextResponse.json({ error: 'Invalid JSON format.' }, { status: 400 });
+    }
     return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
   }
 }
