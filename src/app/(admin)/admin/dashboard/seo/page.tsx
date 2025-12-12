@@ -23,6 +23,8 @@ const enSeoSchema = z.object({
   metaDescription: z.string().min(1, 'Meta description is required.'),
   ogTitle: z.string().min(1, 'OpenGraph title is required.'),
   ogDescription: z.string().min(1, 'OpenGraph description is required.'),
+  ogUrl: z.string().url('Must be a valid URL.').min(1, 'OpenGraph URL is required.'),
+  ogSiteName: z.string().min(1, 'OpenGraph Site Name is required.'),
 });
 
 const arSeoSchema = z.object({
@@ -31,6 +33,8 @@ const arSeoSchema = z.object({
   metaDescription: z.string().optional(),
   ogTitle: z.string().optional(),
   ogDescription: z.string().optional(),
+  ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  ogSiteName: z.string().optional(),
 });
 
 
@@ -110,12 +114,14 @@ export default function SeoSettingsPage() {
   const [robotsContent, setRobotsContent] = useState('');
   const [sitemapContent, setSitemapContent] = useState('');
 
-  const formDefaultValues: SeoFormValues = {
+  const formDefaultValues: z.infer<typeof enSeoSchema> = {
     metaKeywords: [],
     metaTitle: '',
     metaDescription: '',
     ogTitle: '',
     ogDescription: '',
+    ogUrl: '',
+    ogSiteName: '',
   };
 
   const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
@@ -125,6 +131,8 @@ export default function SeoSettingsPage() {
     metaDescription: '',
     ogTitle: '',
     ogDescription: '',
+    ogUrl: '',
+    ogSiteName: '',
   } });
 
   useEffect(() => {
@@ -291,6 +299,12 @@ export default function SeoSettingsPage() {
                                         <FormField control={enForm.control} name="ogDescription" render={({ field }) => (
                                             <FormItem><FormLabel>OpenGraph Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
+                                        <FormField control={enForm.control} name="ogUrl" render={({ field }) => (
+                                            <FormItem><FormLabel>OpenGraph URL</FormLabel><FormControl><Input {...field} placeholder="https://your-domain.com" /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={enForm.control} name="ogSiteName" render={({ field }) => (
+                                            <FormItem><FormLabel>OpenGraph Site Name</FormLabel><FormControl><Input {...field} placeholder="MaskShop" /></FormControl><FormMessage /></FormItem>
+                                        )} />
                                     </div>
                                     <div className="lg:col-span-1">
                                         <div className="space-y-2">
@@ -338,6 +352,12 @@ export default function SeoSettingsPage() {
                                         )} />
                                         <FormField control={arForm.control} name="ogDescription" render={({ field }) => (
                                         <FormItem><FormLabel>وصف OpenGraph (العربية)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={arForm.control} name="ogUrl" render={({ field }) => (
+                                            <FormItem><FormLabel>رابط OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={arForm.control} name="ogSiteName" render={({ field }) => (
+                                            <FormItem><FormLabel>اسم موقع OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     </div>
                                     <div className="lg:col-span-1">

@@ -24,6 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: currentSeoData.ogTitle,
       description: currentSeoData.ogDescription,
+      url: currentSeoData.ogUrl,
+      siteName: currentSeoData.ogSiteName,
       images: [
         {
           url: seoData.homepage.ogImage, // OG image is shared
