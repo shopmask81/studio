@@ -58,7 +58,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 150 5% 25%; /* #3A403C - Darker Grey Border */
+    --border: 150 5% 35%; /* Light grey for dark mode borders */
     --input: 147 11% 15%;
     --ring: 159 75% 24%; /* Set to light mode primary color */
 
