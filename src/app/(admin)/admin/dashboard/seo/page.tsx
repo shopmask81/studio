@@ -29,7 +29,7 @@ const enSeoSchema = z.object({
   canonical: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   twitterCard: z.string().optional(),
   twitterTitle: z.string().optional(),
-  twitterDescription: zstring().optional(),
+  twitterDescription: z.string().optional(),
   twitterUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   twitterImage: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
@@ -553,3 +553,5 @@ export default function SeoSettingsPage() {
     </div>
   );
 }
+
+    
