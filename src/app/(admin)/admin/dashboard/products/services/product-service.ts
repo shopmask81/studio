@@ -79,6 +79,7 @@ export async function updateAllProductSortOrders(
   firestore: Firestore,
   productsToUpdate: { id: string; sortOrder: number }[]
 ): Promise<void> {
+  if (productsToUpdate.length === 0) return;
   const batch = writeBatch(firestore);
 
   productsToUpdate.forEach(product => {
