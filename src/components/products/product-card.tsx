@@ -88,16 +88,16 @@ export function ProductCard({ product }: ProductCardProps) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       )}
-        <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative">
+        <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative overflow-hidden">
             {product.featured && (
-                <div className="absolute top-0 left-0 h-16 w-16 z-10 overflow-hidden">
+                <div className="absolute top-0 left-0 h-16 w-16 z-10">
                     <div className="absolute transform -rotate-45 bg-primary text-center text-primary-foreground font-semibold py-1 left-[-34px] top-[32px] w-[170px] shadow-lg">
                         Featured
                     </div>
                 </div>
             )}
-            <CardHeader className="p-0 overflow-hidden rounded-t-lg">
-                <div className="relative aspect-[3/4] w-full">
+            <CardHeader className="p-0">
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg">
                 <Image
                     src={product.mainImage}
                     alt={product.name}
