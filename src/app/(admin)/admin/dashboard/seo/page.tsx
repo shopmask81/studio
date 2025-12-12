@@ -89,9 +89,17 @@ export default function SeoSettingsPage() {
   const [robotsContent, setRobotsContent] = useState('');
   const [sitemapContent, setSitemapContent] = useState('');
 
+  const formDefaultValues: SeoFormValues = {
+    focusKeyword: '',
+    relatedKeywords: [],
+    metaTitle: '',
+    metaDescription: '',
+    ogTitle: '',
+    ogDescription: '',
+  };
 
-  const enForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: { relatedKeywords: [] } });
-  const arForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: { relatedKeywords: [] } });
+  const enForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: formDefaultValues });
+  const arForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: formDefaultValues });
 
   const watchedEnDescription = enForm.watch('metaDescription');
   const watchedEnFocusKeyword = enForm.watch('focusKeyword');
