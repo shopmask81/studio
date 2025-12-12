@@ -42,6 +42,7 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
+      e.stopPropagation(); // Stop the event from bubbling up to the form
       const newKeyword = inputValue.trim();
       if (newKeyword && !value.includes(newKeyword)) {
         onChange([...value, newKeyword]);
@@ -423,3 +424,5 @@ export default function SeoSettingsPage() {
     </div>
   );
 }
+
+    
