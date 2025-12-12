@@ -47,7 +47,7 @@ const jsonLd = {
   name: structuredData.appName,
   url: structuredData.appUrl,
   description: structuredData.appDescription,
-  applicationCategory: 'BusinessApplication',
+  applicationCategory: structuredData.applicationCategory,
   operatingSystem: 'Any',
   offers: {
     '@type': 'Offer',
@@ -64,10 +64,9 @@ const jsonLd = {
   screenshot: structuredData.screenshotUrl,
   logo: structuredData.logoUrl,
   developer: {
-    '@type': 'Organization',
+    '@type': structuredData.developerType || 'Organization',
     name: structuredData.developerName,
   },
-  keywords: [structuredData.focusKeyword, ...(structuredData.relatedKeywords || [])].join(', '),
 };
 
 

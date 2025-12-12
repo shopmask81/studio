@@ -55,14 +55,14 @@ const structuredDataSchema = z.object({
     appUrl: z.string().url("Must be a valid URL."),
     appDescription: z.string().min(1, "App Description is required."),
     appType: z.enum(["WebApplication", "MobileApplication", "Website"]),
+    applicationCategory: z.string().min(1, "Application Category is required."),
     developerName: z.string().min(1, "Developer Name is required."),
+    developerType: z.enum(["Organization", "Person"]),
     logoUrl: z.string().url("Must be a valid URL."),
     screenshotUrl: z.string().url("Must be a valid URL."),
     averageRating: z.coerce.number().optional(),
     reviewsCount: z.coerce.number().int().optional(),
     price: z.coerce.number().min(0, "Price must be a positive number."),
-    focusKeyword: z.string().min(1, "Focus Keyword is required."),
-    relatedKeywords: z.array(z.string()).min(1, "At least one related keyword is required."),
 });
 
 
@@ -169,14 +169,14 @@ export default function SeoSettingsPage() {
         appUrl: "",
         appDescription: "",
         appType: "WebApplication",
+        applicationCategory: "",
         developerName: "",
+        developerType: "Organization",
         logoUrl: "",
         screenshotUrl: "",
         averageRating: undefined,
         reviewsCount: undefined,
         price: 0,
-        focusKeyword: "",
-        relatedKeywords: [],
     }
   });
 
@@ -560,6 +560,24 @@ export default function SeoSettingsPage() {
                             <FormField control={structuredDataForm.control} name="appDescription" render={({ field }) => (
                                 <FormItem><FormLabel>App Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField control={structuredDataForm.control} name="developerName" render={({ field }) => (
+                                    <FormItem><FormLabel>Developer Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="developerType" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Developer Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Organization">Organization</SelectItem>
+                                                <SelectItem value="Person">Person</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField control={structuredDataForm.control} name="appType" render={({ field }) => (
                                     <FormItem>
@@ -575,8 +593,8 @@ export default function SeoSettingsPage() {
                                         <FormMessage />
                                     </FormItem>
                                 )} />
-                                <FormField control={structuredDataForm.control} name="developerName" render={({ field }) => (
-                                    <FormItem><FormLabel>Developer Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormField control={structuredDataForm.control} name="applicationCategory" render={({ field }) => (
+                                    <FormItem><FormLabel>Application Category</FormLabel><FormControl><Input {...field} placeholder="e.g. BusinessApplication" /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -596,14 +614,6 @@ export default function SeoSettingsPage() {
                                 )} />
                                 <FormField control={structuredDataForm.control} name="price" render={({ field }) => (
                                     <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField control={structuredDataForm.control} name="focusKeyword" render={({ field }) => (
-                                    <FormItem><FormLabel>Focus Keyword</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <Controller control={structuredDataForm.control} name="relatedKeywords" render={({ field }) => (
-                                    <FormItem><FormLabel>Related Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                             <div className="flex justify-end">
