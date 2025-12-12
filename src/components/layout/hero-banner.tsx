@@ -116,7 +116,7 @@ export function HeroBanner() {
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-[16/7]">
+      <div className="w-full aspect-[4/3] md:aspect-[16/7]">
         <Skeleton className="w-full h-full" />
       </div>
     );
