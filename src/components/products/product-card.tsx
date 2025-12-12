@@ -87,49 +87,49 @@ export function ProductCard({ product }: ProductCardProps) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       )}
-        <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative">
-            {product.featured && (
-                <div className="absolute top-0 left-0 h-16 w-16 z-10 overflow-hidden">
-                    <div className="absolute transform -rotate-45 bg-destructive text-center text-destructive-foreground font-semibold py-1 left-[-34px] top-[32px] w-[170px] shadow-lg">
-                        Featured
-                    </div>
-                </div>
-            )}
-            <CardHeader className="p-0 overflow-hidden rounded-t-lg">
-                <div className="relative aspect-[3/4] w-full">
-                <Image
-                    src={product.mainImage}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    data-ai-hint={product.imageHint}
-                />
-                </div>
-            </CardHeader>
-            <CardContent className="p-3 md:p-4 flex-grow">
-                <CardTitle className="font-headline text-xl md:text-2xl mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]" dir={dir} style={style}>
-                    {displayName}
-                </CardTitle>
-            </CardContent>
-            <CardFooter className="p-3 md:p-4 flex flex-col items-start gap-3 mt-auto">
-                <div className="flex items-baseline gap-2 flex-wrap">
-                    {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
-                    {hasDiscount ? (
-                        <>
-                            <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
-                            <p className="text-sm md:text-base font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
-                        </>
-                    ) : (
-                        <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
-                    )}
-                </div>
-                 <Button onClick={handleAddToCart} className="w-full h-9 text-xs md:h-10 md:text-sm font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
-                    <ShoppingCart className="h-4 w-4 me-2" />
-                    {hasVariants ? 'Select Options' : t('add_to_cart').text}
-                </Button>
-            </CardFooter>
-        </Card>
+       {product.featured && (
+          <div className="absolute top-0 left-0 w-24 h-24 overflow-hidden z-10">
+              <div className="absolute transform -rotate-45 bg-destructive text-center text-destructive-foreground font-semibold py-1 left-[-34px] top-[32px] w-[170px] shadow-lg">
+                  Featured
+              </div>
+          </div>
+      )}
+      <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative overflow-hidden">
+          <CardHeader className="p-0">
+              <div className="relative aspect-[3/4] w-full">
+              <Image
+                  src={product.mainImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  data-ai-hint={product.imageHint}
+              />
+              </div>
+          </CardHeader>
+          <CardContent className="p-3 md:p-4 flex-grow">
+              <CardTitle className="font-headline text-xl md:text-2xl mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]" dir={dir} style={style}>
+                  {displayName}
+              </CardTitle>
+          </CardContent>
+          <CardFooter className="p-3 md:p-4 flex flex-col items-start gap-3 mt-auto">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                  {isFromPrice && <span className="text-xs md:text-sm text-muted-foreground mr-1">From</span>}
+                  {hasDiscount ? (
+                      <>
+                          <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
+                          <p className="text-sm md:text-base font-medium text-accent line-through">{formatPrice(originalPrice!)}</p>
+                      </>
+                  ) : (
+                      <p className="text-base md:text-lg font-bold text-primary">{formatPrice(displayPrice)}</p>
+                  )}
+              </div>
+               <Button onClick={handleAddToCart} className="w-full h-9 text-xs md:h-10 md:text-sm font-semibold hover:bg-[#125F47] transition-all duration-200 ease-in-out">
+                  <ShoppingCart className="h-4 w-4 me-2" />
+                  {hasVariants ? 'Select Options' : t('add_to_cart').text}
+              </Button>
+          </CardFooter>
+      </Card>
     </Link>
   );
 }
