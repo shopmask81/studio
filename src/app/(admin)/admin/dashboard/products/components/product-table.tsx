@@ -59,7 +59,8 @@ export function ProductTable() {
   }, [firestore]);
 
   const { data: cachedData, isLoading } = useDoc<{ products: Product[] }>(cachedProductsRef);
-  const originalProducts = cachedData?.products || [];
+
+  const originalProducts = useMemo(() => cachedData?.products || [], [cachedData]);
 
   const [editableProducts, setEditableProducts] = useState<Product[]>([]);
   const [isOrderChanged, setIsOrderChanged] = useState(false);
