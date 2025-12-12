@@ -5,15 +5,8 @@ import { cn } from '@/lib/utils';
 import siteSettings from '@/../appData/siteSettings.json';
 import { ClientProviders } from '@/components/client-providers';
 
-// The global metadata has been removed from this root layout.
-// SEO metadata is now applied on a per-page basis, starting with the homepage.
-export const metadata: Metadata = {
-  title: {
-    default: siteSettings.siteName,
-    template: `%s | ${siteSettings.siteName}`,
-  },
-  description: siteSettings.siteDescription,
-};
+// Per user request, global metadata has been removed to isolate SEO to the homepage.
+// Other pages will not have default titles or descriptions.
 
 
 const ThemeInitializer = () => (
