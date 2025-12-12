@@ -90,7 +90,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       )}
       {product.featured && (
-        <Badge className="absolute top-2 left-2 z-10 bg-[#990000] text-white px-3 py-1 text-sm border-[#990000]">
+        <Badge className="absolute top-4 left-2 z-10 bg-[#990000] text-white px-3 py-1 text-sm border-[#990000]">
             Featured
         </Badge>
       )}
