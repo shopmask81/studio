@@ -31,6 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
 import { MoreHorizontal, Edit, Trash2, Loader2, Save, GripVertical } from 'lucide-react';
