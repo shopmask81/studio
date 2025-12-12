@@ -1,3 +1,4 @@
+
 {
   "siteName": "MaskShop",
   "contactEmail": "support@maskshop.com",
@@ -12,5 +13,7 @@
     "paypal": false,
     "cod": true
   },
-  "imgbbApiKey": "518d3cdcaedf3c5ade143a41de38c554"
+  "imgbbApiKey": "518d3cdcaedf3c5ade143a41de38c554",
+  "enableWhatsAppButton": false,
+  "whatsAppUrl": ""
 }

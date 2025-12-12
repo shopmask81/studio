@@ -21,6 +21,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Currency } from '@/lib/types';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -35,6 +36,15 @@ const generalFormSchema = z.object({
     cod: z.boolean().default(true),
   }),
   imgbbApiKey: z.string().min(1, 'ImgBB API key is required.'),
+  enableWhatsAppButton: z.boolean().default(false),
+  whatsAppUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+}).superRefine((data, ctx) => {
+    if (data.enableWhatsAppButton && !data.whatsAppUrl) {
+        ctx.addIssue({
+            path: ['whatsAppUrl'],
+            message: 'WhatsApp URL is required when the button is enabled.',
+        });
+    }
 });
 
 const contentFormSchema = z.object({
@@ -126,6 +136,8 @@ export default function AdminSettingsPage() {
       defaultCurrency: initialSettings.defaultCurrency || 'AED',
       payments: initialSettings.payments || { creditCard: false, paypal: false, cod: true },
       imgbbApiKey: initialSettings.imgbbApiKey || '',
+      enableWhatsAppButton: initialSettings.enableWhatsAppButton ?? false,
+      whatsAppUrl: initialSettings.whatsAppUrl || '',
     },
   });
   
@@ -339,6 +351,41 @@ export default function AdminSettingsPage() {
                                         <ImageUploader title="Site Logo" description="Recommended: PNG or SVG, 256x256px." imageState={logo} onFileChange={(e) => handleFileChange(e, setLogo)} />
                                         <ImageUploader title="Favicon" description="Recommended: .ico or PNG, 32x32px or 16x16px." imageState={favicon} onFileChange={(e) => handleFileChange(e, setFavicon)} />
                                         <FormField control={generalForm.control} name="imgbbApiKey" render={({ field }) => (<FormItem><FormLabel>Image Upload API Key (imgbb)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                </div>
+                                <Separator className="my-8" />
+                                <div>
+                                    <h3 className="text-lg font-medium mb-4">WhatsApp Support Button</h3>
+                                    <div className="space-y-6">
+                                         <FormField
+                                            control={generalForm.control}
+                                            name="enableWhatsAppButton"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                    <FormLabel className="text-base">Enable WhatsApp Button</FormLabel>
+                                                    <FormDescription>Show a floating WhatsApp button on all public pages.</FormDescription>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={generalForm.control}
+                                            name="whatsAppUrl"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>WhatsApp Chat URL</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="https://wa.me/yourNumber" {...field} />
+                                                    </FormControl>
+                                                    <FormDescription>The full URL that the button will link to (opens in a new tab).</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
                                 </div>
                             </form>

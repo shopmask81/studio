@@ -150,4 +150,6 @@ export type SiteSettings = {
     cod: boolean;
   };
   imgbbApiKey: string;
+  enableWhatsAppButton: boolean;
+  whatsAppUrl: string;
 };

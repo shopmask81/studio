@@ -1,6 +1,7 @@
 
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 
 export default function PublicLayout({
     children,
@@ -12,6 +13,7 @@ export default function PublicLayout({
             <Header />
             <main className="flex-grow">{children}</main>
             <Footer />
+            <WhatsAppFloatingButton />
         </div>
     );
 }
