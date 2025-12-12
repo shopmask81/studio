@@ -1,10 +1,9 @@
-
 'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense, useMemo, useState } from 'react';
 import { useTranslation } from '@/components/language/language-provider';
 import { ClientOnly } from '@/components/layout/client-only';
-import { Category, Product } from '@/lib/types';
+import { Category, Product, Timestamp } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Menu, Search, AlertCircle } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -38,8 +37,8 @@ export function HomePageContent() {
                 return orderA - orderB;
             }
             // Fallback to creation date if sortOrder is the same or not set
-            const dateA = a.createdAt?.toMillis() || 0;
-            const dateB = b.createdAt?.toMillis() || 0;
+            const dateA = a.createdAt ? new Date(a.createdAt as unknown as string).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt as unknown as string).getTime() : 0;
             return dateB - dateA; // Descending
         });
     }
