@@ -29,6 +29,7 @@ export type Product = {
   sku?: string | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  sortOrder?: number;
   // This field is for placeholder images and not part of the Firestore schema
   imageHint?: string;
 

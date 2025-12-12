@@ -52,6 +52,7 @@ export async function updateProductCache(
     variants: product.variants ?? [],
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
+    sortOrder: product.sortOrder ?? null,
   }));
 
   // 3. Get a reference to the target cache document

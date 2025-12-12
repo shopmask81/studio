@@ -6,6 +6,7 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -72,4 +73,26 @@ export async function updateProduct(
         }));
         throw error;
     });
+}
+
+export async function updateAllProductSortOrders(
+  firestore: Firestore,
+  productsToUpdate: { id: string; sortOrder: number }[]
+): Promise<void> {
+  const batch = writeBatch(firestore);
+
+  productsToUpdate.forEach(product => {
+    const productRef = doc(firestore, 'products', product.id);
+    batch.update(productRef, { sortOrder: product.sortOrder });
+  });
+
+  await batch.commit().catch((error) => {
+    console.error("Batch update for sort order failed:", error);
+    // Emitting a generic error as it involves multiple documents.
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: 'products',
+        operation: 'write', // Represents a multi-document write
+    }));
+    throw new Error('Failed to update product display order. You may not have the required permissions.');
+  });
 }

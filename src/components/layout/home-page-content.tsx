@@ -1,3 +1,4 @@
+
 'use client';
 import { ProductGrid } from '@/components/products/product-grid';
 import { Suspense, useMemo, useState } from 'react';
@@ -23,12 +24,25 @@ export function HomePageContent() {
   // Fetch products from the global cache provider
   const { products: allProducts, isLoading, error } = useProductCache();
   
-  const filteredProducts = useMemo(() => {
-    if (!allProducts) {
-      return [];
-    }
+  const displayedProducts = useMemo(() => {
+    if (!allProducts) return [];
 
-    let products = allProducts;
+    let products = [...allProducts];
+
+    // Only apply custom sorting on the homepage when no filters are active
+    if (!selectedCategory && !debouncedSearchQuery.trim()) {
+        products.sort((a, b) => {
+            const orderA = a.sortOrder ?? Infinity;
+            const orderB = b.sortOrder ?? Infinity;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            // Fallback to creation date if sortOrder is the same or not set
+            const dateA = a.createdAt?.toMillis() || 0;
+            const dateB = b.createdAt?.toMillis() || 0;
+            return dateB - dateA; // Descending
+        });
+    }
 
     // Filter by category
     if (selectedCategory) {
@@ -85,7 +99,7 @@ export function HomePageContent() {
       );
     }
     
-    return <ProductGrid products={filteredProducts} isLoading={isLoading} />;
+    return <ProductGrid products={displayedProducts} isLoading={isLoading} />;
   }
 
   const exploreText = language === 'ar' ? t('explore_collection_ar').text : t('explore_collection').text;
