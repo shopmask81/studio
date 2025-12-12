@@ -48,8 +48,8 @@
     --card-foreground: 45 14% 91%; /* #E8E8E3 */
     --popover: 120 2% 10%;
     --popover-foreground: 45 3% 90%;
-    --primary: 161 24% 33%; /* #3C695C */
-    --primary-foreground: 50 20% 97%; /* #F3F3F1 */
+    --primary: 159 75% 24%; /* #0F6A50 - Set to light mode primary color */
+    --primary-foreground: 0 0% 100%;
     --secondary: 154 15% 20%;
     --secondary-foreground: 45 3% 90%;
     --muted: 154 10% 15%;
@@ -58,9 +58,9 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 150 11% 15%; /* #222825 */
+    --border: 45 10% 84%; /* #D8D5C8 - Set to light mode border color */
     --input: 147 11% 15%;
-    --ring: 161 24% 43%; /* #4F8273 */
+    --ring: 159 75% 24%; /* Set to light mode primary color */
 
     --sidebar-background: 147 12% 10%;
     --sidebar-foreground: 45 14% 88%;
