@@ -137,7 +137,6 @@ export type Currency = "AED" | "MAD" | "USD" | "EUR";
 
 export type SiteSettings = {
   siteName: string;
-  siteDescription: string;
   logoUrl: string;
   faviconUrl: string;
   contactEmail: string;

@@ -24,7 +24,6 @@ import { Switch } from '@/components/ui/switch';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
-  siteDescription: z.string().min(10, 'Site description is required.'),
   contactEmail: z.string().email('Invalid email address.'),
   contactPhone: z.string().min(1, 'Contact phone is required.'),
   storeAddress: z.string().min(10, 'Store address is required.'),
@@ -283,7 +282,6 @@ export default function AdminSettingsPage() {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <div className="space-y-6">
                                         <FormField control={generalForm.control} name="siteName" render={({ field }) => (<FormItem><FormLabel>Site Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={generalForm.control} name="siteDescription" render={({ field }) => (<FormItem><FormLabel>Site Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={generalForm.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={generalForm.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Contact Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={generalForm.control} name="storeAddress" render={({ field }) => (<FormItem><FormLabel>Store Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
