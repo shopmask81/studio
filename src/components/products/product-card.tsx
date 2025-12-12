@@ -89,9 +89,11 @@ export function ProductCard({ product }: ProductCardProps) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       )}
-      <Badge className="absolute top-4 left-4 z-10 bg-[#990000] text-white px-3 py-1 text-sm border-[#990000]">
-          Featured
-      </Badge>
+      {product.featured && (
+        <Badge className="absolute top-4 left-4 z-10 bg-[#990000] text-white px-3 py-1 text-sm border-[#990000]">
+            Featured
+        </Badge>
+      )}
       <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative">
           <CardHeader className="p-0 rounded-t-lg overflow-hidden">
               <div className="relative aspect-[3/4] w-full">
