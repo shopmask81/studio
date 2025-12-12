@@ -1,14 +1,11 @@
-
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import { getAuthInstance, getFirebaseAppInstance, getFirestoreInstance } from './client';
 
-interface FirebaseProviderProps {
+interface FirebaseProviderProps extends FirebaseContextState {
   children: ReactNode;
 }
 
@@ -24,22 +21,25 @@ export const FirebaseContext = createContext<FirebaseContextState | undefined>(u
 
 /**
  * FirebaseProvider manages and provides Firebase services.
+ * It now receives the initialized services as props.
  */
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
+  firebaseApp,
+  firestore,
+  auth,
   children,
 }) => {
-  // Memoize the context value
+  // Memoize the context value based on the passed-in services
   const contextValue = useMemo((): FirebaseContextState => {
     return {
-      firebaseApp: getFirebaseAppInstance(),
-      firestore: getFirestoreInstance(),
-      auth: getAuthInstance(),
+      firebaseApp,
+      firestore,
+      auth,
     };
-  }, []);
+  }, [firebaseApp, firestore, auth]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );

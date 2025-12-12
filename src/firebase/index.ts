@@ -10,3 +10,4 @@ export * from './firestore/use-doc';
 export * from './errors';
 export * from './error-emitter';
 export * from './init';
+export { useAuth as useFirebaseAuth } from './provider';
