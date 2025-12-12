@@ -2,10 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://your-domain.com/</loc>
-    <lastmod>2024-01-01</lastmod>
   </url>
   <url>
     <loc>https://your-domain.com/about</loc>
-    <lastmod>2024-01-01</lastmod>
+  </url>
+  <url>
+    <loc>https://your-domain.com/contact</loc>
+  </url>
+  <url>
+    <loc>https://your-domain.com/privacy</loc>
+  </url>
+  <url>
+    <loc>https://your-domain.com/terms</loc>
   </url>
 </urlset>

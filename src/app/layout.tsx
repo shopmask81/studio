@@ -4,14 +4,41 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import siteSettings from '@/../appData/siteSettings.json';
 import { ClientProviders } from '@/components/client-providers';
+import seoData from '@/data/seo.json';
+import seoDataAr from '@/data/seo-ar.json';
 
-export const metadata: Metadata = {
-  title: siteSettings.siteName,
-  description: siteSettings.siteDescription,
-  icons: {
-    icon: siteSettings.faviconUrl,
-  },
-};
+// This function dynamically generates metadata based on language.
+// Note: In a real app, you would fetch the language from headers/cookies.
+// For this example, we assume a way to determine the language server-side.
+// We will default to English for this implementation.
+export async function generateMetadata(): Promise<Metadata> {
+  // This logic is simplified. A real app would determine the language
+  // from request headers, cookies, or URL path.
+  const language = 'en'; // or 'ar'
+  const currentSeoData = language === 'ar' ? seoDataAr : seoData;
+
+  return {
+    title: currentSeoData.metaTitle,
+    description: currentSeoData.metaDescription,
+    keywords: [currentSeoData.focusKeyword, ...currentSeoData.relatedKeywords],
+    openGraph: {
+      title: currentSeoData.ogTitle,
+      description: currentSeoData.ogDescription,
+      images: [
+        {
+          url: seoData.ogImage, // OG image is shared
+          width: 1200,
+          height: 630,
+          alt: currentSeoData.ogTitle,
+        },
+      ],
+      locale: language === 'ar' ? 'ar_AE' : 'en_US',
+      type: 'website',
+    },
+    // Add other metadata tags as needed
+  };
+}
+
 
 const ThemeInitializer = () => (
   <script
