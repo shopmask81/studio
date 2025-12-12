@@ -17,19 +17,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const MAX_TITLE_LENGTH = 60;
-const MAX_DESC_LENGTH = 160;
-
-const seoSchema = z.object({
+const enSeoSchema = z.object({
   focusKeyword: z.string().min(1, 'Focus keyword is required.'),
   relatedKeywords: z.array(z.string()).min(1, 'At least one related keyword is required.'),
-  metaTitle: z.string().min(1, 'Meta title is required.').max(MAX_TITLE_LENGTH, `Meta title must be ${MAX_TITLE_LENGTH} characters or less.`),
-  metaDescription: z.string().min(1, 'Meta description is required.').max(MAX_DESC_LENGTH, `Meta description must be ${MAX_DESC_LENGTH} characters or less.`),
+  metaTitle: z.string().min(1, 'Meta title is required.'),
+  metaDescription: z.string().min(1, 'Meta description is required.'),
   ogTitle: z.string().min(1, 'OpenGraph title is required.'),
   ogDescription: z.string().min(1, 'OpenGraph description is required.'),
 });
 
-type SeoFormValues = z.infer<typeof seoSchema>;
+const arSeoSchema = z.object({
+  focusKeyword: z.string().optional(),
+  relatedKeywords: z.array(z.string()).optional(),
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  ogTitle: z.string().optional(),
+  ogDescription: z.string().optional(),
+});
+
+
+type SeoFormValues = z.infer<typeof enSeoSchema>;
 
 type ImageState = {
   file: File | null;
@@ -41,7 +48,8 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault(); // This is the key part to stop form submission/focus change
+      e.preventDefault();
+      e.stopPropagation();
       const newKeyword = inputValue.trim();
       if (newKeyword && !value.includes(newKeyword)) {
         onChange([...value, newKeyword]);
@@ -81,6 +89,11 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
           onBlur={handleBlur}
           className="flex-grow border-none shadow-none focus-visible:ring-0 p-0 h-auto"
           placeholder="Type keyword and press Enter..."
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
         />
       </div>
     </div>
@@ -108,8 +121,15 @@ export default function SeoSettingsPage() {
     ogDescription: '',
   };
 
-  const enForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: formDefaultValues });
-  const arForm = useForm<SeoFormValues>({ resolver: zodResolver(seoSchema), defaultValues: formDefaultValues });
+  const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
+  const arForm = useForm<z.infer<typeof arSeoSchema>>({ resolver: zodResolver(arSeoSchema), defaultValues: {
+    focusKeyword: '',
+    relatedKeywords: [],
+    metaTitle: '',
+    metaDescription: '',
+    ogTitle: '',
+    ogDescription: '',
+  } });
 
   const watchedEnDescription = enForm.watch('metaDescription');
   const watchedEnFocusKeyword = enForm.watch('focusKeyword');
@@ -268,13 +288,13 @@ export default function SeoSettingsPage() {
                                         </div>
                                         <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Meta Title ({field.value?.length || 0} / {MAX_TITLE_LENGTH})</FormLabel>
+                                                <FormLabel>Meta Title</FormLabel>
                                                 <FormControl><Input {...field} /></FormControl><FormMessage />
                                             </FormItem>
                                         )} />
                                         <FormField control={enForm.control} name="metaDescription" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Meta Description ({field.value?.length || 0} / {MAX_DESC_LENGTH})</FormLabel>
+                                                <FormLabel>Meta Description</FormLabel>
                                                 <FormControl><Textarea rows={4} {...field} /></FormControl>
                                                 {focusKeywordWarning && (
                                                     <Alert variant="destructive" className="mt-2 text-xs flex items-start gap-2">
