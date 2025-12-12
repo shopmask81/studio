@@ -145,7 +145,7 @@ export function HeroBanner() {
             <CarouselItem key={banner.id}>
               <div className="p-0">
                 <Card className="border-none rounded-none shadow-none">
-                  <CardContent className="relative flex aspect-[4/3] md:aspect-[16/7] items-center justify-center p-0">
+                  <CardContent className="relative flex aspect-video md:aspect-[16/7] items-center justify-center p-0">
                     <Image
                       src={banner.imageUrl}
                       alt={banner.title || 'Promotional Banner'}
