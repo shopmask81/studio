@@ -1,3 +1,4 @@
+
 {
   "homepage": {
     "metaKeywords": [
@@ -14,6 +15,7 @@
     "ogDescription": "From intricate Venetian designs to rustic traditional crafts, MaskShop offers a curated collection of handmade and vintage masks that tell a story. Explore artistry and cultural heritage in every piece.",
     "ogImage": "https://i.ibb.co/9H9CxxZ4/1764682613245-removebg-preview.png",
     "ogUrl": "",
-    "ogSiteName": ""
+    "ogSiteName": "MaskShop",
+    "canonical": ""
   }
 }

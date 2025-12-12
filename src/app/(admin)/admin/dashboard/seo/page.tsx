@@ -25,6 +25,7 @@ const enSeoSchema = z.object({
   ogDescription: z.string().min(1, 'OpenGraph description is required.'),
   ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   ogSiteName: z.string().min(1, 'OpenGraph Site Name is required.'),
+  canonical: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
 
 const arSeoSchema = z.object({
@@ -35,6 +36,7 @@ const arSeoSchema = z.object({
   ogDescription: z.string().optional(),
   ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   ogSiteName: z.string().optional(),
+  canonical: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
 
 
@@ -45,61 +47,61 @@ type ImageState = {
   previewUrl: string | null;
 };
 
-const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywords: string[]) => void }) => {
-  const [inputValue, setInputValue] = useState('');
+const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywords: string[]) => void; }) => {
+    const [inputValue, setInputValue] = useState('');
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      e.stopPropagation();
-      const newKeyword = inputValue.trim();
-      if (newKeyword && !value.includes(newKeyword)) {
-        onChange([...value, newKeyword]);
-      }
-      setInputValue('');
-    }
-  };
-  
-  const handleBlur = () => {
-    const newKeyword = inputValue.trim();
-    if (newKeyword && !value.includes(newKeyword)) {
-        onChange([...value, newKeyword]);
-    }
-    setInputValue('');
-  };
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        e.stopPropagation();
+        const newKeyword = inputValue.trim();
+        if (newKeyword && !value.includes(newKeyword)) {
+            onChange([...value, newKeyword]);
+        }
+        setInputValue('');
+        }
+    };
+    
+    const handleBlur = () => {
+        const newKeyword = inputValue.trim();
+        if (newKeyword && !value.includes(newKeyword)) {
+            onChange([...value, newKeyword]);
+        }
+        setInputValue('');
+    };
 
 
-  const removeKeyword = (keywordToRemove: string) => {
-    onChange(value.filter(keyword => keyword !== keywordToRemove));
-  };
+    const removeKeyword = (keywordToRemove: string) => {
+        onChange(value.filter(keyword => keyword !== keywordToRemove));
+    };
 
-  return (
-    <div>
-      <div className="flex flex-wrap gap-2 rounded-md border p-2">
-        {value.map(keyword => (
-          <div key={keyword} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-sm">
-            {keyword}
-            <button type="button" onClick={() => removeKeyword(keyword)}>
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
-        <Input
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          className="flex-grow border-none shadow-none focus-visible:ring-0 p-0 h-auto"
-          placeholder="Type keyword and press Enter..."
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-            }
-          }}
-        />
-      </div>
-    </div>
-  );
+    return (
+        <div>
+        <div className="flex flex-wrap gap-2 rounded-md border p-2">
+            {value.map(keyword => (
+            <div key={keyword} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-sm">
+                {keyword}
+                <button type="button" onClick={() => removeKeyword(keyword)}>
+                <X className="h-3 w-3" />
+                </button>
+            </div>
+            ))}
+            <Input
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                className="flex-grow border-none shadow-none focus-visible:ring-0 p-0 h-auto"
+                placeholder="Type keyword and press Enter..."
+                onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                    e.preventDefault();
+                    }
+                }}
+            />
+        </div>
+        </div>
+    );
 };
 
 
@@ -122,6 +124,7 @@ export default function SeoSettingsPage() {
     ogDescription: '',
     ogUrl: '',
     ogSiteName: '',
+    canonical: '',
   };
 
   const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
@@ -133,6 +136,7 @@ export default function SeoSettingsPage() {
     ogDescription: '',
     ogUrl: '',
     ogSiteName: '',
+    canonical: '',
   } });
 
   useEffect(() => {
@@ -277,6 +281,14 @@ export default function SeoSettingsPage() {
                             <form className="space-y-6">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 space-y-6">
+                                        <FormField control={enForm.control} name="canonical" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Canonical URL</FormLabel>
+                                                <FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl>
+                                                <FormDescription>The preferred URL for this page.</FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <Controller control={enForm.control} name="metaKeywords" render={({ field }) => (
                                             <FormItem><FormLabel>Meta Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                                         )} />
@@ -338,6 +350,13 @@ export default function SeoSettingsPage() {
                             <form className="space-y-6" dir="rtl">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 space-y-6">
+                                         <FormField control={arForm.control} name="canonical" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>الرابط الأساسي (Canonical URL)</FormLabel>
+                                                <FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <Controller control={arForm.control} name="metaKeywords" render={({ field }) => (
                                             <FormItem><FormLabel>الكلمات المفتاحية للميتا</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                                         )} />

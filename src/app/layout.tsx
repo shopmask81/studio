@@ -37,6 +37,9 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: language === 'ar' ? 'ar_AE' : 'en_US',
       type: 'website',
     },
+    alternates: {
+      canonical: currentSeoData.canonical || undefined,
+    },
     // Add other metadata tags as needed
   };
 }
