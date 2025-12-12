@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     const enDataString = formData.get('enHomepage') as string | null;
     const arDataString = formData.get('arHomepage') as string | null;
     const ogImageFile = formData.get('ogImageFile') as File | null;
+    const twitterImageFile = formData.get('twitterImageFile') as File | null;
     const robotsFileContent = formData.get('robots') as string | null;
     const sitemapFileContent = formData.get('sitemap') as string | null;
     
@@ -78,6 +79,11 @@ export async function POST(request: NextRequest) {
         if (ogImageFile) {
             const { url } = await uploadToImgBB(ogImageFile);
             enData.ogImage = url;
+        }
+
+        if (twitterImageFile) {
+            const { url } = await uploadToImgBB(twitterImageFile);
+            enData.twitterImage = url;
         }
         
         // Read existing files to preserve other potential settings

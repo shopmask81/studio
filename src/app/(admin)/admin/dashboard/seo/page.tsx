@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const enSeoSchema = z.object({
   metaKeywords: z.array(z.string()).min(1, 'At least one meta keyword is required.'),
@@ -26,6 +27,11 @@ const enSeoSchema = z.object({
   ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   ogSiteName: z.string().min(1, 'OpenGraph Site Name is required.'),
   canonical: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  twitterCard: z.string().optional(),
+  twitterTitle: z.string().optional(),
+  twitterDescription: zstring().optional(),
+  twitterUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  twitterImage: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
 
 const arSeoSchema = z.object({
@@ -37,6 +43,11 @@ const arSeoSchema = z.object({
   ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   ogSiteName: z.string().optional(),
   canonical: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  twitterCard: z.string().optional(),
+  twitterTitle: z.string().optional(),
+  twitterDescription: z.string().optional(),
+  twitterUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  twitterImage: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
 
 
@@ -52,13 +63,13 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        e.stopPropagation();
-        const newKeyword = inputValue.trim();
-        if (newKeyword && !value.includes(newKeyword)) {
-            onChange([...value, newKeyword]);
-        }
-        setInputValue('');
+            e.preventDefault();
+            e.stopPropagation();
+            const newKeyword = inputValue.trim();
+            if (newKeyword && !value.includes(newKeyword)) {
+                onChange([...value, newKeyword]);
+            }
+            setInputValue('');
         }
     };
     
@@ -95,7 +106,7 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
                 placeholder="Type keyword and press Enter..."
                 onKeyPress={(e) => {
                     if (e.key === 'Enter') {
-                    e.preventDefault();
+                        e.preventDefault();
                     }
                 }}
             />
@@ -113,6 +124,7 @@ export default function SeoSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [ogImage, setOgImage] = useState<ImageState>({ file: null, previewUrl: null });
+  const [twitterImage, setTwitterImage] = useState<ImageState>({ file: null, previewUrl: null });
   const [robotsContent, setRobotsContent] = useState('');
   const [sitemapContent, setSitemapContent] = useState('');
 
@@ -125,6 +137,11 @@ export default function SeoSettingsPage() {
     ogUrl: '',
     ogSiteName: '',
     canonical: '',
+    twitterCard: 'summary_large_image',
+    twitterTitle: '',
+    twitterDescription: '',
+    twitterUrl: '',
+    twitterImage: '',
   };
 
   const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
@@ -137,6 +154,11 @@ export default function SeoSettingsPage() {
     ogUrl: '',
     ogSiteName: '',
     canonical: '',
+    twitterCard: 'summary_large_image',
+    twitterTitle: '',
+    twitterDescription: '',
+    twitterUrl: '',
+    twitterImage: '',
   } });
 
   useEffect(() => {
@@ -155,6 +177,7 @@ export default function SeoSettingsPage() {
         }
         
         setOgImage(prev => ({ ...prev, previewUrl: data.en?.homepage?.ogImage || null }));
+        setTwitterImage(prev => ({ ...prev, previewUrl: data.en?.homepage?.twitterImage || null }));
 
         setRobotsContent(data.robots);
         setSitemapContent(data.sitemap);
@@ -169,10 +192,10 @@ export default function SeoSettingsPage() {
   }, [enForm, arForm, toast]);
 
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<ImageState>>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setOgImage({ file, previewUrl: URL.createObjectURL(file) });
+      setter({ file, previewUrl: URL.createObjectURL(file) });
     }
   };
 
@@ -193,8 +216,12 @@ export default function SeoSettingsPage() {
         const formData = new FormData();
         formData.append('enHomepage', JSON.stringify(enData));
         formData.append('arHomepage', JSON.stringify(arData));
+        
         if (ogImage.file) {
             formData.append('ogImageFile', ogImage.file);
+        }
+        if (twitterImage.file) {
+            formData.append('twitterImageFile', twitterImage.file);
         }
         
         const response = await fetch('/api/seo', {
@@ -278,131 +305,190 @@ export default function SeoSettingsPage() {
                     
                     <TabsContent value="en" className="pt-4">
                         <Form {...enForm}>
-                            <form className="space-y-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 space-y-6">
-                                        <FormField control={enForm.control} name="canonical" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Canonical URL</FormLabel>
-                                                <FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl>
-                                                <FormDescription>The preferred URL for this page.</FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <Controller control={enForm.control} name="metaKeywords" render={({ field }) => (
-                                            <FormItem><FormLabel>Meta Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Meta Title</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl><FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="metaDescription" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Meta Description</FormLabel>
-                                                <FormControl><Textarea rows={4} {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="ogTitle" render={({ field }) => (
-                                            <FormItem><FormLabel>OpenGraph Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="ogDescription" render={({ field }) => (
-                                            <FormItem><FormLabel>OpenGraph Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="ogUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>OpenGraph URL</FormLabel><FormControl><Input {...field} placeholder="https://your-domain.com" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={enForm.control} name="ogSiteName" render={({ field }) => (
-                                            <FormItem><FormLabel>OpenGraph Site Name</FormLabel><FormControl><Input {...field} placeholder="MaskShop" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </div>
-                                    <div className="lg:col-span-1">
-                                        <div className="space-y-2">
-                                            <FormLabel>OpenGraph Image</FormLabel>
-                                            {ogImage.previewUrl ? (
-                                                <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
-                                                <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
-                                                </div>
-                                            ) : (
-                                                <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
-                                                <p>No Image</p>
-                                                </div>
-                                            )}
-                                            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
-                                                <div className="flex flex-col items-center justify-center text-center p-4">
-                                                <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
-                                                <p className="text-sm text-muted-foreground">Click to upload image</p>
-                                                </div>
-                                                <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                                            </label>
-                                            <FormDescription>Recommended: 1200x630px image.</FormDescription>
+                            <Accordion type="multiple" defaultValue={['meta', 'opengraph', 'twitter']} className="w-full space-y-4">
+                                <AccordionItem value="meta">
+                                    <AccordionTrigger className="text-xl font-semibold px-4">Meta Tags</AccordionTrigger>
+                                    <AccordionContent className="p-4">
+                                        <div className="space-y-6">
+                                            <FormField control={enForm.control} name="canonical" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Canonical URL</FormLabel>
+                                                    <FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl>
+                                                    <FormDescription>The preferred URL for this page.</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <Controller control={enForm.control} name="metaKeywords" render={({ field }) => (
+                                                <FormItem><FormLabel>Meta Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
+                                                <FormItem><FormLabel>Meta Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={enForm.control} name="metaDescription" render={({ field }) => (
+                                                <FormItem><FormLabel>Meta Description</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
                                         </div>
-                                    </div>
-                                </div>
-                            </form>
+                                    </AccordionContent>
+                                </AccordionItem>
+
+                                <AccordionItem value="opengraph">
+                                    <AccordionTrigger className="text-xl font-semibold px-4">OpenGraph Tags</AccordionTrigger>
+                                    <AccordionContent className="p-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <div className="lg:col-span-2 space-y-6">
+                                                <FormField control={enForm.control} name="ogTitle" render={({ field }) => (
+                                                    <FormItem><FormLabel>OpenGraph Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="ogDescription" render={({ field }) => (
+                                                    <FormItem><FormLabel>OpenGraph Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="ogUrl" render={({ field }) => (
+                                                    <FormItem><FormLabel>OpenGraph URL</FormLabel><FormControl><Input {...field} placeholder="https://your-domain.com" /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="ogSiteName" render={({ field }) => (
+                                                    <FormItem><FormLabel>OpenGraph Site Name</FormLabel><FormControl><Input {...field} placeholder="MaskShop" /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                            <div className="lg:col-span-1">
+                                                <div className="space-y-2">
+                                                    <FormLabel>OpenGraph Image</FormLabel>
+                                                    {ogImage.previewUrl ? (
+                                                        <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
+                                                        <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
+                                                        <p>No Image</p>
+                                                        </div>
+                                                    )}
+                                                    <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                                                        <div className="flex flex-col items-center justify-center text-center p-4">
+                                                        <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                                        <p className="text-sm text-muted-foreground">Click to upload image</p>
+                                                        </div>
+                                                        <input type="file" className="hidden" onChange={(e) => handleFileChange(e, setOgImage)} accept="image/png, image/jpeg, image/webp" />
+                                                    </label>
+                                                    <FormDescription>Recommended: 1200x630px image.</FormDescription>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+
+                                <AccordionItem value="twitter">
+                                    <AccordionTrigger className="text-xl font-semibold px-4">Twitter Card Settings</AccordionTrigger>
+                                    <AccordionContent className="p-4">
+                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <div className="lg:col-span-2 space-y-6">
+                                                <FormField control={enForm.control} name="twitterCard" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Twitter Card Type</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select card type" /></SelectTrigger></FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="summary">Summary</SelectItem>
+                                                                <SelectItem value="summary_large_image">Summary with Large Image</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="twitterTitle" render={({ field }) => (
+                                                    <FormItem><FormLabel>Twitter Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="twitterDescription" render={({ field }) => (
+                                                    <FormItem><FormLabel>Twitter Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={enForm.control} name="twitterUrl" render={({ field }) => (
+                                                    <FormItem><FormLabel>Twitter URL</FormLabel><FormControl><Input {...field} placeholder="https://your-domain.com" /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                            <div className="lg:col-span-1">
+                                                 <div className="space-y-2">
+                                                    <FormLabel>Twitter Image</FormLabel>
+                                                    {twitterImage.previewUrl ? (
+                                                        <div className="relative w-full aspect-[2/1] rounded-md border p-1 flex items-center justify-center bg-muted">
+                                                            <Image src={twitterImage.previewUrl} alt="Twitter image preview" fill className="object-contain" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-full aspect-[2/1] rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
+                                                            <p>No Image</p>
+                                                        </div>
+                                                    )}
+                                                    <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                                                        <div className="flex flex-col items-center justify-center text-center p-4">
+                                                        <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                                        <p className="text-sm text-muted-foreground">Click to upload image</p>
+                                                        </div>
+                                                        <input type="file" className="hidden" onChange={(e) => handleFileChange(e, setTwitterImage)} accept="image/png, image/jpeg, image/webp" />
+                                                    </label>
+                                                    <FormDescription>Recommended: 2:1 ratio (e.g. 1200x600px).</FormDescription>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
                         </Form>
                     </TabsContent>
                     
                     <TabsContent value="ar" className="pt-4">
                         <Form {...arForm}>
-                            <form className="space-y-6" dir="rtl">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 space-y-6">
-                                         <FormField control={arForm.control} name="canonical" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>الرابط الأساسي (Canonical URL)</FormLabel>
-                                                <FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <Controller control={arForm.control} name="metaKeywords" render={({ field }) => (
-                                            <FormItem><FormLabel>الكلمات المفتاحية للميتا</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="metaTitle" render={({ field }) => (
-                                            <FormItem><FormLabel>عنوان الميتا</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="metaDescription" render={({ field }) => (
-                                            <FormItem><FormLabel>وصف الميتا</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="ogTitle" render={({ field }) => (
-                                        <FormItem><FormLabel>عنوان OpenGraph (العربية)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="ogDescription" render={({ field }) => (
-                                        <FormItem><FormLabel>وصف OpenGraph (العربية)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="ogUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>رابط OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={arForm.control} name="ogSiteName" render={({ field }) => (
-                                            <FormItem><FormLabel>اسم موقع OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </div>
-                                    <div className="lg:col-span-1">
-                                         <div className="space-y-2">
-                                            <FormLabel>صورة OpenGraph</FormLabel>
-                                            {ogImage.previewUrl ? (
-                                                <div className="relative w-full aspect-video rounded-md border p-1 flex items-center justify-center bg-muted">
-                                                <Image src={ogImage.previewUrl} alt="OpenGraph image preview" fill className="object-contain" />
-                                                </div>
-                                            ) : (
-                                                <div className="w-full aspect-video rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
-                                                <p>لا توجد صورة</p>
-                                                </div>
-                                            )}
-                                            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
-                                                <div className="flex flex-col items-center justify-center text-center p-4">
-                                                <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
-                                                <p className="text-sm text-muted-foreground">انقر لتحميل الصورة</p>
-                                                </div>
-                                                <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                                            </label>
-                                            <FormDescription>مستحسن: صورة 1200x630 بكسل.</FormDescription>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                            <div className="space-y-6" dir="rtl">
+                                <Accordion type="multiple" defaultValue={['meta-ar']} className="w-full space-y-4">
+                                    <AccordionItem value="meta-ar">
+                                        <AccordionTrigger className="text-xl font-semibold px-4">Meta Tags (Arabic)</AccordionTrigger>
+                                        <AccordionContent className="p-4">
+                                             <div className="space-y-6">
+                                                <FormField control={arForm.control} name="canonical" render={({ field }) => (
+                                                    <FormItem><FormLabel>الرابط الأساسي (Canonical URL)</FormLabel><FormControl><Input {...field} placeholder="https://your-domain.com/canonical-page" /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <Controller control={arForm.control} name="metaKeywords" render={({ field }) => (
+                                                    <FormItem><FormLabel>الكلمات المفتاحية للميتا</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="metaTitle" render={({ field }) => (
+                                                    <FormItem><FormLabel>عنوان الميتا</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="metaDescription" render={({ field }) => (
+                                                    <FormItem><FormLabel>وصف الميتا</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                    <AccordionItem value="opengraph-ar">
+                                         <AccordionTrigger className="text-xl font-semibold px-4">OpenGraph Tags (Arabic)</AccordionTrigger>
+                                         <AccordionContent className="p-4">
+                                            <div className="space-y-6">
+                                                <FormField control={arForm.control} name="ogTitle" render={({ field }) => (
+                                                    <FormItem><FormLabel>عنوان OpenGraph (العربية)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="ogDescription" render={({ field }) => (
+                                                    <FormItem><FormLabel>وصف OpenGraph (العربية)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="ogUrl" render={({ field }) => (
+                                                    <FormItem><FormLabel>رابط OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="ogSiteName" render={({ field }) => (
+                                                    <FormItem><FormLabel>اسم موقع OpenGraph</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                         </AccordionContent>
+                                    </AccordionItem>
+                                     <AccordionItem value="twitter-ar">
+                                        <AccordionTrigger className="text-xl font-semibold px-4">Twitter Card (Arabic)</AccordionTrigger>
+                                        <AccordionContent className="p-4">
+                                            <div className="space-y-6">
+                                                 <FormField control={arForm.control} name="twitterTitle" render={({ field }) => (
+                                                    <FormItem><FormLabel>عنوان Twitter</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={arForm.control} name="twitterDescription" render={({ field }) => (
+                                                    <FormItem><FormLabel>وصف Twitter</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            </div>
                         </Form>
                     </TabsContent>
                 </Tabs>
