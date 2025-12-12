@@ -1,7 +1,9 @@
+
 import { Metadata } from 'next';
 import { HomePageContent } from '@/components/layout/home-page-content';
 
 import seoData from '@/data/seo.json';
+import structuredData from '@/data/seo/structuredData.json';
 
 const currentSeoData = seoData.homepage;
 
@@ -39,7 +41,44 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': structuredData.appType || "WebApplication",
+  name: structuredData.appName,
+  url: structuredData.appUrl,
+  description: structuredData.appDescription,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Any',
+  offers: {
+    '@type': 'Offer',
+    price: structuredData.price,
+    priceCurrency: 'USD',
+  },
+  ...(structuredData.averageRating && structuredData.reviewsCount && {
+      aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: structuredData.averageRating,
+      reviewCount: structuredData.reviewsCount,
+    }
+  }),
+  screenshot: structuredData.screenshotUrl,
+  logo: structuredData.logoUrl,
+  developer: {
+    '@type': 'Organization',
+    name: structuredData.developerName,
+  },
+  keywords: [structuredData.focusKeyword, ...(structuredData.relatedKeywords || [])].join(', '),
+};
+
 
 export default function Home() {
-  return <HomePageContent />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <HomePageContent />
+    </>
+  );
 }

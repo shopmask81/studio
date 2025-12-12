@@ -50,8 +50,24 @@ const arSeoSchema = z.object({
   twitterImage: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
 });
 
+const structuredDataSchema = z.object({
+    appName: z.string().min(1, "App Name is required."),
+    appUrl: z.string().url("Must be a valid URL."),
+    appDescription: z.string().min(1, "App Description is required."),
+    appType: z.enum(["WebApplication", "MobileApplication", "Website"]),
+    developerName: z.string().min(1, "Developer Name is required."),
+    logoUrl: z.string().url("Must be a valid URL."),
+    screenshotUrl: z.string().url("Must be a valid URL."),
+    averageRating: z.coerce.number().optional(),
+    reviewsCount: z.coerce.number().int().optional(),
+    price: z.coerce.number().min(0, "Price must be a positive number."),
+    focusKeyword: z.string().min(1, "Focus Keyword is required."),
+    relatedKeywords: z.array(z.string()).min(1, "At least one related keyword is required."),
+});
+
 
 type SeoFormValues = z.infer<typeof enSeoSchema>;
+type StructuredDataFormValues = z.infer<typeof structuredDataSchema>;
 
 type ImageState = {
   file: File | null;
@@ -80,7 +96,6 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
         }
         setInputValue('');
     };
-
 
     const removeKeyword = (keywordToRemove: string) => {
         onChange(value.filter(keyword => keyword !== keywordToRemove));
@@ -119,6 +134,7 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
 export default function SeoSettingsPage() {
   const { toast } = useToast();
   const [isSavingHomepageSeo, setIsSavingHomepageSeo] = useState(false);
+  const [isSavingStructuredData, setIsSavingStructuredData] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState<'robots' | 'sitemap' | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -145,21 +161,25 @@ export default function SeoSettingsPage() {
   };
 
   const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
-  const arForm = useForm<z.infer<typeof arSeoSchema>>({ resolver: zodResolver(arSeoSchema), defaultValues: {
-    metaKeywords: [],
-    metaTitle: '',
-    metaDescription: '',
-    ogTitle: '',
-    ogDescription: '',
-    ogUrl: '',
-    ogSiteName: '',
-    canonical: '',
-    twitterCard: 'summary_large_image',
-    twitterTitle: '',
-    twitterDescription: '',
-    twitterUrl: '',
-    twitterImage: '',
-  } });
+  const arForm = useForm<z.infer<typeof arSeoSchema>>({ resolver: zodResolver(arSeoSchema), defaultValues: { metaKeywords: [], metaTitle: '', metaDescription: '', ogTitle: '', ogDescription: '', ogUrl: '', ogSiteName: '', canonical: '', twitterCard: 'summary_large_image', twitterTitle: '', twitterDescription: '', twitterUrl: '', twitterImage: '' } });
+  const structuredDataForm = useForm<StructuredDataFormValues>({
+    resolver: zodResolver(structuredDataSchema),
+    defaultValues: {
+        appName: "",
+        appUrl: "",
+        appDescription: "",
+        appType: "WebApplication",
+        developerName: "",
+        logoUrl: "",
+        screenshotUrl: "",
+        averageRating: undefined,
+        reviewsCount: undefined,
+        price: 0,
+        focusKeyword: "",
+        relatedKeywords: [],
+    }
+  });
+
 
   useEffect(() => {
     async function fetchSeoData() {
@@ -175,6 +195,9 @@ export default function SeoSettingsPage() {
         if (data.ar?.homepage) {
           arForm.reset(data.ar.homepage);
         }
+        if(data.structuredData) {
+            structuredDataForm.reset(data.structuredData);
+        }
         
         setOgImage(prev => ({ ...prev, previewUrl: data.en?.homepage?.ogImage || null }));
         setTwitterImage(prev => ({ ...prev, previewUrl: data.en?.homepage?.twitterImage || null }));
@@ -189,7 +212,7 @@ export default function SeoSettingsPage() {
       }
     }
     fetchSeoData();
-  }, [enForm, arForm, toast]);
+  }, [enForm, arForm, structuredDataForm, toast]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<ImageState>>) => {
@@ -241,6 +264,31 @@ export default function SeoSettingsPage() {
       setIsSavingHomepageSeo(false);
     }
   };
+  
+  const handleSaveStructuredData = async (data: StructuredDataFormValues) => {
+    setIsSavingStructuredData(true);
+    try {
+        const formData = new FormData();
+        formData.append('structuredData', JSON.stringify(data));
+        
+        const response = await fetch('/api/seo', {
+            method: 'POST',
+            body: formData,
+        });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save structured data.');
+      }
+
+      toast({ title: 'Structured Data Saved', description: 'Your JSON-LD settings have been updated.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: (error as Error).message });
+    } finally {
+        setIsSavingStructuredData(false);
+    }
+  };
+
 
   const handleSaveFile = async (fileType: 'robots' | 'sitemap') => {
     setIsSavingFile(fileType);
@@ -494,6 +542,81 @@ export default function SeoSettingsPage() {
                 </Tabs>
             </CardContent>
         </Card>
+        
+        <Accordion type="multiple" defaultValue={['structured-data']} className="w-full space-y-4">
+            <AccordionItem value="structured-data" className="border rounded-lg">
+                <AccordionTrigger className="text-xl font-semibold px-6">Structured Data (JSON-LD)</AccordionTrigger>
+                <AccordionContent className="p-6">
+                    <Form {...structuredDataForm}>
+                        <form onSubmit={structuredDataForm.handleSubmit(handleSaveStructuredData)} className="space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField control={structuredDataForm.control} name="appName" render={({ field }) => (
+                                    <FormItem><FormLabel>App Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="appUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>App URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <FormField control={structuredDataForm.control} name="appDescription" render={({ field }) => (
+                                <FormItem><FormLabel>App Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField control={structuredDataForm.control} name="appType" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Application Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="WebApplication">Web Application</SelectItem>
+                                                <SelectItem value="MobileApplication">Mobile Application</SelectItem>
+                                                <SelectItem value="Website">Website</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="developerName" render={({ field }) => (
+                                    <FormItem><FormLabel>Developer Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField control={structuredDataForm.control} name="logoUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>Logo URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="screenshotUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>Screenshot URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <FormField control={structuredDataForm.control} name="averageRating" render={({ field }) => (
+                                    <FormItem><FormLabel>Average Rating (Optional)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="reviewsCount" render={({ field }) => (
+                                    <FormItem><FormLabel>Reviews Count (Optional)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={structuredDataForm.control} name="price" render={({ field }) => (
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField control={structuredDataForm.control} name="focusKeyword" render={({ field }) => (
+                                    <FormItem><FormLabel>Focus Keyword</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <Controller control={structuredDataForm.control} name="relatedKeywords" render={({ field }) => (
+                                    <FormItem><FormLabel>Related Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={isSavingStructuredData}>
+                                    {isSavingStructuredData && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" /> Save Structured Data
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
 
         <Accordion type="multiple" className="w-full space-y-4">
             <AccordionItem value="robots-editor" className="border rounded-lg">
@@ -553,5 +676,3 @@ export default function SeoSettingsPage() {
     </div>
   );
 }
-
-    

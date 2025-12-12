@@ -8,6 +8,8 @@ const enSeoPath = path.join(process.cwd(), 'src', 'data', 'seo.json');
 const arSeoPath = path.join(process.cwd(), 'src', 'data', 'seo-ar.json');
 const robotsPath = path.join(process.cwd(), 'src', 'data', 'seo', 'robots.txt');
 const sitemapPath = path.join(process.cwd(), 'src', 'data', 'seo', 'sitemap.xml');
+const structuredDataPath = path.join(process.cwd(), 'src', 'data', 'seo', 'structuredData.json');
+
 
 // For serving live files
 const publicRobotsPath = path.join(process.cwd(), 'public', 'robots.txt');
@@ -47,12 +49,15 @@ export async function GET(request: NextRequest) {
     const arContent = await fs.readFile(arSeoPath, 'utf8').catch(() => '{}');
     const robotsContent = await fs.readFile(robotsPath, 'utf8').catch(() => '');
     const sitemapContent = await fs.readFile(sitemapPath, 'utf8').catch(() => '');
+    const structuredDataContent = await fs.readFile(structuredDataPath, 'utf8').catch(() => '{}');
+
 
     return NextResponse.json({
       en: JSON.parse(enContent),
       ar: JSON.parse(arContent),
       robots: robotsContent,
       sitemap: sitemapContent,
+      structuredData: JSON.parse(structuredDataContent),
     });
   } catch (error) {
     console.error('API Error fetching SEO settings:', error);
@@ -70,6 +75,7 @@ export async function POST(request: NextRequest) {
     const twitterImageFile = formData.get('twitterImageFile') as File | null;
     const robotsFileContent = formData.get('robots') as string | null;
     const sitemapFileContent = formData.get('sitemap') as string | null;
+    const structuredDataString = formData.get('structuredData') as string | null;
     
     // Handle Homepage SEO saving
     if (enDataString && arDataString) {
@@ -107,6 +113,12 @@ export async function POST(request: NextRequest) {
     if (sitemapFileContent !== null) {
         await fs.writeFile(sitemapPath, sitemapFileContent, 'utf8');
         await fs.writeFile(publicSitemapPath, sitemapFileContent, 'utf8');
+    }
+    
+    // Handle structured data saving
+    if (structuredDataString) {
+        const structuredData = JSON.parse(structuredDataString);
+        await fs.writeFile(structuredDataPath, JSON.stringify(structuredData, null, 2), 'utf8');
     }
 
 

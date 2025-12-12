@@ -1,0 +1,19 @@
+
+{
+  "appName": "MaskShop",
+  "appUrl": "https://your-domain.com",
+  "appDescription": "Discover unique, handmade masks from global artisans at MaskShop. Explore our curated collection of Venetian, traditional, and vintage decorative masks.",
+  "appType": "WebApplication",
+  "developerName": "MaskShop Inc.",
+  "logoUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
+  "screenshotUrl": "https://i.ibb.co/9H9CxxZ4/1764682613245-removebg-preview.png",
+  "averageRating": 4.8,
+  "reviewsCount": 1250,
+  "price": "0",
+  "focusKeyword": "handmade masks",
+  "relatedKeywords": [
+    "venetian masks",
+    "cultural masks",
+    "artisan crafts"
+  ]
+}
