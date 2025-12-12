@@ -106,9 +106,14 @@ export default function SeoSettingsPage() {
         if (!response.ok) throw new Error('Failed to fetch SEO data');
         const data = await response.json();
         
-        enForm.reset(data.en.homepage);
-        arForm.reset(data.ar.homepage);
-        setOgImage(prev => ({ ...prev, previewUrl: data.en.homepage.ogImage }));
+        if (data.en?.homepage) {
+          enForm.reset(data.en.homepage);
+        }
+        if (data.ar?.homepage) {
+          arForm.reset(data.ar.homepage);
+        }
+        
+        setOgImage(prev => ({ ...prev, previewUrl: data.en?.homepage?.ogImage || null }));
 
         setRobotsContent(data.robots);
         setSitemapContent(data.sitemap);
