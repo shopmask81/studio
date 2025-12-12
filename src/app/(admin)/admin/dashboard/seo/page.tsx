@@ -41,8 +41,7 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      e.stopPropagation(); // Stop the event from bubbling up to the form
+      e.preventDefault(); // This is the key part to stop form submission/focus change
       const newKeyword = inputValue.trim();
       if (newKeyword && !value.includes(newKeyword)) {
         onChange([...value, newKeyword]);
@@ -50,6 +49,15 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
       setInputValue('');
     }
   };
+  
+  const handleBlur = () => {
+    const newKeyword = inputValue.trim();
+    if (newKeyword && !value.includes(newKeyword)) {
+        onChange([...value, newKeyword]);
+    }
+    setInputValue('');
+  };
+
 
   const removeKeyword = (keywordToRemove: string) => {
     onChange(value.filter(keyword => keyword !== keywordToRemove));
@@ -70,6 +78,7 @@ const KeywordsInput = ({ value, onChange }: { value: string[]; onChange: (keywor
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           className="flex-grow border-none shadow-none focus-visible:ring-0 p-0 h-auto"
           placeholder="Type keyword and press Enter..."
         />
@@ -424,5 +433,3 @@ export default function SeoSettingsPage() {
     </div>
   );
 }
-
-    
