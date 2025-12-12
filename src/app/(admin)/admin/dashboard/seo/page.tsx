@@ -23,7 +23,7 @@ const enSeoSchema = z.object({
   metaDescription: z.string().min(1, 'Meta description is required.'),
   ogTitle: z.string().min(1, 'OpenGraph title is required.'),
   ogDescription: z.string().min(1, 'OpenGraph description is required.'),
-  ogUrl: z.string().url('Must be a valid URL.').min(1, 'OpenGraph URL is required.'),
+  ogUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
   ogSiteName: z.string().min(1, 'OpenGraph Site Name is required.'),
 });
 
