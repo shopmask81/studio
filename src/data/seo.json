@@ -1,13 +1,19 @@
+
 {
-  "focusKeyword": "Handmade Masks",
-  "relatedKeywords": [
-    "Venetian masks",
-    "cultural artifacts",
-    "traditional crafts"
-  ],
-  "metaTitle": "MaskShop - Authentic Handmade & Vintage Masks",
-  "metaDescription": "Discover authentic, handmade masks from around the world. Our collection features unique Venetian, traditional, and vintage crafts. Find your perfect piece of art at MaskShop.",
-  "ogTitle": "MaskShop | Artistry in Every Artifact",
-  "ogDescription": "Explore a curated collection of handmade, vintage, and traditional masks. Each piece tells a story of cultural heritage and masterful craftsmanship.",
-  "ogImage": "https://i.ibb.co/Xz9d3t5/dazzle-dazzle-dazzle-2.png"
+  "ogImage": "https://i.ibb.co/Xz9d3t5/dazzle-dazzle-dazzle-2.png",
+  "homepage": {
+    "metaKeywords": [
+      "Handmade Masks",
+      "Venetian Masks",
+      "Cultural Artifacts",
+      "Traditional Crafts",
+      "Artisan Masks",
+      "Decorative Masks"
+    ],
+    "metaTitle": "MaskShop | Authentic Handmade & Vintage Masks",
+    "metaDescription": "Discover unique, handmade masks from global artisans at MaskShop. Explore our curated collection of Venetian, traditional, and vintage decorative masks. Find your perfect piece of cultural art today.",
+    "ogTitle": "MaskShop: The World's Most Unique Handmade Masks",
+    "ogDescription": "From intricate Venetian designs to rustic traditional crafts, MaskShop offers a curated collection of handmade and vintage masks that tell a story. Explore artistry and cultural heritage in every piece.",
+    "ogImage": "https://i.ibb.co/9H9CxxZ4/1764682613245-removebg-preview.png"
+  }
 }

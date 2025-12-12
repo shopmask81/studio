@@ -15,18 +15,18 @@ export async function generateMetadata(): Promise<Metadata> {
   // This logic is simplified. A real app would determine the language
   // from request headers, cookies, or URL path.
   const language = 'en'; // or 'ar'
-  const currentSeoData = language === 'ar' ? seoDataAr : seoData;
+  const currentSeoData = language === 'ar' ? seoDataAr.homepage : seoData.homepage;
 
   return {
     title: currentSeoData.metaTitle,
     description: currentSeoData.metaDescription,
-    keywords: [currentSeoData.focusKeyword, ...currentSeoData.relatedKeywords],
+    keywords: currentSeoData.metaKeywords?.join(', '),
     openGraph: {
       title: currentSeoData.ogTitle,
       description: currentSeoData.ogDescription,
       images: [
         {
-          url: seoData.ogImage, // OG image is shared
+          url: seoData.homepage.ogImage, // OG image is shared
           width: 1200,
           height: 630,
           alt: currentSeoData.ogTitle,

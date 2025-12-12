@@ -18,8 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const enSeoSchema = z.object({
-  focusKeyword: z.string().min(1, 'Focus keyword is required.'),
-  relatedKeywords: z.array(z.string()).min(1, 'At least one related keyword is required.'),
+  metaKeywords: z.array(z.string()).min(1, 'At least one meta keyword is required.'),
   metaTitle: z.string().min(1, 'Meta title is required.'),
   metaDescription: z.string().min(1, 'Meta description is required.'),
   ogTitle: z.string().min(1, 'OpenGraph title is required.'),
@@ -27,8 +26,7 @@ const enSeoSchema = z.object({
 });
 
 const arSeoSchema = z.object({
-  focusKeyword: z.string().optional(),
-  relatedKeywords: z.array(z.string()).optional(),
+  metaKeywords: z.array(z.string()).optional(),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   ogTitle: z.string().optional(),
@@ -113,8 +111,7 @@ export default function SeoSettingsPage() {
   const [sitemapContent, setSitemapContent] = useState('');
 
   const formDefaultValues: SeoFormValues = {
-    focusKeyword: '',
-    relatedKeywords: [],
+    metaKeywords: [],
     metaTitle: '',
     metaDescription: '',
     ogTitle: '',
@@ -123,18 +120,12 @@ export default function SeoSettingsPage() {
 
   const enForm = useForm<SeoFormValues>({ resolver: zodResolver(enSeoSchema), defaultValues: formDefaultValues });
   const arForm = useForm<z.infer<typeof arSeoSchema>>({ resolver: zodResolver(arSeoSchema), defaultValues: {
-    focusKeyword: '',
-    relatedKeywords: [],
+    metaKeywords: [],
     metaTitle: '',
     metaDescription: '',
     ogTitle: '',
     ogDescription: '',
   } });
-
-  const watchedEnDescription = enForm.watch('metaDescription');
-  const watchedEnFocusKeyword = enForm.watch('focusKeyword');
-
-  const focusKeywordWarning = watchedEnFocusKeyword && watchedEnDescription && !watchedEnDescription.toLowerCase().includes(watchedEnFocusKeyword.toLowerCase());
 
   useEffect(() => {
     async function fetchSeoData() {
@@ -278,14 +269,9 @@ export default function SeoSettingsPage() {
                             <form className="space-y-6">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 space-y-6">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <FormField control={enForm.control} name="focusKeyword" render={({ field }) => (
-                                                <FormItem><FormLabel>Focus Keyword</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                            )} />
-                                            <Controller control={enForm.control} name="relatedKeywords" render={({ field }) => (
-                                                <FormItem><FormLabel>Related Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
-                                            )} />
-                                        </div>
+                                        <Controller control={enForm.control} name="metaKeywords" render={({ field }) => (
+                                            <FormItem><FormLabel>Meta Keywords</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                        )} />
                                         <FormField control={enForm.control} name="metaTitle" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Meta Title</FormLabel>
@@ -296,12 +282,6 @@ export default function SeoSettingsPage() {
                                             <FormItem>
                                                 <FormLabel>Meta Description</FormLabel>
                                                 <FormControl><Textarea rows={4} {...field} /></FormControl>
-                                                {focusKeywordWarning && (
-                                                    <Alert variant="destructive" className="mt-2 text-xs flex items-start gap-2">
-                                                        <AlertTriangle className="h-4 w-4 mt-0.5" />
-                                                        <AlertDescription>Warning: The meta description does not contain the focus keyword.</AlertDescription>
-                                                    </Alert>
-                                                )}
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -344,14 +324,9 @@ export default function SeoSettingsPage() {
                             <form className="space-y-6" dir="rtl">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 space-y-6">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <FormField control={arForm.control} name="focusKeyword" render={({ field }) => (
-                                                <FormItem><FormLabel>الكلمة المفتاحية الرئيسية</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                            )} />
-                                            <Controller control={arForm.control} name="relatedKeywords" render={({ field }) => (
-                                                <FormItem><FormLabel>الكلمات المفتاحية ذات الصلة</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
-                                            )} />
-                                        </div>
+                                        <Controller control={arForm.control} name="metaKeywords" render={({ field }) => (
+                                            <FormItem><FormLabel>الكلمات المفتاحية للميتا</FormLabel><FormControl><KeywordsInput value={field.value || []} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                                        )} />
                                         <FormField control={arForm.control} name="metaTitle" render={({ field }) => (
                                             <FormItem><FormLabel>عنوان الميتا</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
