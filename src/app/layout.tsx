@@ -4,45 +4,16 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import siteSettings from '@/../appData/siteSettings.json';
 import { ClientProviders } from '@/components/client-providers';
-import seoData from '@/data/seo.json';
-import seoDataAr from '@/data/seo-ar.json';
 
-// This function dynamically generates metadata based on language.
-// Note: In a real app, you would fetch the language from headers/cookies.
-// For this example, we assume a way to determine the language server-side.
-// We will default to English for this implementation.
-export async function generateMetadata(): Promise<Metadata> {
-  // This logic is simplified. A real app would determine the language
-  // from request headers, cookies, or URL path.
-  const language = 'en'; // or 'ar'
-  const currentSeoData = language === 'ar' ? seoDataAr.homepage : seoData.homepage;
-
-  return {
-    title: currentSeoData.metaTitle,
-    description: currentSeoData.metaDescription,
-    keywords: currentSeoData.metaKeywords?.join(', '),
-    openGraph: {
-      title: currentSeoData.ogTitle,
-      description: currentSeoData.ogDescription,
-      url: currentSeoData.ogUrl,
-      siteName: currentSeoData.ogSiteName,
-      images: [
-        {
-          url: seoData.homepage.ogImage, // OG image is shared
-          width: 1200,
-          height: 630,
-          alt: currentSeoData.ogTitle,
-        },
-      ],
-      locale: language === 'ar' ? 'ar_AE' : 'en_US',
-      type: 'website',
-    },
-    alternates: {
-      canonical: currentSeoData.canonical || undefined,
-    },
-    // Add other metadata tags as needed
-  };
-}
+// The global metadata has been removed from this root layout.
+// SEO metadata is now applied on a per-page basis, starting with the homepage.
+export const metadata: Metadata = {
+  title: {
+    default: siteSettings.siteName,
+    template: `%s | ${siteSettings.siteName}`,
+  },
+  description: siteSettings.siteDescription,
+};
 
 
 const ThemeInitializer = () => (
