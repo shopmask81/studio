@@ -146,7 +146,7 @@ export function HomePageContent() {
                   placeholder={
                       selectedCategory
                       ? `Search in ${selectedCategory.name}...`
-                      : 'Search masks by name, description, category...'
+                      : 'Search products by name, description, category...'
                   }
                   className="w-full pl-10 h-12 text-base bg-white dark:bg-background border-[#C7B8A2] dark:border-input text-[#5A493A] dark:text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-none"
                   value={searchQuery}
