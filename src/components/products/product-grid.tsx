@@ -13,10 +13,12 @@ export function ProductGrid({ products, isLoading }: ProductGridProps) {
 
   if (isLoading) {
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
             <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
             <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
+            <div className="w-full h-96 bg-muted rounded-lg animate-pulse hidden lg:block"></div>
+            <div className="w-full h-96 bg-muted rounded-lg animate-pulse hidden xl:block"></div>
         </div>
     )
   }
@@ -26,7 +28,7 @@ export function ProductGrid({ products, isLoading }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
       {products?.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
