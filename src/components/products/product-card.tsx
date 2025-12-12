@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -88,13 +89,13 @@ export function ProductCard({ product }: ProductCardProps) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       )}
+      {product.featured && (
+        <Badge className="absolute top-2 left-2 z-10 bg-[#990000] text-white px-3 py-1 text-sm border-[#990000]">
+            Featured
+        </Badge>
+      )}
       <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative">
-          {product.featured && (
-              <Badge variant="destructive" className="absolute top-2 left-2 z-10">
-                  Featured
-              </Badge>
-          )}
-          <CardHeader className="p-0 overflow-hidden rounded-t-lg">
+          <CardHeader className="p-0 rounded-t-lg overflow-hidden">
               <div className="relative aspect-[3/4] w-full">
               <Image
                   src={product.mainImage}
