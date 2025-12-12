@@ -91,6 +91,13 @@ export function ProductCard({ product }: ProductCardProps) {
         <Card className="overflow-hidden flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5">
             <CardHeader className="p-0">
                 <div className="relative aspect-[3/4] w-full overflow-hidden">
+                {product.featured && (
+                    <div className="absolute top-0 left-0 h-16 w-16">
+                        <div className="absolute transform -rotate-45 bg-primary text-center text-primary-foreground font-semibold py-1 left-[-34px] top-[32px] w-[170px] shadow-lg">
+                            Featured
+                        </div>
+                    </div>
+                )}
                 <Image
                     src={product.mainImage}
                     alt={product.name}
