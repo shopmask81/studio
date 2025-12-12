@@ -99,7 +99,7 @@ function CartDisplay() {
                                             {hasDiscount ? (
                                                 <div className="flex items-baseline gap-2">
                                                     <p className="text-primary font-semibold">{formatPrice(price)}</p>
-                                                    <p className="text-muted-foreground line-through">{formatPrice(originalPrice!)}</p>
+                                                    <p className="text-accent line-through">{formatPrice(originalPrice!)}</p>
                                                 </div>
                                             ) : (
                                                 <p className="text-primary">{formatPrice(price)}</p>
