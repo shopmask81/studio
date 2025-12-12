@@ -13,6 +13,7 @@ import { useModal } from '../modals/modal-provider';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCurrency } from '../currency/currency-provider';
+import { Badge } from '../ui/badge';
 
 interface ProductCardProps {
   product: Product;
@@ -87,15 +88,13 @@ export function ProductCard({ product }: ProductCardProps) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       )}
-       {product.featured && (
-          <div className="absolute top-0 left-0 w-24 h-24 overflow-hidden z-10">
-              <div className="absolute transform -rotate-45 bg-destructive text-center text-destructive-foreground font-semibold py-1 left-[-34px] top-[32px] w-[170px] shadow-lg">
+      <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative">
+          {product.featured && (
+              <Badge variant="destructive" className="absolute top-2 left-2 z-10">
                   Featured
-              </div>
-          </div>
-      )}
-      <Card className="flex flex-col h-full transition-all duration-300 ease-in-out dark:shadow-card-warm shadow-card-warm dark:hover:shadow-lg hover:shadow-card-warm-hover dark:hover:-translate-y-1 hover:-translate-y-0.5 relative overflow-hidden">
-          <CardHeader className="p-0">
+              </Badge>
+          )}
+          <CardHeader className="p-0 overflow-hidden rounded-t-lg">
               <div className="relative aspect-[3/4] w-full">
               <Image
                   src={product.mainImage}
