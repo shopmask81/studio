@@ -32,7 +32,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const formSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  targetUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
+  targetUrl: z.string().optional(),
   cta: z.string().optional(),
 });
 
