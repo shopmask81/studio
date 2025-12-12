@@ -343,17 +343,19 @@ export function CheckoutForm() {
                     </div>
                     
                     <div className="md:col-span-1">
-                        <ClientOnly>
-                            <OrderSummary />
-                        </ClientOnly>
-                        <Button type="submit" size="lg" className="w-full mt-6" disabled={isSubmitting || cartItems.length === 0}>
-                            {isSubmitting ? (
-                                <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Lock className="me-2 h-4 w-4" />
-                            )}
-                            {t('place_order').text}
-                        </Button>
+                        <div className="sticky top-20 space-y-6">
+                            <ClientOnly>
+                                <OrderSummary />
+                            </ClientOnly>
+                            <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || cartItems.length === 0}>
+                                {isSubmitting ? (
+                                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Lock className="me-2 h-4 w-4" />
+                                )}
+                                {t('place_order').text}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </Form>
