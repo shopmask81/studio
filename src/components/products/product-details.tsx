@@ -275,7 +275,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 {hasDiscount ? (
                     <>
                         <p className="text-4xl font-bold text-primary">{formatPrice(displayDiscountPrice!)}</p>
-                        <p className="text-2xl font-medium text-muted-foreground line-through">{formatPrice(displayPrice!)}</p>
+                        <p className="text-2xl font-medium text-accent line-through">{formatPrice(displayPrice!)}</p>
                     </>
                 ) : (
                    displayPrice !== undefined && <p className="text-4xl font-bold text-primary">{formatPrice(displayPrice)}</p>
