@@ -3,15 +3,41 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   async headers() {
+    const noIndexHeaders = [
+      {
+        key: 'X-Robots-Tag',
+        value: 'noindex, nofollow',
+      },
+    ];
+
     return [
       {
-        source: '/:(admin|account|login|signup|cart|checkout|order-confirmation)(.*)',
-        headers: [
-          {
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow',
-          },
-        ],
+        source: '/admin/:path*',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/account/:path*',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/login',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/signup',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/cart',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/checkout',
+        headers: noIndexHeaders,
+      },
+      {
+        source: '/order-confirmation',
+        headers: noIndexHeaders,
       },
     ]
   },
