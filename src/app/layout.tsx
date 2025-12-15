@@ -36,6 +36,12 @@ const ThemeInitializer = () => (
   />
 );
 
+export const metadata: Metadata = {
+  icons: {
+    icon: siteSettings.faviconUrl || '/favicon.ico',
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,7 +54,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Lato:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
-        {siteSettings.faviconUrl && <link rel="icon" href={siteSettings.faviconUrl} sizes="any" />}
       </head>
       <body className={cn("font-body antialiased")}>
         <ClientProviders>
