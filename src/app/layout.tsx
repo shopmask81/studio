@@ -33,9 +33,13 @@ const ThemeInitializer = () => (
 );
 
 export const metadata: Metadata = {
-  // Rely on the /favicon.ico route for the icon.
-  // This is the most reliable method.
+  icons: {
+    icon: '/api/favicon.ico',
+    shortcut: '/api/favicon.ico',
+    apple: '/api/favicon.ico',
+  },
 };
+
 
 export default function RootLayout({
   children,

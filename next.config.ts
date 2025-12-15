@@ -2,6 +2,19 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/((admin|account|login|signup|cart|checkout|order-confirmation)(/.*)?)',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow',
+          },
+        ],
+      },
+    ]
+  },
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
