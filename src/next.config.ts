@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path((admin|account|login|signup|cart|checkout|order-confirmation)(/.*)?)',
+        source: '/:path((admin|account|login|signup|cart|checkout|order-confirmation).*)',
         headers: [
           {
             key: 'X-Robots-Tag',
