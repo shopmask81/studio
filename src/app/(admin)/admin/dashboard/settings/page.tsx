@@ -84,33 +84,44 @@ const currencies: { code: Currency; name: string }[] = [
   { code: 'EUR', name: 'Euro' },
 ];
 
-// Properly defined standalone helper component
-const ImageUploader = ({ title, description, imageState, onFileChange }: { title: string; description: string; imageState: ImageState; onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }) => {
-  return (
-    <div className="space-y-2">
-      <FormLabel>{title}</FormLabel>
-      <div className="flex items-center gap-4">
-        {imageState.previewUrl ? (
-          <div className="relative h-16 w-16 rounded-md border p-1 flex items-center justify-center bg-muted">
-            <Image src={imageState.previewUrl} alt={`${title} preview`} width={60} height={60} className="object-contain" />
+const ImageUploader = ({ title, description, imageState, onFileChange, onUpload, isUploading, apiKeyPresent }: { title: string; description: string; imageState: ImageState; onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; onUpload: () => void; isUploading: boolean; apiKeyPresent: boolean; }) => {
+    return (
+      <div className="space-y-2">
+        <FormLabel>{title}</FormLabel>
+        <div className="flex items-start gap-4">
+          {imageState.previewUrl ? (
+            <div className="relative h-20 w-20 rounded-md border p-1 flex items-center justify-center bg-muted">
+              <Image src={imageState.previewUrl} alt={`${title} preview`} width={72} height={72} className="object-contain" />
+            </div>
+          ) : (
+            <div className="h-20 w-20 rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
+              <p className="text-xs">None</p>
+            </div>
+          )}
+          <div className="flex-grow space-y-2">
+             <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors min-h-20">
+              <div className="flex flex-col items-center justify-center text-center p-2">
+                <UploadCloud className="w-5 h-5 mb-1 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{imageState.file ? imageState.file.name : 'Click to select file'}</p>
+              </div>
+              <input type="file" className="hidden" onChange={onFileChange} accept="image/png, image/jpeg, image/svg+xml, image/ico" />
+            </label>
+             <Button 
+                type="button" 
+                size="sm" 
+                className="w-full"
+                onClick={onUpload} 
+                disabled={!imageState.file || isUploading || !apiKeyPresent}
+            >
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                Upload
+            </Button>
           </div>
-        ) : (
-          <div className="h-16 w-16 rounded-md border flex items-center justify-center text-muted-foreground bg-muted">
-            <p className="text-xs">None</p>
-          </div>
-        )}
-        <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors max-h-16">
-          <div className="flex flex-col items-center justify-center text-center p-2">
-            <UploadCloud className="w-5 h-5 mb-1 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Click to upload</p>
-          </div>
-          <input type="file" className="hidden" onChange={onFileChange} accept="image/png, image/jpeg, image/svg+xml, image/ico" />
-        </label>
+        </div>
+        <FormDescription>{description}</FormDescription>
       </div>
-      <FormDescription>{description}</FormDescription>
-    </div>
-  );
-};
+    );
+  };
 
 
 export default function AdminSettingsPage() {
@@ -164,6 +175,8 @@ export default function AdminSettingsPage() {
         privacy_policy_content_ar: initialAr.privacy_policy_content_ar,
     },
   });
+  
+  const apiKey = generalForm.watch('imgbbApiKey');
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -184,15 +197,19 @@ export default function AdminSettingsPage() {
     setter: React.Dispatch<React.SetStateAction<ImageState>>,
     apiKey: string
   ) => {
-    if (!imageState.file) return null;
+    if (!imageState.file) return;
+    if (!apiKey) {
+      toast({ variant: 'destructive', title: 'API Key Missing', description: 'Please provide the ImgBB API key before uploading.' });
+      return;
+    }
     setter(prev => ({ ...prev, isUploading: true }));
     try {
       const { url } = await uploadImage(imageState.file, apiKey);
       setter(prev => ({ ...prev, previewUrl: url, file: null, isUploading: false }));
-      toast({ title: 'Image Uploaded', description: 'The image has been successfully uploaded.' });
+      toast({ title: 'Image Uploaded', description: 'The new image is ready. Click "Save All Changes" to apply it to your site.' });
       return url;
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the image.' });
+      toast({ variant: 'destructive', title: 'Upload Failed', description: (error as Error).message || 'Could not upload the image.' });
       setter(prev => ({ ...prev, isUploading: false }));
       return null;
     }
@@ -215,34 +232,18 @@ export default function AdminSettingsPage() {
     }
 
     const generalData = generalForm.getValues();
-    let finalLogoUrl = logo.previewUrl;
-    let finalFaviconUrl = favicon.previewUrl;
+    const contentData = contentForm.getValues();
 
     try {
-      // Handle image uploads first, using the newly entered API key
-      if (logo.file) {
-        const uploadedUrl = await handleUpload(logo, setLogo, generalData.imgbbApiKey);
-        if (uploadedUrl) finalLogoUrl = uploadedUrl;
-        else throw new Error("Logo upload failed.");
-      }
-
-      if (favicon.file) {
-        const uploadedUrl = await handleUpload(favicon, setFavicon, generalData.imgbbApiKey);
-        if (uploadedUrl) finalFaviconUrl = uploadedUrl;
-        else throw new Error("Favicon upload failed.");
-      }
-
-      const contentData = contentForm.getValues();
-
       const finalSettings = {
         ...generalData,
-        logoUrl: finalLogoUrl || '',
-        faviconUrl: finalFaviconUrl || '',
+        logoUrl: logo.previewUrl || '',
+        faviconUrl: favicon.previewUrl || '',
       };
       
       const finalContent = {
           en: {
-              ...initialEn, // Preserve other keys
+              ...initialEn,
               discover_persona: contentData.discover_persona,
               explore_collection: contentData.explore_collection,
               about_title: contentData.about_title,
@@ -253,7 +254,7 @@ export default function AdminSettingsPage() {
               privacy_policy_content: contentData.privacy_policy_content,
           },
           ar: {
-              ...initialAr, // Preserve other keys
+              ...initialAr,
               discover_persona: contentData.discover_persona_ar,
               explore_collection: contentData.explore_collection_ar,
               about_title_ar: contentData.about_title_ar,
@@ -268,7 +269,6 @@ export default function AdminSettingsPage() {
       await saveSettings({ general: finalSettings, content: finalContent });
       toast({ title: 'Settings Saved', description: 'Your site settings have been updated successfully. The page will now reload to apply changes.' });
 
-      // Force a reload to apply new settings like favicon
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -276,9 +276,7 @@ export default function AdminSettingsPage() {
 
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
-    } finally {
-      // Keep loading state until page reloads
-      // setIsSaving(false);
+      setIsSaving(false);
     }
   }
   
@@ -357,9 +355,25 @@ export default function AdminSettingsPage() {
                                         />
                                     </div>
                                     <div className="space-y-6">
-                                        <ImageUploader title="Site Logo" description="Recommended: PNG or SVG, 256x256px." imageState={logo} onFileChange={(e) => handleFileChange(e, setLogo)} />
-                                        <ImageUploader title="Favicon" description="Recommended: .ico or PNG, 32x32px or 16x16px." imageState={favicon} onFileChange={(e) => handleFileChange(e, setFavicon)} />
-                                        <FormField control={generalForm.control} name="imgbbApiKey" render={({ field }) => (<FormItem><FormLabel>Image Upload API Key (imgbb)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                         <FormField control={generalForm.control} name="imgbbApiKey" render={({ field }) => (<FormItem><FormLabel>Image Upload API Key (imgbb)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <ImageUploader 
+                                            title="Site Logo" 
+                                            description="Recommended: PNG or SVG, 256x256px." 
+                                            imageState={logo} 
+                                            onFileChange={(e) => handleFileChange(e, setLogo)}
+                                            onUpload={() => handleUpload(logo, setLogo, apiKey)}
+                                            isUploading={logo.isUploading}
+                                            apiKeyPresent={!!apiKey}
+                                        />
+                                        <ImageUploader 
+                                            title="Favicon" 
+                                            description="Recommended: .ico or PNG, 32x32px or 16x16px." 
+                                            imageState={favicon} 
+                                            onFileChange={(e) => handleFileChange(e, setFavicon)}
+                                            onUpload={() => handleUpload(favicon, setFavicon, apiKey)}
+                                            isUploading={favicon.isUploading}
+                                            apiKeyPresent={!!apiKey}
+                                        />
                                     </div>
                                 </div>
                                 <Separator className="my-8" />
