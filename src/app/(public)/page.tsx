@@ -5,6 +5,8 @@ import { HomePageContent } from '@/components/layout/home-page-content';
 import seoData from '@/data/seo.json';
 import structuredData from '@/data/seo/structuredData.json';
 
+// Since this is now a server component, we need to handle potential dynamic data loading.
+// For now, we assume the data is static as per the original file.
 const currentSeoData = seoData.homepage;
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
     },
     twitter: {
-      card: currentSeoData.twitterCard as "summary" | "summary_large_image" | "app" | "player" || "summary_large_image",
+      card: (currentSeoData.twitterCard as "summary" | "summary_large_image" | "app" | "player") || "summary_large_image",
       title: currentSeoData.twitterTitle,
       description: currentSeoData.twitterDescription,
       images: [currentSeoData.twitterImage], 
