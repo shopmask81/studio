@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/((admin|account|login|signup|cart|checkout|order-confirmation)(/.*)?)',
+        source: '/:(admin|account|login|signup|cart|checkout|order-confirmation)(.*)',
         headers: [
           {
             key: 'X-Robots-Tag',
@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https' as const,
         hostname: 'i.ibb.co',
         port: '',
         pathname: '/**',
