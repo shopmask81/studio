@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Currency } from '@/lib/types';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 const generalFormSchema = z.object({
   siteName: z.string().min(3, 'Site name must be at least 3 characters.'),
@@ -114,6 +115,7 @@ const ImageUploader = ({ title, description, imageState, onFileChange }: { title
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
   const [logo, setLogo] = useState<ImageState>({
@@ -264,12 +266,19 @@ export default function AdminSettingsPage() {
       };
 
       await saveSettings({ general: finalSettings, content: finalContent });
-      toast({ title: 'Settings Saved', description: 'Your site settings have been updated successfully.' });
+      toast({ title: 'Settings Saved', description: 'Your site settings have been updated successfully. The page will now reload to apply changes.' });
+
+      // Force a reload to apply new settings like favicon
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+
 
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
     } finally {
-      setIsSaving(false);
+      // Keep loading state until page reloads
+      // setIsSaving(false);
     }
   }
   
