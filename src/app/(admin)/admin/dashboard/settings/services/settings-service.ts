@@ -36,7 +36,7 @@ type SettingsPayload = {
 }
 
 export async function saveSettings(settings: SettingsPayload): Promise<void> {
-  const response = await fetch('/api/site-settings', {
+  const response = await fetch('/api/settings-handler', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),

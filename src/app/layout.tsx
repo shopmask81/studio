@@ -6,7 +6,7 @@ import siteSettings from '@/../appData/siteSettings.json';
 import { ClientProviders } from '@/components/client-providers';
 
 // This component runs a script to apply theme settings before the page hydrates.
-const ThemeAndFaviconInitializer = () => (
+const ThemeInitializer = () => (
   <script
     dangerouslySetInnerHTML={{
       __html: `
@@ -26,16 +26,6 @@ const ThemeAndFaviconInitializer = () => (
           const root = document.documentElement;
           root.classList.remove('light', 'dark');
           root.classList.add(mode);
-
-          // --- FAVICON ---
-          const faviconUrl = "${siteSettings.faviconUrl || '/favicon.ico'}";
-          let link = document.querySelector("link[rel~='icon']");
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.getElementsByTagName('head')[0].appendChild(link);
-          }
-          link.href = faviconUrl;
         })();
       `,
     }}
@@ -43,11 +33,8 @@ const ThemeAndFaviconInitializer = () => (
 );
 
 export const metadata: Metadata = {
-  // Metadata is still useful for SEO and initial static export,
-  // but the client-side script ensures dynamic updates are reflected.
-  icons: {
-    icon: siteSettings.faviconUrl || '/favicon.ico',
-  },
+  // Rely on the /favicon.ico route for the icon.
+  // This is the most reliable method.
 };
 
 export default function RootLayout({
@@ -58,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <ThemeAndFaviconInitializer />
+        <ThemeInitializer />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Lato:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
