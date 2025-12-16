@@ -6,6 +6,25 @@ import path from 'path';
 const settingsFilePath = path.join(process.cwd(), 'appData', 'siteSettings.json');
 const enLocalePath = path.join(process.cwd(), 'src', 'locales', 'en.json');
 const arLocalePath = path.join(process.cwd(), 'src', 'locales', 'ar.json');
+const publicFaviconPath = path.join(process.cwd(), 'public', 'favicon.ico');
+
+async function updateFavicon(faviconUrl: string) {
+    if (!faviconUrl) {
+        console.log('No favicon URL provided, skipping update.');
+        return;
+    }
+    try {
+        const response = await fetch(faviconUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch new favicon. Status: ${response.status}`);
+        }
+        const imageBuffer = await response.arrayBuffer();
+        await fs.writeFile(publicFaviconPath, Buffer.from(imageBuffer));
+        console.log('Successfully updated public/favicon.ico');
+    } catch (error) {
+        console.error('Failed to update favicon.ico:', error);
+    }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +41,24 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing required content fields.' }, { status: 400 });
     }
 
+    // Read current settings to check if favicon has changed
+    let oldFaviconUrl = '';
+    try {
+        const currentSettingsRaw = await fs.readFile(settingsFilePath, 'utf8');
+        const currentSettings = JSON.parse(currentSettingsRaw);
+        oldFaviconUrl = currentSettings.faviconUrl;
+    } catch {
+        // Ignore if the file doesn't exist yet
+    }
+
     // Write general settings
     const generalSettingsString = JSON.stringify(newSettings, null, 2);
     await fs.writeFile(settingsFilePath, generalSettingsString, 'utf8');
+    
+    // If the favicon URL has changed, update the physical file
+    if (newSettings.faviconUrl && newSettings.faviconUrl !== oldFaviconUrl) {
+        await updateFavicon(newSettings.faviconUrl);
+    }
 
     // Write content settings
     const enContentString = JSON.stringify(newContent.en, null, 2);
