@@ -2,7 +2,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useCurrency } from "@/components/currency/currency-provider";
 import type { Order } from "@/lib/types";
@@ -19,10 +19,12 @@ export function AffiliateOrders() {
 
     const ordersQuery = useMemoFirebase(() => {
         if (!firestore || !userProfile?.affiliateCode) return null;
+        // The query MUST match the security rules: filtered by affiliateCode and limited to <= 50
         return query(
             collection(firestore, 'orders'),
             where('affiliateCode', '==', userProfile.affiliateCode),
-            orderBy('createdAt', 'desc')
+            orderBy('createdAt', 'desc'),
+            limit(50)
         );
     }, [firestore, userProfile?.affiliateCode]);
 
@@ -32,7 +34,7 @@ export function AffiliateOrders() {
         <Card>
             <CardHeader>
                 <CardTitle>Recent Referred Orders</CardTitle>
-                <CardDescription>Real-time list of orders placed using your referral code.</CardDescription>
+                <CardDescription>Real-time list of orders placed using your referral code (up to 50 latest).</CardDescription>
             </CardHeader>
             <CardContent>
                 {isLoading ? (

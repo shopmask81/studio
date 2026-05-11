@@ -50,9 +50,17 @@ service cloud.firestore {
      */
     match /orders/{orderId} {
       allow create: if isOwner(request.resource.data.userId) || request.resource.data.userId == 'guest';
-      allow get: if isOwner(resource.data.userId) || isAdmin();
-      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 50 && request.query.where.affiliateCode != null);
-      allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings']));
+      allow get: if isOwner(resource.data.userId) || 
+                   isAdmin() || 
+                   (isSignedIn() && resource.data.affiliateCode != null && resource.data.affiliateCode == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.affiliateCode);
+      
+      allow list: if isAdmin() || 
+                    (isSignedIn() && 
+                     request.query.limit <= 50 && 
+                     request.query.where.affiliateCode != null && 
+                     request.query.where.affiliateCode == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.affiliateCode);
+      
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -70,7 +78,10 @@ service cloud.firestore {
     match /affiliates/{affiliateId} {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
-      allow create, update, delete: if isAdmin();
+      allow create: if isAdmin();
+      // Allow incrementing stats during checkout
+      allow update: if isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings', 'updatedAt']);
+      allow delete: if isAdmin();
     }
 
     /**
@@ -109,7 +120,7 @@ service cloud.firestore {
       return isSignedIn() && (
         // Priority 1: Hardcoded Master Admin UID
         request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2' ||
-        // Priority 2: Document lookup (safe fallback)
+        // Priority 2: Document lookup
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
