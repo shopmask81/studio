@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -8,7 +7,7 @@ import { useFirestore, useDoc } from '@/firebase';
 import { writeBatch, doc, getDocs, collection, query, orderBy, where, Timestamp } from 'firebase/firestore';
 import type { Order, Product } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Loader2, RefreshCw } from 'lucide-react';
+import { Terminal, Loader2, RefreshCw, Info } from 'lucide-react';
 import { BulkActionsBar } from './components/bulk-actions-bar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
@@ -34,7 +33,6 @@ export default function AdminOrdersPage() {
 
   const isAdmin = userProfile?.role === 'admin';
 
-  // Listen to the cached document instead of the whole collection
   const cachedOrdersRef = useMemo(() => {
     if (!firestore || !isAdmin || isAuthLoading) return null;
     return doc(firestore, 'cachedData', 'allOrders');
@@ -44,7 +42,6 @@ export default function AdminOrdersPage() {
   
   const allOrders = useMemo(() => {
     if (!cachedData?.orders) return [];
-    // Firestore Timestamps need to be converted back to Date objects for filtering
     return cachedData.orders.map(order => ({
       ...order,
       createdAt: order.createdAt ? (order.createdAt as any)?.toDate ? (order.createdAt as any).toDate() : new Date(order.createdAt as any) : new Date(),
@@ -52,7 +49,7 @@ export default function AdminOrdersPage() {
   }, [cachedData]);
   
   const handleManualCacheRefresh = useCallback(async () => {
-    if (!firestore || isCaching) return; // Prevent multiple clicks
+    if (!firestore || isCaching) return;
     if (!isAdmin) {
       toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to update the order cache.' });
       return;
@@ -61,7 +58,7 @@ export default function AdminOrdersPage() {
     setIsCaching(true);
     try {
       const count = await updateOrderCache(firestore);
-      toast({ title: 'Order Cache Updated', description: `${count} orders have been cached.` });
+      toast({ title: 'Order Cache Updated', description: `${count} orders have been cached for Admin and Affiliates.` });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
     } finally {
@@ -69,21 +66,17 @@ export default function AdminOrdersPage() {
     }
   }, [firestore, toast, isAdmin, isCaching]);
   
-  // Effect for automatic cache refresh based on timestamp
   useEffect(() => {
     if (cachedData && !isCacheLoading) {
       const lastUpdated = cachedData.lastUpdated?.toDate().getTime() || 0;
       const now = Date.now();
       
       if (now - lastUpdated > CACHE_EXPIRATION_MS) {
-        console.log("Order cache is older than 1 hour. Automatically refreshing...");
         handleManualCacheRefresh();
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cachedData, isCacheLoading]);
+  }, [cachedData, isCacheLoading, handleManualCacheRefresh]);
 
-  // This is the core filtering logic, now simplified and robust.
   const filteredOrders = useMemo(() => {
     if (!allOrders) return null;
 
@@ -96,7 +89,7 @@ export default function AdminOrdersPage() {
     if (filters.dateRange?.from) {
         orders = orders.filter(order => {
             if (!order.createdAt) return false;
-            const orderDate = order.createdAt; // Already a Date object
+            const orderDate = order.createdAt;
             if (filters.dateRange?.to) {
                 return orderDate >= filters.dateRange.from && orderDate <= filters.dateRange.to;
             }
@@ -196,7 +189,7 @@ export default function AdminOrdersPage() {
 
     try {
         await batch.commit();
-        await updateOrderCache(firestore); // Refresh cache
+        await updateOrderCache(firestore);
         toast({ title: "Bulk Update Successful", description: `${selectedOrderIds.length} orders updated.` });
         setSelectedOrderIds([]);
     } catch(error) {
@@ -216,7 +209,7 @@ export default function AdminOrdersPage() {
 
      try {
         await batch.commit();
-        await updateOrderCache(firestore); // Refresh cache
+        await updateOrderCache(firestore);
         toast({ title: "Bulk Delete Successful", description: `${selectedOrderIds.length} orders deleted.` });
         setSelectedOrderIds([]);
     } catch (error) {
@@ -245,6 +238,14 @@ export default function AdminOrdersPage() {
             )}
         </div>
       </div>
+
+      <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800">
+        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertTitle>Affiliate System Sync</AlertTitle>
+        <AlertDescription className="text-blue-700 dark:text-blue-300">
+          Remember to click <b>"Refresh Orders Cache"</b> after new orders are placed to update the private dashboards for your affiliates.
+        </AlertDescription>
+      </Alert>
       
       <OrderFilters onFilterChange={setFilters} />
 

@@ -135,7 +135,6 @@ export function CheckoutForm() {
 
         const finalTotal = cartTotal + shippingTotal;
         
-        // --- Affiliate Tracking Logic ---
         let affiliateCodeToSave = null;
         let commissionAmount = 0;
         let affiliateId = null;
@@ -145,8 +144,6 @@ export function CheckoutForm() {
         if (savedAffiliateCode) {
             try {
                 const normalizedCode = savedAffiliateCode.toUpperCase().trim();
-                
-                // Find matching active affiliate
                 const affQuery = query(
                     collection(firestore, 'affiliates'), 
                     where('code', '==', normalizedCode), 
@@ -164,7 +161,6 @@ export function CheckoutForm() {
                     affiliateCodeToSave = normalizedCode;
                     commissionAmount = cartTotal * (affData.commissionRate || 0);
                     
-                    // Increment affiliate totals atomically
                     await updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
@@ -172,7 +168,7 @@ export function CheckoutForm() {
                     });
                 }
             } catch (e) {
-                console.warn("Affiliate tracking lookup failed:", e);
+                console.warn("[Affiliate] Referral lookup failed:", e);
             }
         }
         
@@ -232,7 +228,6 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
-            // Clear tracking after success
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('affiliate_ref');
             }
