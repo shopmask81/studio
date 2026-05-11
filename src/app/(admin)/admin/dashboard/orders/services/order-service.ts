@@ -36,7 +36,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
     const allOrders = orderSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      createdAt: (doc.data().createdAt as Timestamp)?.toDate ? (doc.data().createdAt as Timestamp).toDate().toISOString() : new Date(doc.data().createdAt).toISOString(),
+      createdAt: (doc.data().createdAt as Timestamp)?.toDate ? (doc.data().createdAt as Timestamp).toDate().toISOString() : new Date(doc.data().createdAt as any).toISOString(),
     })) as unknown as Order[];
 
     // 2. Fetch all affiliates to map affiliateId (doc ID) AND affiliateCode to userId (Auth UID)
@@ -49,12 +49,10 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
 
     const affiliateIdToUserId = new Map<string, string>();
     const affiliateCodeToUserId = new Map<string, string>();
-    const affiliateIdToRate = new Map<string, number>();
     
-    // MAINTENANCE: Also keep track of which user documents need syncing
+    // MAINTENANCE & MAPPING
     affiliates.forEach(a => {
         affiliateIdToUserId.set(a.id, a.userId);
-        affiliateIdToRate.set(a.id, a.commissionRate || 0.1);
         
         const userRef = doc(firestore, 'users', a.userId);
         const userUpdateData: any = {
@@ -69,7 +67,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
             userUpdateData.affiliateCode = normalizedCode;
         }
         
-        // Sync critical fields back to the user document to fix old/broken profiles
+        // Sync critical fields back to the user document
         batch.update(userRef, userUpdateData);
     });
 
@@ -80,52 +78,51 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
       lastUpdated: serverTimestamp(),
     });
 
-    // 4. Group orders by affiliate userId with FALLBACK logic
+    // 4. Group orders by affiliate userId
     const ordersByAffiliateUserId = new Map<string, Order[]>();
     
     allOrders.forEach(order => {
-        let userId = null;
+        let targetUserId = null;
 
         // Strategy A: Primary lookup by ID
         if (order.affiliateId && order.affiliateId !== 'unknown' && order.affiliateId !== 'undefined') {
-            userId = affiliateIdToUserId.get(order.affiliateId);
+            targetUserId = affiliateIdToUserId.get(order.affiliateId);
         }
         
-        // Strategy B: Fallback lookup by Code (Heals "unknown" ID orders)
-        if (!userId && order.affiliateCode) {
-            userId = affiliateCodeToUserId.get(order.affiliateCode.toUpperCase().trim());
+        // Strategy B: Fallback lookup by Code
+        if (!targetUserId && order.affiliateCode) {
+            targetUserId = affiliateCodeToUserId.get(order.affiliateCode.toUpperCase().trim());
         }
 
-        if (userId) {
-            if (!ordersByAffiliateUserId.has(userId)) {
-                ordersByAffiliateUserId.set(userId, []);
+        if (targetUserId) {
+            if (!ordersByAffiliateUserId.has(targetUserId)) {
+                ordersByAffiliateUserId.set(targetUserId, []);
             }
-            ordersByAffiliateUserId.get(userId)!.push(order);
+            ordersByAffiliateUserId.get(targetUserId)!.push(order);
         }
     });
 
-    // 5. Write affiliate-specific caches
-    ordersByAffiliateUserId.forEach((orders, userId) => {
-        const affiliateOrdersCacheRef = doc(firestore, 'cachedData', `affiliate_orders_${userId}`);
-        batch.set(affiliateOrdersCacheRef, {
-            orders: orders,
-            lastUpdated: serverTimestamp(),
-        });
-    });
-
-    // 6. Write affiliate-specific stats caches with Delivered Orders split
+    // 5. Write affiliate-specific caches (Orders & Dynamic Stats)
     affiliates.forEach(affiliate => {
         const affiliateOrders = ordersByAffiliateUserId.get(affiliate.userId) || [];
+        
+        // CALCULATE STATS DYNAMICALLY FROM THE ACTUAL ORDERS LIST
         const deliveredOrders = affiliateOrders.filter(o => o.status === 'delivered');
-        
-        // Note: totalEarnings usually only applies to delivered or processed orders in some systems,
-        // but here we follow your request to show both counts.
-        
+        const totalEarnings = affiliateOrders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0);
+
+        // A. Cache Orders List
+        const affiliateOrdersCacheRef = doc(firestore, 'cachedData', `affiliate_orders_${affiliate.userId}`);
+        batch.set(affiliateOrdersCacheRef, {
+            orders: affiliateOrders,
+            lastUpdated: serverTimestamp(),
+        });
+
+        // B. Cache Stats (Fully Dynamic)
         const affiliateStatsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${affiliate.userId}`);
         batch.set(affiliateStatsCacheRef, {
             totalOrders: affiliateOrders.length,
             deliveredOrders: deliveredOrders.length,
-            totalEarnings: affiliate.totalEarnings || 0,
+            totalEarnings: totalEarnings, // Calculated from orders, not the affiliate doc
             commissionRate: affiliate.commissionRate || 0,
             status: affiliate.status,
             lastUpdated: serverTimestamp(),
