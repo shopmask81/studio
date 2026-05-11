@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +13,7 @@ import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/lib/types';
@@ -136,47 +135,35 @@ export function CheckoutForm() {
 
         const finalTotal = cartTotal + shippingTotal;
         
-        let affiliateCodeToSave = null;
-        let commissionAmount = 0;
         let affiliateId = null;
+        let affiliateCode = null;
+        let commissionAmount = 0;
 
-        const savedAffiliateCode = typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : null;
+        // PRE-RESOLVED STRATEGY: Retrieve affiliate data from localStorage
+        // This avoids any Firestore queries during the critical unauthenticated checkout path.
+        const storedAffiliateJSON = typeof window !== 'undefined' ? localStorage.getItem('affiliate_data') : null;
 
-        if (savedAffiliateCode) {
+        if (storedAffiliateJSON) {
             try {
-                const normalizedCode = savedAffiliateCode.toUpperCase().trim();
-                console.log(`[Checkout] Verifying affiliate code: ${normalizedCode}`);
-                
-                const affQuery = query(
-                    collection(firestore, 'affiliates'), 
-                    where('code', '==', normalizedCode), 
-                    where('status', '==', 'active'), 
-                    limit(1)
-                );
-                
-                const affSnap = await getDocs(affQuery);
-                
-                if (!affSnap.empty) {
-                    const affDoc = affSnap.docs[0];
-                    const affData = affDoc.data();
-                    
-                    affiliateId = affDoc.id;
-                    affiliateCodeToSave = normalizedCode;
+                const affData = JSON.parse(storedAffiliateJSON);
+                // Basic integrity check
+                if (affData.id && affData.code) {
+                    affiliateId = affData.id;
+                    affiliateCode = affData.code;
                     commissionAmount = cartTotal * (affData.commissionRate || 0);
                     
-                    console.log(`[Checkout] Valid affiliate found: ${affiliateId}. Commission: ${commissionAmount}`);
-
-                    // Atomic increment for affiliate stats
-                    await updateDoc(doc(firestore, 'affiliates', affiliateId), {
+                    console.log(`[Checkout] Using pre-resolved affiliate: ${affiliateCode}`);
+                    
+                    // Increment stats directly using the known document ID
+                    // This is an update write, which is handled by security rules.
+                    updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
                         updatedAt: serverTimestamp()
-                    });
-                } else {
-                  console.log(`[Checkout] Affiliate code ${normalizedCode} not found or inactive.`);
+                    }).catch(e => console.error("[Checkout] Failed to increment affiliate stats:", e));
                 }
             } catch (e) {
-                console.warn("[Affiliate] Referral lookup failed:", e);
+                console.error("[Checkout] Corrupted affiliate data in storage:", e);
             }
         }
         
@@ -223,13 +210,12 @@ export function CheckoutForm() {
             paymentMethod: values.paymentMethod,
             status: 'pending' as const,
             affiliateId: affiliateId,
-            affiliateCode: affiliateCodeToSave,
+            affiliateCode: affiliateCode,
             commissionAmount: commissionAmount,
             createdAt: serverTimestamp(),
         };
 
         try {
-            console.log("[Checkout] Creating order document...");
             await addDoc(collection(firestore, 'orders'), newOrderData);
 
             toast({
@@ -238,7 +224,7 @@ export function CheckoutForm() {
             });
 
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('affiliate_ref');
+                localStorage.removeItem('affiliate_data');
             }
             
             await clearCart();

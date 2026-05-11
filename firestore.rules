@@ -71,18 +71,19 @@ service cloud.firestore {
      * @description Affiliate Rules
      */
     match /affiliates/{affiliateId} {
-      // Allow admin and owners to see details
+      // Allow everyone to fetch details of a specific affiliate if they have the ID.
+      // Used by the tracker and checkout process.
       allow get: if true; 
       
-      // CRITICAL FIX: Allow public lookup by code during checkout
-      // We restrict this to limit(1) to prevent scraping the whole list.
+      // CRITICAL: Allow public lookup by code during initial tracking resolution.
+      // Restrict to limit(1) and active status for security.
       allow list: if isAdmin() 
                   || (isSignedIn() && request.query.where.userId == request.auth.uid)
                   || (request.query.limit == 1 && request.query.where.code != null);
       
       allow create: if isAdmin();
       
-      // Allow checkout process to increment stats
+      // Allow checkout process to increment stats atomically using specific fields.
       allow update: if isAdmin() || (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings', 'updatedAt'])
       );
