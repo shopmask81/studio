@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Link as LinkIcon } from "lucide-react";
+import { Copy, Link as LinkIcon, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "../language/language-provider";
 import { useAuth } from "../auth/auth-provider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function AffiliateTool() {
     const { user, userProfile } = useAuth();
@@ -24,10 +25,19 @@ export function AffiliateTool() {
         
         try {
             const url = new URL(productUrl);
-            const code = userProfile.affiliateCode || user.uid;
-            const aid = userProfile.affiliateId || 'unknown'; // This comes from our Zero-Query requirement
+            const code = userProfile.affiliateCode || user.uid.slice(0, 8);
+            const aid = userProfile.affiliateId;
             
-            // New multi-parameter format: ?ref=CODE&aid=ID
+            if (!aid) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Missing Affiliate ID',
+                    description: 'Your account is not fully configured. Please contact support.',
+                });
+                return;
+            }
+
+            // Standardized format: ?ref=CODE&aid=DOC_ID
             const generated = `${url.origin}${url.pathname}?ref=${code}&aid=${aid}`;
             setAffiliateLink(generated);
         } catch (error) {
@@ -47,11 +57,22 @@ export function AffiliateTool() {
         });
     };
 
+    if (userProfile && !userProfile.affiliateId && userProfile.role !== 'admin') {
+        return (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                    Your affiliate account is still being initialized. Link generation will be available shortly.
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Link Generator</CardTitle>
-                <CardDescription>Paste a product URL from our shop to create your affiliate link.</CardDescription>
+                <CardDescription>Paste a product URL from our shop to create your unique tracking link.</CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={generateLink} className="space-y-4">
@@ -78,6 +99,9 @@ export function AffiliateTool() {
                                 <Copy className="h-4 w-4" />
                             </Button>
                         </div>
+                        <p className="text-[10px] text-muted-foreground italic">
+                            This link includes your referral code and secure affiliate ID.
+                        </p>
                     </div>
                 )}
             </CardContent>

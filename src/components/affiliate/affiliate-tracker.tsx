@@ -18,8 +18,8 @@ export function AffiliateTracker() {
   useEffect(() => {
     // ZERO-QUERY ARCHITECTURE: 
     // We extract both the code and the ID from the URL.
-    // This allows checkout to link the order without any Firestore lookups.
-    if (refCode && affId) {
+    // Validation: Ensure ID is not the 'unknown' placeholder string.
+    if (refCode && affId && affId !== 'unknown' && affId !== 'undefined') {
       const normalizedCode = refCode.toUpperCase().trim();
       const existingRef = localStorage.getItem('affiliate_data');
 
@@ -27,8 +27,6 @@ export function AffiliateTracker() {
         const trackerData = {
             id: affId,
             code: normalizedCode,
-            // Note: In a production app, we might also include commissionRate in the URL 
-            // if we want to avoid all queries. For now, we assume a default or use the stored ID.
             timestamp: Date.now()
         };
 

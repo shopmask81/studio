@@ -20,6 +20,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * 2. Individual affiliate caches 'cachedData/affiliate_orders_{userId}'.
  * 3. Individual affiliate stats 'cachedData/affiliate_stats_{userId}'.
  * 
+ * Includes a self-healing fallback mechanism for orders with missing or 'unknown' affiliate IDs.
+ * 
  * @param firestore The Firestore database instance.
  * @returns The number of orders cached in the main admin document.
  */
@@ -38,7 +40,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
       createdAt: (doc.data().createdAt as Timestamp)?.toDate ? (doc.data().createdAt as Timestamp).toDate().toISOString() : new Date(doc.data().createdAt).toISOString(),
     })) as unknown as Order[];
 
-    // 2. Fetch all affiliates to map affiliateId (doc ID) to userId (Auth UID)
+    // 2. Fetch all affiliates to map affiliateId (doc ID) AND affiliateCode to userId (Auth UID)
     const affiliatesRef = collection(firestore, 'affiliates');
     const affiliateSnapshot = await getDocs(affiliatesRef);
     const affiliates = affiliateSnapshot.docs.map(doc => ({
@@ -47,7 +49,14 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
     })) as Affiliate[];
 
     const affiliateIdToUserId = new Map<string, string>();
-    affiliates.forEach(a => affiliateIdToUserId.set(a.id, a.userId));
+    const affiliateCodeToUserId = new Map<string, string>();
+    
+    affiliates.forEach(a => {
+        affiliateIdToUserId.set(a.id, a.userId);
+        if (a.code) {
+            affiliateCodeToUserId.set(a.code.toUpperCase().trim(), a.userId);
+        }
+    });
 
     // 3. Set main admin cache
     const adminCacheRef = doc(firestore, 'cachedData', 'allOrders');
@@ -56,17 +65,27 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
       lastUpdated: serverTimestamp(),
     });
 
-    // 4. Group orders by affiliate userId
+    // 4. Group orders by affiliate userId with FALLBACK logic
     const ordersByAffiliateUserId = new Map<string, Order[]>();
+    
     allOrders.forEach(order => {
-        if (order.affiliateId) {
-            const userId = affiliateIdToUserId.get(order.affiliateId);
-            if (userId) {
-                if (!ordersByAffiliateUserId.has(userId)) {
-                    ordersByAffiliateUserId.set(userId, []);
-                }
-                ordersByAffiliateUserId.get(userId)!.push(order);
+        let userId = null;
+
+        // Strategy A: Primary lookup by ID
+        if (order.affiliateId && order.affiliateId !== 'unknown' && order.affiliateId !== 'undefined') {
+            userId = affiliateIdToUserId.get(order.affiliateId);
+        }
+        
+        // Strategy B: Fallback lookup by Code (Heals "unknown" ID orders)
+        if (!userId && order.affiliateCode) {
+            userId = affiliateCodeToUserId.get(order.affiliateCode.toUpperCase().trim());
+        }
+
+        if (userId) {
+            if (!ordersByAffiliateUserId.has(userId)) {
+                ordersByAffiliateUserId.set(userId, []);
             }
+            ordersByAffiliateUserId.get(userId)!.push(order);
         }
     });
 
