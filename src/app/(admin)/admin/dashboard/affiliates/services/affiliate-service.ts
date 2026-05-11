@@ -1,3 +1,4 @@
+
 import {
   Firestore,
   collection,
@@ -98,6 +99,7 @@ export async function addAffiliate(
         email: values.email,
         role: "affiliate",
         affiliateCode: normalizedCode,
+        affiliateId: affiliateRef.id, // Store for easy URL generation
         createdAt: serverTimestamp(),
         emailVerified: false,
     });
@@ -105,6 +107,7 @@ export async function addAffiliate(
     batch.update(userDocRef, { 
         role: 'affiliate',
         affiliateCode: normalizedCode,
+        affiliateId: affiliateRef.id, // Store for easy URL generation
         updatedAt: serverTimestamp(),
     });
   }
@@ -166,6 +169,7 @@ export async function deleteAffiliate(
   batch.update(userRef, { 
       role: 'customer' as const,
       affiliateCode: null,
+      affiliateId: null,
       updatedAt: serverTimestamp(),
   });
 

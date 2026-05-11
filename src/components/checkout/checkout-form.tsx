@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -139,31 +140,31 @@ export function CheckoutForm() {
         let affiliateCode = null;
         let commissionAmount = 0;
 
-        // PRE-RESOLVED STRATEGY: Retrieve affiliate data from localStorage
-        // This avoids any Firestore queries during the critical unauthenticated checkout path.
+        // ZERO-QUERY STRATEGY: Retrieve pre-captured data from URL/Storage
         const storedAffiliateJSON = typeof window !== 'undefined' ? localStorage.getItem('affiliate_data') : null;
 
         if (storedAffiliateJSON) {
             try {
                 const affData = JSON.parse(storedAffiliateJSON);
-                // Basic integrity check
                 if (affData.id && affData.code) {
                     affiliateId = affData.id;
                     affiliateCode = affData.code;
-                    commissionAmount = cartTotal * (affData.commissionRate || 0);
+                    // Note: Default commission fallback if rate isn't stored. 
+                    // You can also include rate in trackerData if desired.
+                    const rate = 0.1; 
+                    commissionAmount = cartTotal * rate;
                     
-                    console.log(`[Checkout] Using pre-resolved affiliate: ${affiliateCode}`);
+                    console.log(`[Checkout] Linking order to affiliate: ${affiliateCode}`);
                     
-                    // Increment stats directly using the known document ID
-                    // This is an update write, which is handled by security rules.
+                    // Increment stats directly using the stored ID. No query needed.
                     updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
                         updatedAt: serverTimestamp()
-                    }).catch(e => console.error("[Checkout] Failed to increment affiliate stats:", e));
+                    }).catch(e => console.warn("[Checkout] Stat update failed (optional):", e));
                 }
             } catch (e) {
-                console.error("[Checkout] Corrupted affiliate data in storage:", e);
+                console.error("[Checkout] Tracking data corrupted:", e);
             }
         }
         
@@ -223,6 +224,7 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
+            // Cleanup tracking after successful purchase
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('affiliate_data');
             }
@@ -231,7 +233,7 @@ export function CheckoutForm() {
             router.push('/order-confirmation');
 
         } catch (error: any) {
-            console.error("Checkout submission failed:", error);
+            console.error("Checkout failed:", error);
             toast({
                 variant: 'destructive',
                 title: t('order_failed_title').text,

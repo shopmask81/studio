@@ -133,6 +133,7 @@ export type UserProfile = {
     email: string;
     role: 'customer' | 'affiliate' | 'admin';
     affiliateCode?: string;
+    affiliateId?: string; // Link to the affiliate document ID
     createdAt: Timestamp;
     emailVerified: boolean;
 };

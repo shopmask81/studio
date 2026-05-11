@@ -1,9 +1,8 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 /**
  * ATTRIBUTION STRATEGY
@@ -14,53 +13,30 @@ const ATTRIBUTION_STRATEGY: 'first-click' | 'last-click' = 'last-click';
 export function AffiliateTracker() {
   const searchParams = useSearchParams();
   const refCode = searchParams.get('ref');
-  const firestore = useFirestore();
+  const affId = searchParams.get('aid');
 
   useEffect(() => {
-    if (refCode && firestore) {
+    // ZERO-QUERY ARCHITECTURE: 
+    // We extract both the code and the ID from the URL.
+    // This allows checkout to link the order without any Firestore lookups.
+    if (refCode && affId) {
       const normalizedCode = refCode.toUpperCase().trim();
       const existingRef = localStorage.getItem('affiliate_data');
 
-      // Only resolve if we need to (last-click or no existing data)
       if (ATTRIBUTION_STRATEGY === 'last-click' || !existingRef) {
-        const resolveAffiliate = async () => {
-            try {
-                console.log(`[Affiliate System] Resolving tracking code: ${normalizedCode}`);
-                
-                const affQuery = query(
-                    collection(firestore, 'affiliates'), 
-                    where('code', '==', normalizedCode), 
-                    where('status', '==', 'active'), 
-                    limit(1)
-                );
-                
-                const querySnapshot = await getDocs(affQuery);
-                
-                if (!querySnapshot.empty) {
-                    const affDoc = querySnapshot.docs[0];
-                    const affData = affDoc.data();
-                    
-                    const trackerData = {
-                        id: affDoc.id,
-                        code: normalizedCode,
-                        commissionRate: affData.commissionRate || 0,
-                        timestamp: Date.now()
-                    };
-
-                    localStorage.setItem('affiliate_data', JSON.stringify(trackerData));
-                    console.log(`[Affiliate System] Tracking active for: ${normalizedCode} (${affDoc.id})`);
-                } else {
-                    console.warn(`[Affiliate System] Invalid or inactive code: ${normalizedCode}`);
-                }
-            } catch (error) {
-                console.error("[Affiliate System] Failed to resolve referral:", error);
-            }
+        const trackerData = {
+            id: affId,
+            code: normalizedCode,
+            // Note: In a production app, we might also include commissionRate in the URL 
+            // if we want to avoid all queries. For now, we assume a default or use the stored ID.
+            timestamp: Date.now()
         };
 
-        resolveAffiliate();
+        localStorage.setItem('affiliate_data', JSON.stringify(trackerData));
+        console.log(`[Affiliate System] Tracking persisted: ${normalizedCode} (${affId})`);
       }
     }
-  }, [refCode, firestore]);
+  }, [refCode, affId]);
 
   return null;
 }

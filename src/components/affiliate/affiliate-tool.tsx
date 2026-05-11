@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -19,13 +20,15 @@ export function AffiliateTool() {
 
     const generateLink = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!productUrl || !user) return;
+        if (!productUrl || !user || !userProfile) return;
         
         try {
             const url = new URL(productUrl);
-            // Use the assigned affiliate code from the profile, fallback to UID
-            const trackingCode = userProfile?.affiliateCode || user.uid;
-            const generated = `${url.origin}${url.pathname}?ref=${trackingCode}`;
+            const code = userProfile.affiliateCode || user.uid;
+            const aid = userProfile.affiliateId || 'unknown'; // This comes from our Zero-Query requirement
+            
+            // New multi-parameter format: ?ref=CODE&aid=ID
+            const generated = `${url.origin}${url.pathname}?ref=${code}&aid=${aid}`;
             setAffiliateLink(generated);
         } catch (error) {
             toast({
