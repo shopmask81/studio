@@ -137,31 +137,45 @@ export function CheckoutForm() {
         const finalTotal = cartTotal + shippingTotal;
         
         // --- Affiliate Logic ---
-        let affiliateCode = localStorage.getItem('affiliate_ref');
+        // Retrieve code from localStorage (set by AffiliateTracker)
+        let savedAffiliateCode = typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : null;
+        let affiliateCodeToSave = null;
         let commissionAmount = 0;
         let affiliateId = null;
 
-        if (affiliateCode) {
+        if (savedAffiliateCode) {
             try {
-                const affQuery = query(collection(firestore, 'affiliates'), where('code', '==', affiliateCode), where('status', '==', 'active'), limit(1));
+                // Codes are stored in uppercase in the system
+                const normalizedCode = savedAffiliateCode.toUpperCase().trim();
+                
+                // Query for active affiliate
+                const affQuery = query(
+                    collection(firestore, 'affiliates'), 
+                    where('code', '==', normalizedCode), 
+                    where('status', '==', 'active'), 
+                    limit(1)
+                );
+                
                 const affSnap = await getDocs(affQuery);
+                
                 if (!affSnap.empty) {
                     const affDoc = affSnap.docs[0];
                     const affData = affDoc.data();
+                    
                     affiliateId = affDoc.id;
+                    affiliateCodeToSave = normalizedCode;
                     commissionAmount = cartTotal * (affData.commissionRate || 0);
                     
-                    // Increment affiliate totals (simplified)
+                    // Increment affiliate totals. 
+                    // Security rules are configured to allow guest updates to these specific fields.
                     await updateDoc(doc(firestore, 'affiliates', affDoc.id), {
                         totalOrders: increment(1),
-                        totalEarnings: increment(commissionAmount)
+                        totalEarnings: increment(commissionAmount),
+                        updatedAt: serverTimestamp()
                     });
-                } else {
-                    affiliateCode = null; // Code invalid or suspended
                 }
             } catch (e) {
-                console.warn("Affiliate check failed", e);
-                affiliateCode = null;
+                console.warn("Affiliate data retrieval failed during checkout:", e);
             }
         }
         
@@ -208,7 +222,7 @@ export function CheckoutForm() {
             paymentMethod: values.paymentMethod,
             status: 'pending' as const,
             affiliateId: affiliateId,
-            affiliateCode: affiliateCode,
+            affiliateCode: affiliateCodeToSave,
             commissionAmount: commissionAmount,
             createdAt: serverTimestamp(),
         };
@@ -221,8 +235,10 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
-            // Clear affiliate tracking after order
-            localStorage.removeItem('affiliate_ref');
+            // Clear affiliate tracking after successful order
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('affiliate_ref');
+            }
             
             await clearCart();
             router.push('/order-confirmation');
@@ -306,7 +322,7 @@ export function CheckoutForm() {
                                             <FormItem><FormLabel {...t('city')}>{t('city').text}</FormLabel><FormControl><Input placeholder="Venice" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="postalCode" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="90210" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="90210" {...field} /></FormControl><FormMessage /></FormMessage>
                                         )} />
                                         <FormField control={form.control} name="country" render={({ field }) => (
                                             <FormItem><FormLabel {...t('country')}>{t('country').text}</FormLabel><FormControl><Input placeholder="USA" {...field} /></FormControl><FormMessage /></FormItem>

@@ -77,7 +77,10 @@ service cloud.firestore {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       allow create: if isAdmin();
-      allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings', 'updatedAt']));
+      // Allow the checkout process (even for guests) to increment stats
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings', 'updatedAt'])
+      );
       allow delete: if isAdmin();
     }
 
