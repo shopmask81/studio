@@ -107,10 +107,11 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        // Check hardcoded UID FIRST for immediate short-circuiting
+        // Priority 1: Hardcoded Master Admin UID
         request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2' ||
+        // Priority 2: Document lookup (safe fallback)
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'customer') == 'admin')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
   }

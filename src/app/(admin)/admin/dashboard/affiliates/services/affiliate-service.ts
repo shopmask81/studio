@@ -41,7 +41,7 @@ export async function addAffiliate(
     const tempAuth = getAuth(tempApp);
 
     try {
-        // CRITICAL: Ensure the temporary login doesn't overwrite the Admin's session in LocalStorage
+        // Isolation: Temporary login MUST not touch LocalStorage
         await setPersistence(tempAuth, inMemoryPersistence);
         
         const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
@@ -58,7 +58,7 @@ export async function addAffiliate(
     userId = userDoc.id;
   }
 
-  // 2. Check if this user is already an affiliate
+  // 2. Uniqueness Checks
   const affiliatesRef = collection(firestore, 'affiliates');
   const affQuery = query(affiliatesRef, where('userId', '==', userId), limit(1));
   const affSnap = await getDocs(affQuery);
@@ -67,18 +67,19 @@ export async function addAffiliate(
     throw new Error('This user is already registered as an affiliate.');
   }
   
-  // 3. Check if the code is unique
   const codeQuery = query(affiliatesRef, where('code', '==', values.code), limit(1));
   const codeSnap = await getDocs(codeQuery);
   if (!codeSnap.empty) {
       throw new Error('This affiliate code is already taken. Please choose another.');
   }
 
-  // 4. Update the user role and add the affiliate document in a single atomic batch
+  // 3. Atomic Batch Write
   const batch = writeBatch(firestore);
   
+  // Create Affiliate Document
   const affiliateRef = doc(collection(firestore, 'affiliates'));
   const affiliateData = {
+    id: affiliateRef.id, // Explicitly set ID inside the data
     userId,
     name: values.name,
     email: values.email,
@@ -90,13 +91,13 @@ export async function addAffiliate(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
-
   batch.set(affiliateRef, affiliateData);
 
+  // Set or Update User Role
   const userDocRef = doc(firestore, 'users', userId);
   if (isNewUser) {
     batch.set(userDocRef, {
-        id: userId, // Match schema expectation
+        id: userId,
         uid: userId,
         name: values.name,
         email: values.email,
@@ -115,6 +116,7 @@ export async function addAffiliate(
 
   await batch.commit()
     .catch((err) => {
+        console.error("Affiliate Batch Write Failed:", err);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: 'affiliates/creation-batch',
             operation: 'write',
