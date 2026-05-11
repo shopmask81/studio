@@ -19,8 +19,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * 1. The centralized admin cache 'cachedData/allOrders'.
  * 2. Individual affiliate caches 'cachedData/affiliate_orders_{userId}'.
  * 3. Individual affiliate stats 'cachedData/affiliate_stats_{userId}'.
- * 
- * Includes a self-healing fallback mechanism for orders with missing or 'unknown' affiliate IDs.
+ * 4. Maintenance: Syncs affiliateId and affiliateCode to the users collection for all affiliates.
  * 
  * @param firestore The Firestore database instance.
  * @returns The number of orders cached in the main admin document.
@@ -51,11 +50,21 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
     const affiliateIdToUserId = new Map<string, string>();
     const affiliateCodeToUserId = new Map<string, string>();
     
+    // MAINTENANCE: Also keep track of which user documents need syncing
     affiliates.forEach(a => {
         affiliateIdToUserId.set(a.id, a.userId);
         if (a.code) {
             affiliateCodeToUserId.set(a.code.toUpperCase().trim(), a.userId);
         }
+        
+        // Sync critical fields back to the user document to fix old/broken profiles
+        const userRef = doc(firestore, 'users', a.userId);
+        batch.update(userRef, {
+            affiliateId: a.id,
+            affiliateCode: a.code.toUpperCase().trim(),
+            role: 'affiliate',
+            updatedAt: serverTimestamp()
+        });
     });
 
     // 3. Set main admin cache
@@ -98,7 +107,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         });
     });
 
-    // 6. Write affiliate-specific stats caches (mirroring data from affiliates collection)
+    // 6. Write affiliate-specific stats caches
     affiliates.forEach(affiliate => {
         const affiliateStatsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${affiliate.userId}`);
         batch.set(affiliateStatsCacheRef, {

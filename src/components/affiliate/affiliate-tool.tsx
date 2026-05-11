@@ -1,23 +1,52 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Link as LinkIcon, AlertCircle } from "lucide-react";
+import { Copy, Link as LinkIcon, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "../language/language-provider";
 import { useAuth } from "../auth/auth-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFirestore } from "@/firebase";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 export function AffiliateTool() {
     const { user, userProfile } = useAuth();
+    const firestore = useFirestore();
     const [productUrl, setProductUrl] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
+    const [isResolvingId, setIsResolvingId] = useState(false);
+    const [resolvedId, setResolvedId] = useState<string | null>(null);
     const { toast } = useToast();
     const { t } = useTranslation();
+
+    // Effect to try and resolve affiliate ID if missing from profile (for existing users)
+    useEffect(() => {
+        const resolveAffiliateId = async () => {
+            if (!user || userProfile?.affiliateId || !firestore) return;
+            
+            setIsResolvingId(true);
+            try {
+                const affRef = collection(firestore, 'affiliates');
+                const q = query(affRef, where('userId', '==', user.uid), limit(1));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    setResolvedId(snap.docs[0].id);
+                }
+            } catch (error) {
+                console.error("Failed to resolve affiliate ID:", error);
+            } finally {
+                setIsResolvingId(false);
+            }
+        };
+
+        resolveAffiliateId();
+    }, [user, userProfile, firestore]);
 
     const generateLink = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,13 +55,13 @@ export function AffiliateTool() {
         try {
             const url = new URL(productUrl);
             const code = userProfile.affiliateCode || user.uid.slice(0, 8);
-            const aid = userProfile.affiliateId;
+            const aid = userProfile.affiliateId || resolvedId;
             
             if (!aid) {
                 toast({
                     variant: 'destructive',
                     title: 'Missing Affiliate ID',
-                    description: 'Your account is not fully configured. Please contact support.',
+                    description: 'Your account is still being updated. Please try again in a few moments or contact support.',
                 });
                 return;
             }
@@ -57,12 +86,23 @@ export function AffiliateTool() {
         });
     };
 
-    if (userProfile && !userProfile.affiliateId && userProfile.role !== 'admin') {
+    const currentAffiliateId = userProfile?.affiliateId || resolvedId;
+
+    if (isResolvingId) {
+        return (
+            <div className="flex items-center justify-center p-8 border rounded-lg animate-pulse">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" />
+                <p className="text-sm text-muted-foreground">Initializing tools...</p>
+            </div>
+        );
+    }
+
+    if (!currentAffiliateId && userProfile?.role !== 'admin') {
         return (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                    Your affiliate account is still being initialized. Link generation will be available shortly.
+                    We couldn't locate your tracking ID. Please click "Refresh" or contact support to activate your tools.
                 </AlertDescription>
             </Alert>
         );
