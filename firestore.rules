@@ -79,14 +79,15 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isOwner(userId) || isAdmin();
       allow read: if isSignedIn();
+      allow list: if isAdmin();
       allow update: if isExistingOwner(userId) || isAdmin();
       allow delete: if isAdmin();
 
       match /cart/{productId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
       match /addresses/{addressId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
 
@@ -109,7 +110,7 @@ service cloud.firestore {
         // Check hardcoded UID FIRST for immediate short-circuiting
         request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'customer') == 'admin')
       );
     }
   }

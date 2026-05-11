@@ -93,9 +93,10 @@ export async function addAffiliate(
 
   batch.set(affiliateRef, affiliateData);
 
+  const userDocRef = doc(firestore, 'users', userId);
   if (isNewUser) {
-    const userDocRef = doc(firestore, 'users', userId);
     batch.set(userDocRef, {
+        id: userId, // Match schema expectation
         uid: userId,
         name: values.name,
         email: values.email,
@@ -105,10 +106,10 @@ export async function addAffiliate(
         emailVerified: false,
     });
   } else {
-    const userRef = doc(firestore, 'users', userId);
-    batch.update(userRef, { 
+    batch.update(userDocRef, { 
         role: 'affiliate',
-        affiliateCode: values.code
+        affiliateCode: values.code,
+        updatedAt: serverTimestamp(),
     });
   }
 
@@ -145,7 +146,10 @@ export async function updateAffiliate(
   
   if (values.code && values.userId) {
       const userRef = doc(firestore, 'users', values.userId);
-      await updateDoc(userRef, { affiliateCode: values.code });
+      await updateDoc(userRef, { 
+          affiliateCode: values.code,
+          updatedAt: serverTimestamp(),
+      });
   }
 }
 
@@ -160,7 +164,8 @@ export async function deleteAffiliate(
   const userRef = doc(firestore, 'users', affiliate.userId);
   batch.update(userRef, { 
       role: 'customer' as const,
-      affiliateCode: null
+      affiliateCode: null,
+      updatedAt: serverTimestamp(),
   });
 
   await batch.commit()
