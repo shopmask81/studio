@@ -112,7 +112,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         const totalEarnings = affiliateOrders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0);
 
         // A. Update Main Affiliate Document (Sync back to source)
-        // This ensures stats are visible in the Admin Affiliates table
+        // This ensures stats are visible in the Admin Affiliates table (admin/dashboard/affiliates)
         const affiliateDocRef = doc(firestore, 'affiliates', affiliate.id);
         batch.update(affiliateDocRef, {
             totalOrders: affiliateOrders.length,
