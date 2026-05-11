@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -6,14 +5,67 @@ import { AffiliateTool } from "@/components/affiliate/affiliate-tool";
 import { AffiliateOrders } from "./components/affiliate-orders";
 import { AffiliateStats } from "./components/affiliate-stats";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { HandCoins, Loader2 } from "lucide-react";
+import { HandCoins, Loader2, AlertOctagon, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { LoginForm } from "@/components/auth/login-form";
+import { useFirestore, useDoc } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { useMemo } from "react";
+import siteSettings from "@/../appData/siteSettings.json";
+
+function SuspendedView() {
+    return (
+        <div className="container mx-auto px-4 py-24">
+            <Card className="max-w-2xl mx-auto border-destructive/20 bg-destructive/5 shadow-xl">
+                <CardHeader className="text-center pb-2">
+                    <div className="mx-auto bg-destructive/10 w-20 h-20 rounded-full flex items-center justify-center mb-4">
+                        <AlertOctagon className="h-10 w-10 text-destructive" />
+                    </div>
+                    <CardTitle className="text-3xl font-headline text-destructive">Account Suspended</CardTitle>
+                    <CardDescription className="text-lg">
+                        Your affiliate account has been temporarily deactivated by the administration.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center space-y-6 pt-6">
+                    <p className="text-muted-foreground">
+                        While your account is suspended, you will not be able to generate new referral links or track incoming orders. 
+                        Your previously earned commissions are safe, but payouts may be delayed.
+                    </p>
+                    <div className="bg-background/50 rounded-lg p-6 border border-dashed">
+                        <h3 className="font-semibold mb-2">Need clarification?</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            If you believe this is a mistake or would like to appeal the suspension, please reach out to our support team.
+                        </p>
+                        <Button asChild variant="outline" className="gap-2">
+                            <a href={`mailto:${siteSettings.contactEmail}`}>
+                                <Mail className="h-4 w-4" />
+                                Contact Administration
+                            </a>
+                        </Button>
+                    </div>
+                    <Button asChild variant="ghost">
+                        <Link href="/">Return to Homepage</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
 
 export default function AffiliatePage() {
-    const { user, userProfile, isLoading } = useAuth();
+    const { user, userProfile, isLoading: isAuthLoading } = useAuth();
+    const firestore = useFirestore();
+
+    const statsCacheRef = useMemo(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'cachedData', `affiliate_stats_${user.uid}`);
+    }, [firestore, user]);
+
+    const { data: statsData, isLoading: isStatsLoading } = useDoc<{ status: string }>(statsCacheRef);
+
+    const isLoading = isAuthLoading || (user && isStatsLoading);
 
     if (isLoading) {
         return (
@@ -24,6 +76,7 @@ export default function AffiliatePage() {
     }
 
     const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
+    const isSuspended = statsData?.status === 'suspended' && userProfile?.role !== 'admin';
 
     // If not logged in, show login form specifically for affiliates
     if (!user) {
@@ -53,6 +106,11 @@ export default function AffiliatePage() {
                 </div>
             </div>
         )
+    }
+
+    // Check for suspension
+    if (isAffiliate && isSuspended) {
+        return <SuspendedView />;
     }
 
     // If logged in but not an affiliate, show info page
