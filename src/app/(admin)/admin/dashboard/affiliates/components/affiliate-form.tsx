@@ -22,7 +22,7 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Input, PasswordInput } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import type { Affiliate } from '@/lib/types';
@@ -30,6 +30,7 @@ import type { Affiliate } from '@/lib/types';
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters.').optional().or(z.literal('')),
   code: z.string().min(3, 'Code must be at least 3 characters.').toUpperCase().trim(),
   commissionRate: z.coerce.number().min(0, 'Rate must be at least 0').max(1, 'Rate cannot exceed 1 (100%)'),
 });
@@ -56,6 +57,7 @@ export function AffiliateForm({
     defaultValues: {
       name: '',
       email: '',
+      password: '',
       code: '',
       commissionRate: 0.1, // Default 10%
     },
@@ -67,6 +69,7 @@ export function AffiliateForm({
         form.reset({
           name: affiliateToEdit.name,
           email: affiliateToEdit.email,
+          password: '',
           code: affiliateToEdit.code,
           commissionRate: affiliateToEdit.commissionRate,
         });
@@ -74,6 +77,7 @@ export function AffiliateForm({
         form.reset({
           name: '',
           email: '',
+          password: '',
           code: '',
           commissionRate: 0.1,
         });
@@ -93,11 +97,13 @@ export function AffiliateForm({
             {affiliateToEdit ? 'Edit Affiliate' : 'Add New Affiliate'}
           </DialogTitle>
           <DialogDescription>
-            Configure the affiliate details and commission percentage.
+            {affiliateToEdit 
+                ? 'Update affiliate details.' 
+                : 'Enter details and a password to create a new affiliate account.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="name"
@@ -111,20 +117,37 @@ export function AffiliateForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormDescription>Must match an existing user's email.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                            <Input placeholder="john@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {!affiliateToEdit && (
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Login Password</FormLabel>
+                            <FormControl>
+                                <PasswordInput placeholder="******" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-[10px]">Will create a new user account.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
                 <FormField
                     control={form.control}
@@ -144,17 +167,16 @@ export function AffiliateForm({
                     name="commissionRate"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Commission (0 to 1)</FormLabel>
+                        <FormLabel>Commission (0-1)</FormLabel>
                         <FormControl>
                             <Input type="number" step="0.01" placeholder="0.10" {...field} />
                         </FormControl>
-                        <FormDescription>e.g. 0.15 = 15%</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
             </div>
-             <DialogFooter>
+             <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                     Cancel
                 </Button>

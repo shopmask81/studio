@@ -2,9 +2,7 @@
 import {
   Firestore,
   collection,
-  addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   serverTimestamp,
   getDocs,
@@ -13,23 +11,60 @@ import {
   limit,
   writeBatch
 } from 'firebase/firestore';
-import type { Affiliate, UserProfile } from '@/lib/types';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { firebaseConfig } from '@/firebase/config';
+import type { Affiliate } from '@/lib/types';
 
 export async function addAffiliate(
   firestore: Firestore,
-  values: { name: string; email: string; code: string; commissionRate: number }
+  values: { name: string; email: string; code: string; commissionRate: number; password?: string }
 ): Promise<void> {
-  // 1. Check if a user with this email exists
   const usersRef = collection(firestore, 'users');
   const userQuery = query(usersRef, where('email', '==', values.email), limit(1));
   const userSnap = await getDocs(userQuery);
 
-  if (userSnap.empty) {
-    throw new Error(`No user found with email ${values.email}. The user must create an account first.`);
-  }
+  let userId: string;
 
-  const userDoc = userSnap.docs[0];
-  const userId = userDoc.id;
+  // 1. If user doesn't exist and password is provided, create a new user account
+  if (userSnap.empty) {
+    if (!values.password) {
+      throw new Error(`No user found with email ${values.email}. Please provide a password to create a new account.`);
+    }
+
+    // Use a secondary Firebase app instance to create the user without signing out the admin
+    const tempAppName = `temp-auth-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
+        userId = userCredential.user.uid;
+        
+        // Sign out from the temp app immediately
+        await signOut(tempAuth);
+        await deleteApp(tempApp);
+        
+        // Initialize the user document in Firestore (normally done during signup)
+        const userDocRef = doc(firestore, 'users', userId);
+        await writeBatch(firestore).set(userDocRef, {
+            uid: userId,
+            name: values.name,
+            email: values.email,
+            role: "affiliate",
+            affiliateCode: values.code,
+            createdAt: serverTimestamp(),
+            emailVerified: false,
+        }).commit();
+
+    } catch (authError: any) {
+        await deleteApp(tempApp);
+        throw new Error(`Failed to create account: ${authError.message}`);
+    }
+  } else {
+    const userDoc = userSnap.docs[0];
+    userId = userDoc.id;
+  }
 
   // 2. Check if this user is already an affiliate
   const affiliatesRef = collection(firestore, 'affiliates');
@@ -84,7 +119,6 @@ export async function updateAffiliate(
     updatedAt: serverTimestamp(),
   });
   
-  // If code changed, update user doc too
   if (values.code && values.userId) {
       const userRef = doc(firestore, 'users', values.userId);
       await updateDoc(userRef, { affiliateCode: values.code });
@@ -96,12 +130,9 @@ export async function deleteAffiliate(
   affiliate: Affiliate
 ): Promise<void> {
   const batch = writeBatch(firestore);
-  
-  // 1. Delete affiliate document
   const affRef = doc(firestore, 'affiliates', affiliate.id);
   batch.delete(affRef);
 
-  // 2. Revert user role to customer
   const userRef = doc(firestore, 'users', affiliate.userId);
   batch.update(userRef, { 
       role: 'customer',

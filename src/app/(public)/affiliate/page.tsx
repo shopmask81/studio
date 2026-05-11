@@ -6,15 +6,14 @@ import { AffiliateTool } from "@/components/affiliate/affiliate-tool";
 import { AffiliateOrders } from "./components/affiliate-orders";
 import { AffiliateStats } from "./components/affiliate-stats";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertCircle, Loader2, Link as LinkIcon, HandCoins } from "lucide-react";
+import { HandCoins, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { useTranslation } from "@/components/language/language-provider";
+import { LoginForm } from "@/components/auth/login-form";
 
 export default function AffiliatePage() {
     const { user, userProfile, isLoading } = useAuth();
-    const { t } = useTranslation();
 
     if (isLoading) {
         return (
@@ -26,6 +25,37 @@ export default function AffiliatePage() {
 
     const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
 
+    // If not logged in, show login form specifically for affiliates
+    if (!user) {
+        return (
+            <div className="container mx-auto px-4 py-16">
+                <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+                    <div className="text-center md:text-left space-y-6">
+                        <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto md:mx-0">
+                            <HandCoins className="h-8 w-8 text-primary" />
+                        </div>
+                        <h1 className="text-4xl font-headline font-bold">Affiliate Portal</h1>
+                        <p className="text-lg text-muted-foreground">
+                            Welcome to the MaskShop partner program. Sign in to access your dashboard, 
+                            track your referrals, and manage your earnings.
+                        </p>
+                        <div className="space-y-4 pt-4">
+                            <h3 className="font-semibold text-xl">Not a partner yet?</h3>
+                            <p className="text-muted-foreground">Contact our support team to request an affiliate account and start earning today.</p>
+                            <Button asChild variant="outline">
+                                <Link href="/contact">Learn More & Contact Us</Link>
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex justify-center">
+                        <LoginForm />
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // If logged in but not an affiliate, show info page
     if (!isAffiliate) {
         return (
             <div className="container mx-auto px-4 py-16 text-center max-w-2xl">
@@ -48,11 +78,11 @@ export default function AffiliatePage() {
                         </div>
                         <div className="flex gap-4">
                             <div className="font-bold text-primary text-xl">2.</div>
-                            <p>Once approved, you'll get a unique dashboard with tracking links.</p>
+                            <p>Once approved, we will create your account and provide your login details.</p>
                         </div>
                         <div className="flex gap-4">
                             <div className="font-bold text-primary text-xl">3.</div>
-                            <p>Share links to products or the shop on your social media or blog.</p>
+                            <p>Share links to products or the shop using your unique tracking code.</p>
                         </div>
                         <div className="flex gap-4">
                             <div className="font-bold text-primary text-xl">4.</div>
@@ -67,6 +97,7 @@ export default function AffiliatePage() {
         )
     }
 
+    // If logged in and IS an affiliate, show the dashboard
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-12 space-y-12">
