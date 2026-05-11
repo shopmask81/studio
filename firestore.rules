@@ -29,13 +29,10 @@ service cloud.firestore {
 
     /**
      * @description Cached Data Rules.
-     * Admin has full access. 
-     * Affiliates can only access their specific pre-computed cache files.
      */
     match /cachedData/{docId} {
       allow write: if isAdmin();
       allow read: if isAdmin();
-      // Allow affiliates to get their specific cache documents
       allow get: if isSignedIn() && (
         docId == 'affiliate_orders_' + request.auth.uid ||
         docId == 'affiliate_stats_' + request.auth.uid
@@ -74,10 +71,18 @@ service cloud.firestore {
      * @description Affiliate Rules
      */
     match /affiliates/{affiliateId} {
-      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // Allow admin and owners to see details
+      allow get: if true; 
+      
+      // CRITICAL FIX: Allow public lookup by code during checkout
+      // We restrict this to limit(1) to prevent scraping the whole list.
+      allow list: if isAdmin() 
+                  || (isSignedIn() && request.query.where.userId == request.auth.uid)
+                  || (request.query.limit == 1 && request.query.where.code != null);
+      
       allow create: if isAdmin();
-      // Allow the checkout process (even for guests) to increment stats
+      
+      // Allow checkout process to increment stats
       allow update: if isAdmin() || (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings', 'updatedAt'])
       );

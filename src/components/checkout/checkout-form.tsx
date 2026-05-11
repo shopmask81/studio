@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -144,6 +145,8 @@ export function CheckoutForm() {
         if (savedAffiliateCode) {
             try {
                 const normalizedCode = savedAffiliateCode.toUpperCase().trim();
+                console.log(`[Checkout] Verifying affiliate code: ${normalizedCode}`);
+                
                 const affQuery = query(
                     collection(firestore, 'affiliates'), 
                     where('code', '==', normalizedCode), 
@@ -161,11 +164,16 @@ export function CheckoutForm() {
                     affiliateCodeToSave = normalizedCode;
                     commissionAmount = cartTotal * (affData.commissionRate || 0);
                     
+                    console.log(`[Checkout] Valid affiliate found: ${affiliateId}. Commission: ${commissionAmount}`);
+
+                    // Atomic increment for affiliate stats
                     await updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
                         updatedAt: serverTimestamp()
                     });
+                } else {
+                  console.log(`[Checkout] Affiliate code ${normalizedCode} not found or inactive.`);
                 }
             } catch (e) {
                 console.warn("[Affiliate] Referral lookup failed:", e);
@@ -221,6 +229,7 @@ export function CheckoutForm() {
         };
 
         try {
+            console.log("[Checkout] Creating order document...");
             await addDoc(collection(firestore, 'orders'), newOrderData);
 
             toast({
