@@ -49,10 +49,12 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
 
     const affiliateIdToUserId = new Map<string, string>();
     const affiliateCodeToUserId = new Map<string, string>();
+    const affiliateIdToRate = new Map<string, number>();
     
     // MAINTENANCE: Also keep track of which user documents need syncing
     affiliates.forEach(a => {
         affiliateIdToUserId.set(a.id, a.userId);
+        affiliateIdToRate.set(a.id, a.commissionRate || 0.1);
         
         const userRef = doc(firestore, 'users', a.userId);
         const userUpdateData: any = {
@@ -111,11 +113,18 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         });
     });
 
-    // 6. Write affiliate-specific stats caches
+    // 6. Write affiliate-specific stats caches with Delivered Orders split
     affiliates.forEach(affiliate => {
+        const affiliateOrders = ordersByAffiliateUserId.get(affiliate.userId) || [];
+        const deliveredOrders = affiliateOrders.filter(o => o.status === 'delivered');
+        
+        // Note: totalEarnings usually only applies to delivered or processed orders in some systems,
+        // but here we follow your request to show both counts.
+        
         const affiliateStatsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${affiliate.userId}`);
         batch.set(affiliateStatsCacheRef, {
-            totalOrders: affiliate.totalOrders || 0,
+            totalOrders: affiliateOrders.length,
+            deliveredOrders: deliveredOrders.length,
             totalEarnings: affiliate.totalEarnings || 0,
             commissionRate: affiliate.commissionRate || 0,
             status: affiliate.status,

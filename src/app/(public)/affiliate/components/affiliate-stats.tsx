@@ -4,7 +4,7 @@
 import { useFirestore, useDoc } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, ShoppingCart, DollarSign, Percent, AlertCircle } from "lucide-react";
+import { TrendingUp, ShoppingCart, DollarSign, Percent, AlertCircle, PackageCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useCurrency } from "@/components/currency/currency-provider";
 import { useMemo } from "react";
@@ -23,14 +23,15 @@ export function AffiliateStats() {
     const { data: statsData, isLoading, error } = useDoc<{ 
         totalEarnings: number; 
         totalOrders: number; 
+        deliveredOrders: number;
         commissionRate: number; 
         status: string;
     }>(cacheDocRef);
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {[...Array(5)].map((_, i) => (
                     <Skeleton key={i} className="h-32 w-full" />
                 ))}
             </div>
@@ -57,9 +58,16 @@ export function AffiliateStats() {
         {
             title: "Total Orders",
             value: statsData?.totalOrders || 0,
-            description: "Successful referrals",
+            description: "All referred orders",
             icon: ShoppingCart,
             color: "text-blue-600 bg-blue-100 dark:bg-blue-900/20"
+        },
+        {
+            title: "Delivered Orders",
+            value: statsData?.deliveredOrders || 0,
+            description: "Successfully completed",
+            icon: PackageCheck,
+            color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20"
         },
         {
             title: "Commission Rate",
@@ -78,7 +86,7 @@ export function AffiliateStats() {
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {stats.map((stat, i) => (
                 <Card key={i} className="shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
