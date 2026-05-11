@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, HandCoins } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -90,6 +90,7 @@ export function OrderTable({
             <TableHead className="min-w-[200px]">Order</TableHead>
             <TableHead className="min-w-[150px]">Customer</TableHead>
             <TableHead className="hidden lg:table-cell min-w-[200px]">Email</TableHead>
+            <TableHead className="w-[120px] text-center">Affiliate</TableHead>
             <TableHead className="w-[100px] text-right">Total</TableHead>
             <TableHead className="w-[120px] text-center">Status</TableHead>
             <TableHead className="hidden md:table-cell w-[180px]">Date</TableHead>
@@ -135,6 +136,16 @@ export function OrderTable({
                 </TableCell>
                 <TableCell className="font-medium truncate">{order.name}</TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground truncate">{order.email}</TableCell>
+                <TableCell className="text-center">
+                  {order.affiliateCode ? (
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1">
+                      <HandCoins className="h-3 w-3" />
+                      {order.affiliateCode}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">Regular</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatPrice(order.total)}
                 </TableCell>

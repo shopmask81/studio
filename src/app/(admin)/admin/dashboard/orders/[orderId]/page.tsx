@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -12,6 +11,7 @@ import Link from 'next/link';
 import { OrderDetailsCard } from './components/order-details-card';
 import { OrderItemsCard } from './components/order-items-card';
 import { OrderStatusCard } from './components/order-status-card';
+import { AffiliateReferralCard } from './components/affiliate-referral-card';
 
 
 export default function OrderDetailsPage() {
@@ -121,6 +121,7 @@ export default function OrderDetailsPage() {
                 </div>
                 <div className="md:col-span-1 space-y-6">
                     <OrderStatusCard order={order} />
+                    <AffiliateReferralCard order={order} />
                     <OrderDetailsCard order={order} />
                 </div>
             </div>
