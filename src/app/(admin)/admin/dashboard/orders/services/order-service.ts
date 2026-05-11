@@ -22,7 +22,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * 4. Maintenance: Syncs affiliateId and affiliateCode to the users collection for all affiliates.
  * 
  * @param firestore The Firestore database instance.
- * @returns The number of orders cached in the main admin document.
+ * @returns {Promise<number>} The number of orders cached in the main admin document.
  */
 export async function updateOrderCache(firestore: Firestore): Promise<number> {
   try {
@@ -53,18 +53,22 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
     // MAINTENANCE: Also keep track of which user documents need syncing
     affiliates.forEach(a => {
         affiliateIdToUserId.set(a.id, a.userId);
+        
+        const userRef = doc(firestore, 'users', a.userId);
+        const userUpdateData: any = {
+            affiliateId: a.id,
+            role: 'affiliate',
+            updatedAt: serverTimestamp()
+        };
+
         if (a.code) {
-            affiliateCodeToUserId.set(a.code.toUpperCase().trim(), a.userId);
+            const normalizedCode = a.code.toUpperCase().trim();
+            affiliateCodeToUserId.set(normalizedCode, a.userId);
+            userUpdateData.affiliateCode = normalizedCode;
         }
         
         // Sync critical fields back to the user document to fix old/broken profiles
-        const userRef = doc(firestore, 'users', a.userId);
-        batch.update(userRef, {
-            affiliateId: a.id,
-            affiliateCode: a.code.toUpperCase().trim(),
-            role: 'affiliate',
-            updatedAt: serverTimestamp()
-        });
+        batch.update(userRef, userUpdateData);
     });
 
     // 3. Set main admin cache
