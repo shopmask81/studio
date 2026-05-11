@@ -9,7 +9,8 @@ import {
   query,
   where,
   limit,
-  writeBatch
+  writeBatch,
+  getDoc
 } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
@@ -99,7 +100,7 @@ export async function addAffiliate(
         email: values.email,
         role: "affiliate",
         affiliateCode: normalizedCode,
-        affiliateId: affiliateRef.id, // Store for easy URL generation
+        affiliateId: affiliateRef.id, 
         createdAt: serverTimestamp(),
         emailVerified: false,
     });
@@ -107,7 +108,7 @@ export async function addAffiliate(
     batch.update(userDocRef, { 
         role: 'affiliate',
         affiliateCode: normalizedCode,
-        affiliateId: affiliateRef.id, // Store for easy URL generation
+        affiliateId: affiliateRef.id,
         updatedAt: serverTimestamp(),
     });
   }
@@ -123,12 +124,23 @@ export async function addAffiliate(
     });
 }
 
+/**
+ * Updates an affiliate record and synchronizes the changes to the 
+ * private cache document used by the affiliate dashboard.
+ */
 export async function updateAffiliate(
   firestore: Firestore,
   id: string,
   values: Partial<Affiliate>
 ): Promise<void> {
   const affRef = doc(firestore, 'affiliates', id);
+  
+  // 1. Fetch current affiliate data to get the userId for cache synchronization
+  const affSnap = await getDoc(affRef);
+  if (!affSnap.exists()) throw new Error('Affiliate record not found.');
+  const currentData = affSnap.data() as Affiliate;
+  const userId = currentData.userId;
+
   const dataToUpdate = {
     ...values,
     updatedAt: serverTimestamp(),
@@ -138,23 +150,39 @@ export async function updateAffiliate(
       dataToUpdate.code = values.code.toUpperCase().trim();
   }
 
-  await updateDoc(affRef, dataToUpdate)
+  // 2. Perform updates using a batch to ensure collection and user profile stay in sync
+  const batch = writeBatch(firestore);
+  batch.update(affRef, dataToUpdate);
+
+  if (values.code || values.commissionRate || values.status) {
+      const userRef = doc(firestore, 'users', userId);
+      const userUpdate: any = { updatedAt: serverTimestamp() };
+      if (values.code) userUpdate.affiliateCode = values.code.toUpperCase().trim();
+      batch.update(userRef, userUpdate);
+
+      // 3. CRITICAL FIX: Synchronize to the affiliate's private stats cache document
+      // This ensures the dashboard UI updates immediately when admin changes settings.
+      const statsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${userId}`);
+      
+      // We perform a partial update on the cache document if it exists
+      const statsSnap = await getDoc(statsCacheRef);
+      if (statsSnap.exists()) {
+          const cacheUpdate: any = { lastUpdated: serverTimestamp() };
+          if (values.commissionRate !== undefined) cacheUpdate.commissionRate = values.commissionRate;
+          if (values.status !== undefined) cacheUpdate.status = values.status;
+          batch.update(statsCacheRef, cacheUpdate);
+      }
+  }
+
+  await batch.commit()
     .catch((err) => {
+        console.error("Affiliate Update Failed:", err);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: affRef.path,
             operation: 'update',
-            requestResourceData: dataToUpdate
         }));
         throw err;
     });
-  
-  if (values.code && values.userId) {
-      const userRef = doc(firestore, 'users', values.userId);
-      await updateDoc(userRef, { 
-          affiliateCode: values.code.toUpperCase().trim(),
-          updatedAt: serverTimestamp(),
-      });
-  }
 }
 
 export async function deleteAffiliate(
@@ -173,8 +201,15 @@ export async function deleteAffiliate(
       updatedAt: serverTimestamp(),
   });
 
+  // Also clean up cache documents
+  const statsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${affiliate.userId}`);
+  const ordersCacheRef = doc(firestore, 'cachedData', `affiliate_orders_${affiliate.userId}`);
+  batch.delete(statsCacheRef);
+  batch.delete(ordersCacheRef);
+
   await batch.commit()
     .catch((err) => {
+        console.error("Affiliate Delete Batch Failed:", err);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: 'affiliates/delete-batch',
             operation: 'write',
