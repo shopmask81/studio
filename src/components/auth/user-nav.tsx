@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -56,7 +55,6 @@ export function UserNav() {
     return null;
   }
 
-  const isAffiliate = userProfile?.role === 'affiliate';
   const isAdmin = userProfile?.role === 'admin';
 
   return (
@@ -102,14 +100,13 @@ export function UserNav() {
                 <span>{t('my_addresses').text}</span>
               </Link>
             </DropdownMenuItem>
-            {isAffiliate && (
-              <DropdownMenuItem asChild>
-                <Link href="/affiliate">
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  <span>{t('affiliate').text}</span>
-                </Link>
-              </DropdownMenuItem>
-            )}
+            {/* Affiliate link visible for all logged-in users */}
+            <DropdownMenuItem asChild>
+              <Link href="/affiliate">
+                <LinkIcon className="mr-2 h-4 w-4" />
+                <span>{t('affiliate').text}</span>
+              </Link>
+            </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Theater } from "lucide-react";
@@ -19,8 +18,6 @@ export function Footer() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAffiliate = userProfile?.role === 'affiliate' || userProfile?.role === 'admin';
-  
   useEffect(() => {
     // This code runs only on the client, after hydration
     const currentYear = new Date().getFullYear();
@@ -44,7 +41,7 @@ export function Footer() {
   const navLinks = [
     { href: '/about', label: t('about').text },
     { href: '/contact', label: t('contact').text },
-    ...(isAffiliate ? [{ href: '/affiliate', label: t('affiliate').text }] : []),
+    { href: '/affiliate', label: t('affiliate').text }, // Always visible now
     { href: '/terms', label: t('terms_of_use').text },
     { href: '/privacy', label: t('privacy_policy').text },
   ];
