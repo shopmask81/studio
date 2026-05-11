@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -322,7 +321,7 @@ export function CheckoutForm() {
                                             <FormItem><FormLabel {...t('city')}>{t('city').text}</FormLabel><FormControl><Input placeholder="Venice" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="postalCode" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="90210" {...field} /></FormControl><FormMessage /></FormMessage>
+                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="90210" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="country" render={({ field }) => (
                                             <FormItem><FormLabel {...t('country')}>{t('country').text}</FormLabel><FormControl><Input placeholder="USA" {...field} /></FormControl><FormMessage /></FormItem>

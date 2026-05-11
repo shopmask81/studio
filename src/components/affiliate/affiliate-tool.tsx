@@ -11,7 +11,7 @@ import { useTranslation } from "../language/language-provider";
 import { useAuth } from "../auth/auth-provider";
 
 export function AffiliateTool() {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const [productUrl, setProductUrl] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
     const { toast } = useToast();
@@ -23,7 +23,9 @@ export function AffiliateTool() {
         
         try {
             const url = new URL(productUrl);
-            const generated = `${url.origin}${url.pathname}?ref=${user.uid}`;
+            // Use the assigned affiliate code from the profile, fallback to UID
+            const trackingCode = userProfile?.affiliateCode || user.uid;
+            const generated = `${url.origin}${url.pathname}?ref=${trackingCode}`;
             setAffiliateLink(generated);
         } catch (error) {
             toast({
