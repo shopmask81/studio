@@ -135,19 +135,18 @@ export function CheckoutForm() {
 
         const finalTotal = cartTotal + shippingTotal;
         
-        // --- Affiliate Logic ---
-        // Retrieve code from localStorage (set by AffiliateTracker)
-        let savedAffiliateCode = typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : null;
+        // --- Affiliate Tracking Logic ---
         let affiliateCodeToSave = null;
         let commissionAmount = 0;
         let affiliateId = null;
 
+        const savedAffiliateCode = typeof window !== 'undefined' ? localStorage.getItem('affiliate_ref') : null;
+
         if (savedAffiliateCode) {
             try {
-                // Codes are stored in uppercase in the system
                 const normalizedCode = savedAffiliateCode.toUpperCase().trim();
                 
-                // Query for active affiliate
+                // Find matching active affiliate
                 const affQuery = query(
                     collection(firestore, 'affiliates'), 
                     where('code', '==', normalizedCode), 
@@ -165,16 +164,15 @@ export function CheckoutForm() {
                     affiliateCodeToSave = normalizedCode;
                     commissionAmount = cartTotal * (affData.commissionRate || 0);
                     
-                    // Increment affiliate totals. 
-                    // Security rules are configured to allow guest updates to these specific fields.
-                    await updateDoc(doc(firestore, 'affiliates', affDoc.id), {
+                    // Increment affiliate totals atomically
+                    await updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
                         updatedAt: serverTimestamp()
                     });
                 }
             } catch (e) {
-                console.warn("Affiliate data retrieval failed during checkout:", e);
+                console.warn("Affiliate tracking lookup failed:", e);
             }
         }
         
@@ -234,7 +232,7 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
-            // Clear affiliate tracking after successful order
+            // Clear tracking after success
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('affiliate_ref');
             }
@@ -243,7 +241,7 @@ export function CheckoutForm() {
             router.push('/order-confirmation');
 
         } catch (error: any) {
-            console.error("Order submission error:", error);
+            console.error("Checkout submission failed:", error);
             toast({
                 variant: 'destructive',
                 title: t('order_failed_title').text,
@@ -406,17 +404,6 @@ export function CheckoutForm() {
                                 </Button>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="hidden md:flex justify-end pt-8">
-                         <Button type="submit" size="lg" className="w-full max-w-sm" disabled={isSubmitting || cartItems.length === 0}>
-                            {isSubmitting ? (
-                                <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Lock className="me-2 h-4 w-4" />
-                            )}
-                            {t('place_order').text}
-                        </Button>
                     </div>
                 </form>
             </Form>

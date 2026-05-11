@@ -1,4 +1,3 @@
-
 import {
   Firestore,
   collection,
@@ -22,6 +21,7 @@ export async function addAffiliate(
   firestore: Firestore,
   values: { name: string; email: string; code: string; commissionRate: number; password?: string }
 ): Promise<void> {
+  const normalizedCode = values.code.toUpperCase().trim();
   const usersRef = collection(firestore, 'users');
   const userQuery = query(usersRef, where('email', '==', values.email), limit(1));
   const userSnap = await getDocs(userQuery);
@@ -41,12 +41,9 @@ export async function addAffiliate(
     const tempAuth = getAuth(tempApp);
 
     try {
-        // Isolation: Temporary login MUST not touch LocalStorage
         await setPersistence(tempAuth, inMemoryPersistence);
-        
         const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
         userId = userCredential.user.uid;
-        
         await signOut(tempAuth);
         await deleteApp(tempApp);
     } catch (authError: any) {
@@ -67,7 +64,7 @@ export async function addAffiliate(
     throw new Error('This user is already registered as an affiliate.');
   }
   
-  const codeQuery = query(affiliatesRef, where('code', '==', values.code), limit(1));
+  const codeQuery = query(affiliatesRef, where('code', '==', normalizedCode), limit(1));
   const codeSnap = await getDocs(codeQuery);
   if (!codeSnap.empty) {
       throw new Error('This affiliate code is already taken. Please choose another.');
@@ -76,14 +73,13 @@ export async function addAffiliate(
   // 3. Atomic Batch Write
   const batch = writeBatch(firestore);
   
-  // Create Affiliate Document
   const affiliateRef = doc(collection(firestore, 'affiliates'));
   const affiliateData = {
-    id: affiliateRef.id, // Explicitly set ID inside the data
+    id: affiliateRef.id,
     userId,
     name: values.name,
     email: values.email,
-    code: values.code,
+    code: normalizedCode,
     commissionRate: values.commissionRate,
     status: 'active' as const,
     totalOrders: 0,
@@ -93,7 +89,6 @@ export async function addAffiliate(
   };
   batch.set(affiliateRef, affiliateData);
 
-  // Set or Update User Role
   const userDocRef = doc(firestore, 'users', userId);
   if (isNewUser) {
     batch.set(userDocRef, {
@@ -102,14 +97,14 @@ export async function addAffiliate(
         name: values.name,
         email: values.email,
         role: "affiliate",
-        affiliateCode: values.code,
+        affiliateCode: normalizedCode,
         createdAt: serverTimestamp(),
         emailVerified: false,
     });
   } else {
     batch.update(userDocRef, { 
         role: 'affiliate',
-        affiliateCode: values.code,
+        affiliateCode: normalizedCode,
         updatedAt: serverTimestamp(),
     });
   }
@@ -135,6 +130,10 @@ export async function updateAffiliate(
     ...values,
     updatedAt: serverTimestamp(),
   };
+  
+  if (values.code) {
+      dataToUpdate.code = values.code.toUpperCase().trim();
+  }
 
   await updateDoc(affRef, dataToUpdate)
     .catch((err) => {
@@ -149,7 +148,7 @@ export async function updateAffiliate(
   if (values.code && values.userId) {
       const userRef = doc(firestore, 'users', values.userId);
       await updateDoc(userRef, { 
-          affiliateCode: values.code,
+          affiliateCode: values.code.toUpperCase().trim(),
           updatedAt: serverTimestamp(),
       });
   }
