@@ -9,7 +9,8 @@ import {
   query,
   where,
   limit,
-  writeBatch
+  writeBatch,
+  setDoc
 } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -27,14 +28,15 @@ export async function addAffiliate(
   const userSnap = await getDocs(userQuery);
 
   let userId: string;
+  let isNewUser = false;
 
-  // 1. If user doesn't exist and password is provided, create a new user account
+  // 1. Handle user account creation if it doesn't exist
   if (userSnap.empty) {
     if (!values.password) {
       throw new Error(`No user found with email ${values.email}. Please provide a password to create a new account.`);
     }
 
-    // Use a secondary Firebase app instance to create the user without signing out the admin
+    isNewUser = true;
     const tempAppName = `temp-auth-${Date.now()}`;
     const tempApp = initializeApp(firebaseConfig, tempAppName);
     const tempAuth = getAuth(tempApp);
@@ -43,11 +45,11 @@ export async function addAffiliate(
         const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
         userId = userCredential.user.uid;
         
-        // Sign out from the temp app immediately
         await signOut(tempAuth);
         await deleteApp(tempApp);
         
-        // Initialize the user document in Firestore
+        // We will create the user document as part of the batch if possible, 
+        // but for now let's keep it separate to ensure Auth matches Firestore.
         const userDocRef = doc(firestore, 'users', userId);
         const userData = {
             uid: userId,
@@ -59,15 +61,14 @@ export async function addAffiliate(
             emailVerified: false,
         };
 
-        await writeBatch(firestore).set(userDocRef, userData).commit()
-            .catch((err) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'create',
-                    requestResourceData: userData
-                }));
-                throw err;
-            });
+        await setDoc(userDocRef, userData).catch((err) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: userData
+            }));
+            throw err;
+        });
 
     } catch (authError: any) {
         if (tempApp) await deleteApp(tempApp);
@@ -94,7 +95,7 @@ export async function addAffiliate(
       throw new Error('This affiliate code is already taken. Please choose another.');
   }
 
-  // 4. Update the user role and add the affiliate document
+  // 4. Update the user role (if not a new user who was just set) and add the affiliate document
   const batch = writeBatch(firestore);
   
   const affiliateRef = doc(affiliatesRef);
@@ -113,16 +114,19 @@ export async function addAffiliate(
 
   batch.set(affiliateRef, affiliateData);
 
-  const userRef = doc(firestore, 'users', userId);
-  batch.update(userRef, { 
-      role: 'affiliate',
-      affiliateCode: values.code
-  });
+  // If the user already existed, we need to promote their role
+  if (!isNewUser) {
+    const userRef = doc(firestore, 'users', userId);
+    batch.update(userRef, { 
+        role: 'affiliate',
+        affiliateCode: values.code
+    });
+  }
 
   await batch.commit()
     .catch((err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: 'affiliates/users-batch',
+            path: 'affiliates/creation-batch',
             operation: 'write',
         }));
         throw err;

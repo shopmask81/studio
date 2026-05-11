@@ -81,7 +81,6 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow update: if isExistingOwner(userId) || isAdmin();
       allow delete: if isAdmin();
-      allow list: if isAdmin();
 
       match /cart/{productId} {
         allow read, write: if isOwner(userId);
@@ -107,8 +106,9 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2'
+        // Check hardcoded UID FIRST to avoid potential get() errors for the primary admin
+        request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }
   }
