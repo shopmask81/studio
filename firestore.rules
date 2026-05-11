@@ -7,12 +7,8 @@ service cloud.firestore {
      * @description Public read access for general content.
      */
     match /banners/{bannerId} {
-      // Anyone can get a single banner document directly.
       allow get: if true;
-      // Allow public listing ONLY when querying for active banners.
-      // Admins are allowed to list all banners without restriction.
       allow list: if request.query.where.get('active', false) == true || isAdmin();
-      // Only admins can create, update, or delete banners.
       allow write: if isAdmin();
     }
 
@@ -35,9 +31,7 @@ service cloud.firestore {
      * @description Public read access for cached data.
      */
     match /cachedData/{docId} {
-      // Anyone can read the cache documents.
       allow get: if true;
-      // Writing to the cache is an admin-only operation.
       allow write: if isAdmin();
     }
 
@@ -55,15 +49,10 @@ service cloud.firestore {
      * @description Order Management Rules
      */
     match /orders/{orderId} {
-      // Allow user to create their own order
-      allow create: if isOwner(request.resource.data.userId);
-      // Allow user to read their own orders, and admin to read any order
+      allow create: if isOwner(request.resource.data.userId) || request.resource.data.userId == 'guest';
       allow get: if isOwner(resource.data.userId) || isAdmin();
-      // Allow admin to list all orders
-      allow list: if isAdmin();
-      // Allow admin to update orders (e.g., status)
-      allow update: if isAdmin();
-      // Allow admin to delete orders
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 50 && request.query.where.affiliateCode != null);
+      allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalOrders', 'totalEarnings']));
       allow delete: if isAdmin();
     }
 
@@ -71,9 +60,16 @@ service cloud.firestore {
      * @description Product Rules
      */
     match /products/{productId} {
-      // Anyone can read products
       allow read: if true;
-      // Only admins can create, update, or delete products
+      allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Affiliate Rules
+     */
+    match /affiliates/{affiliateId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       allow write: if isAdmin();
     }
 
@@ -81,19 +77,12 @@ service cloud.firestore {
      * @description User Profile Rules
      */
     match /users/{userId} {
-      // A user can create their own profile document
       allow create: if isOwner(userId);
-      // Allow any signed-in user to read any user profile.
-      // This is necessary for the isAdmin() check to work in other rules.
       allow read: if isSignedIn();
-      // A user can update or delete their own profile
-      allow update, delete: if isExistingOwner(userId);
-      // No one can list all users for privacy
-      allow list: if false;
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+      allow list: if isAdmin();
 
-      /**
-       * @description Subcollection rules for user-specific data
-       */
       match /cart/{productId} {
         allow read, write: if isOwner(userId);
       }
@@ -117,8 +106,6 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Check if the user's document in the 'users' collection has the 'admin' role.
-      // This requires a broad read rule on the users collection.
       return isSignedIn() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
         request.auth.uid == 'MUhB93iWtkbZ1AWzaE5MYo4Qxvy2'

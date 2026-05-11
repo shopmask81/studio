@@ -100,6 +100,8 @@ export type Order = {
     zip: string;
     country: string;
     affiliateId?: string | null;
+    affiliateCode?: string | null;
+    commissionAmount?: number | null;
     paymentMethod: 'card' | 'paypal' | 'cod';
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
     createdAt: Timestamp;
@@ -130,8 +132,31 @@ export type UserProfile = {
     name: string;
     email: string;
     role: 'customer' | 'affiliate' | 'admin';
+    affiliateCode?: string;
     createdAt: Timestamp;
     emailVerified: boolean;
+};
+
+export type Affiliate = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  code: string;
+  commissionRate: number; // e.g. 0.10 for 10%
+  status: 'active' | 'suspended';
+  totalOrders: number;
+  totalEarnings: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type AffiliatePayout = {
+    id: string;
+    affiliateId: string;
+    amount: number;
+    status: 'pending' | 'paid';
+    createdAt: Timestamp;
 };
 
 export type Currency = "AED" | "MAD" | "USD" | "EUR";

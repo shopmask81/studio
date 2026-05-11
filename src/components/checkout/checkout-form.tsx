@@ -14,7 +14,7 @@ import { CreditCard, Loader2, Lock, PlusCircle } from 'lucide-react';
 import { OrderSummary } from './order-summary';
 import { useCart } from '../cart/cart-provider';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, increment } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/lib/types';
@@ -136,6 +136,35 @@ export function CheckoutForm() {
 
         const finalTotal = cartTotal + shippingTotal;
         
+        // --- Affiliate Logic ---
+        let affiliateCode = localStorage.getItem('affiliate_ref');
+        let commissionAmount = 0;
+        let affiliateId = null;
+
+        if (affiliateCode) {
+            try {
+                const affQuery = query(collection(firestore, 'affiliates'), where('code', '==', affiliateCode), where('status', '==', 'active'), limit(1));
+                const affSnap = await getDocs(affQuery);
+                if (!affSnap.empty) {
+                    const affDoc = affSnap.docs[0];
+                    const affData = affDoc.data();
+                    affiliateId = affDoc.id;
+                    commissionAmount = cartTotal * (affData.commissionRate || 0);
+                    
+                    // Increment affiliate totals (simplified)
+                    await updateDoc(doc(firestore, 'affiliates', affDoc.id), {
+                        totalOrders: increment(1),
+                        totalEarnings: increment(commissionAmount)
+                    });
+                } else {
+                    affiliateCode = null; // Code invalid or suspended
+                }
+            } catch (e) {
+                console.warn("Affiliate check failed", e);
+                affiliateCode = null;
+            }
+        }
+        
         const newOrderData = {
             userId: user?.uid ?? 'guest',
             name: values.fullName,
@@ -178,12 +207,13 @@ export function CheckoutForm() {
             total: finalTotal,
             paymentMethod: values.paymentMethod,
             status: 'pending' as const,
-            affiliateId: null, // Placeholder for future implementation
+            affiliateId: affiliateId,
+            affiliateCode: affiliateCode,
+            commissionAmount: commissionAmount,
             createdAt: serverTimestamp(),
         };
 
         try {
-            // Only write to the main orders collection.
             await addDoc(collection(firestore, 'orders'), newOrderData);
 
             toast({
@@ -191,6 +221,9 @@ export function CheckoutForm() {
                 description: t('order_placed_desc').text,
             });
 
+            // Clear affiliate tracking after order
+            localStorage.removeItem('affiliate_ref');
+            
             await clearCart();
             router.push('/order-confirmation');
 
@@ -375,5 +408,3 @@ export function CheckoutForm() {
         </>
     );
 }
-
-    

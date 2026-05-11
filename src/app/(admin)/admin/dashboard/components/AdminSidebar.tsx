@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -14,6 +15,7 @@ import {
     ChevronLeft,
     ImageIcon,
     Search,
+    HandCoins,
 } from "lucide-react";
 import { 
     Sidebar, 
@@ -38,6 +40,7 @@ const sidebarNavItems = [
     { href: '/admin/dashboard/categories', label: 'Categories', icon: Tags },
     { href: '/admin/dashboard/orders', label: 'Orders', icon: ClipboardList },
     { href: '/admin/dashboard/banners', label: 'Banners', icon: ImageIcon },
+    { href: '/admin/dashboard/affiliates', label: 'Affiliates', icon: HandCoins },
     { href: '/admin/dashboard/users', label: 'Users', icon: Users },
 ];
 

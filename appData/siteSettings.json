@@ -6,7 +6,7 @@
   "logoUrl": "https://i.ibb.co/Rq1SX8D/1764682613245-removebg-preview-copy-500x500.png",
   "faviconUrl": "https://i.ibb.co/KpkZMBCc/1764682613245-removebg-preview.png",
   "defaultThemeMode": "dark",
-  "defaultCurrency": "MAD",
+  "defaultCurrency": "AED",
   "payments": {
     "creditCard": false,
     "paypal": false,
