@@ -9,11 +9,10 @@ import {
   query,
   where,
   limit,
-  writeBatch,
-  setDoc
+  writeBatch
 } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
 import type { Affiliate } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -42,34 +41,14 @@ export async function addAffiliate(
     const tempAuth = getAuth(tempApp);
 
     try {
+        // CRITICAL: Ensure the temporary login doesn't overwrite the Admin's session in LocalStorage
+        await setPersistence(tempAuth, inMemoryPersistence);
+        
         const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
         userId = userCredential.user.uid;
         
         await signOut(tempAuth);
         await deleteApp(tempApp);
-        
-        // We will create the user document as part of the batch if possible, 
-        // but for now let's keep it separate to ensure Auth matches Firestore.
-        const userDocRef = doc(firestore, 'users', userId);
-        const userData = {
-            uid: userId,
-            name: values.name,
-            email: values.email,
-            role: "affiliate",
-            affiliateCode: values.code,
-            createdAt: serverTimestamp(),
-            emailVerified: false,
-        };
-
-        await setDoc(userDocRef, userData).catch((err) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'create',
-                requestResourceData: userData
-            }));
-            throw err;
-        });
-
     } catch (authError: any) {
         if (tempApp) await deleteApp(tempApp);
         throw authError;
@@ -95,10 +74,10 @@ export async function addAffiliate(
       throw new Error('This affiliate code is already taken. Please choose another.');
   }
 
-  // 4. Update the user role (if not a new user who was just set) and add the affiliate document
+  // 4. Update the user role and add the affiliate document in a single atomic batch
   const batch = writeBatch(firestore);
   
-  const affiliateRef = doc(affiliatesRef);
+  const affiliateRef = doc(collection(firestore, 'affiliates'));
   const affiliateData = {
     userId,
     name: values.name,
@@ -114,8 +93,18 @@ export async function addAffiliate(
 
   batch.set(affiliateRef, affiliateData);
 
-  // If the user already existed, we need to promote their role
-  if (!isNewUser) {
+  if (isNewUser) {
+    const userDocRef = doc(firestore, 'users', userId);
+    batch.set(userDocRef, {
+        uid: userId,
+        name: values.name,
+        email: values.email,
+        role: "affiliate",
+        affiliateCode: values.code,
+        createdAt: serverTimestamp(),
+        emailVerified: false,
+    });
+  } else {
     const userRef = doc(firestore, 'users', userId);
     batch.update(userRef, { 
         role: 'affiliate',
