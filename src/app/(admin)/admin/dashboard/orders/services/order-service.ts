@@ -19,7 +19,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * 1. The centralized admin cache 'cachedData/allOrders'.
  * 2. Individual affiliate caches 'cachedData/affiliate_orders_{userId}'.
  * 3. Individual affiliate stats 'cachedData/affiliate_stats_{userId}'.
- * 4. Maintenance: Syncs affiliateId and affiliateCode to the users collection for all affiliates.
+ * 4. Main collection sync: Updates 'totalOrders' and 'totalEarnings' in the 'affiliates' collection.
+ * 5. Maintenance: Syncs affiliateId and affiliateCode to the users collection for all affiliates.
  * 
  * @param firestore The Firestore database instance.
  * @returns {Promise<number>} The number of orders cached in the main admin document.
@@ -102,7 +103,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         }
     });
 
-    // 5. Write affiliate-specific caches (Orders & Dynamic Stats)
+    // 5. Write affiliate-specific caches AND update main collection stats
     affiliates.forEach(affiliate => {
         const affiliateOrders = ordersByAffiliateUserId.get(affiliate.userId) || [];
         
@@ -110,19 +111,28 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         const deliveredOrders = affiliateOrders.filter(o => o.status === 'delivered');
         const totalEarnings = affiliateOrders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0);
 
-        // A. Cache Orders List
+        // A. Update Main Affiliate Document (Sync back to source)
+        // This ensures stats are visible in the Admin Affiliates table
+        const affiliateDocRef = doc(firestore, 'affiliates', affiliate.id);
+        batch.update(affiliateDocRef, {
+            totalOrders: affiliateOrders.length,
+            totalEarnings: totalEarnings,
+            updatedAt: serverTimestamp()
+        });
+
+        // B. Cache Orders List
         const affiliateOrdersCacheRef = doc(firestore, 'cachedData', `affiliate_orders_${affiliate.userId}`);
         batch.set(affiliateOrdersCacheRef, {
             orders: affiliateOrders,
             lastUpdated: serverTimestamp(),
         });
 
-        // B. Cache Stats (Fully Dynamic)
+        // C. Cache Stats (For Affiliate Dashboard)
         const affiliateStatsCacheRef = doc(firestore, 'cachedData', `affiliate_stats_${affiliate.userId}`);
         batch.set(affiliateStatsCacheRef, {
             totalOrders: affiliateOrders.length,
             deliveredOrders: deliveredOrders.length,
-            totalEarnings: totalEarnings, // Calculated from orders, not the affiliate doc
+            totalEarnings: totalEarnings,
             commissionRate: affiliate.commissionRate || 0,
             status: affiliate.status,
             lastUpdated: serverTimestamp(),
