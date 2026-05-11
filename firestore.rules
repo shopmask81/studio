@@ -77,7 +77,7 @@ service cloud.firestore {
      * @description User Profile Rules
      */
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow read: if isSignedIn();
       allow update: if isExistingOwner(userId) || isAdmin();
       allow delete: if isAdmin();

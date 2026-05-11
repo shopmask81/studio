@@ -15,6 +15,8 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
 import type { Affiliate } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export async function addAffiliate(
   firestore: Firestore,
@@ -45,9 +47,9 @@ export async function addAffiliate(
         await signOut(tempAuth);
         await deleteApp(tempApp);
         
-        // Initialize the user document in Firestore (normally done during signup)
+        // Initialize the user document in Firestore
         const userDocRef = doc(firestore, 'users', userId);
-        await writeBatch(firestore).set(userDocRef, {
+        const userData = {
             uid: userId,
             name: values.name,
             email: values.email,
@@ -55,11 +57,21 @@ export async function addAffiliate(
             affiliateCode: values.code,
             createdAt: serverTimestamp(),
             emailVerified: false,
-        }).commit();
+        };
+
+        await writeBatch(firestore).set(userDocRef, userData).commit()
+            .catch((err) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'create',
+                    requestResourceData: userData
+                }));
+                throw err;
+            });
 
     } catch (authError: any) {
-        await deleteApp(tempApp);
-        throw new Error(`Failed to create account: ${authError.message}`);
+        if (tempApp) await deleteApp(tempApp);
+        throw authError;
     }
   } else {
     const userDoc = userSnap.docs[0];
@@ -86,18 +98,20 @@ export async function addAffiliate(
   const batch = writeBatch(firestore);
   
   const affiliateRef = doc(affiliatesRef);
-  batch.set(affiliateRef, {
+  const affiliateData = {
     userId,
     name: values.name,
     email: values.email,
     code: values.code,
     commissionRate: values.commissionRate,
-    status: 'active',
+    status: 'active' as const,
     totalOrders: 0,
     totalEarnings: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  batch.set(affiliateRef, affiliateData);
 
   const userRef = doc(firestore, 'users', userId);
   batch.update(userRef, { 
@@ -105,7 +119,14 @@ export async function addAffiliate(
       affiliateCode: values.code
   });
 
-  await batch.commit();
+  await batch.commit()
+    .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: 'affiliates/users-batch',
+            operation: 'write',
+        }));
+        throw err;
+    });
 }
 
 export async function updateAffiliate(
@@ -114,10 +135,20 @@ export async function updateAffiliate(
   values: Partial<Affiliate>
 ): Promise<void> {
   const affRef = doc(firestore, 'affiliates', id);
-  await updateDoc(affRef, {
+  const dataToUpdate = {
     ...values,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  await updateDoc(affRef, dataToUpdate)
+    .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: affRef.path,
+            operation: 'update',
+            requestResourceData: dataToUpdate
+        }));
+        throw err;
+    });
   
   if (values.code && values.userId) {
       const userRef = doc(firestore, 'users', values.userId);
@@ -135,9 +166,16 @@ export async function deleteAffiliate(
 
   const userRef = doc(firestore, 'users', affiliate.userId);
   batch.update(userRef, { 
-      role: 'customer',
+      role: 'customer' as const,
       affiliateCode: null
   });
 
-  await batch.commit();
+  await batch.commit()
+    .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: 'affiliates/delete-batch',
+            operation: 'write',
+        }));
+        throw err;
+    });
 }
