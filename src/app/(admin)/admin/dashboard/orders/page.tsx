@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { OrderTable } from "./components/order-table";
 import { OrderFilters, type Filters } from './components/order-filters';
 import { useFirestore, useDoc } from '@/firebase';
@@ -26,6 +26,8 @@ export default function AdminOrdersPage() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
   const [isCaching, setIsCaching] = useState(false);
+  const isCachingRef = useRef(false); // Ref for internal locking to prevent loops
+  
   const [ordersToExport, setOrdersToExport] = useState<Order[]>([]);
   const [isExportingSelected, setIsExportingSelected] = useState(false);
 
@@ -49,12 +51,13 @@ export default function AdminOrdersPage() {
   }, [cachedData]);
   
   const handleManualCacheRefresh = useCallback(async () => {
-    if (!firestore || isCaching) return;
+    if (!firestore || isCachingRef.current) return;
     if (!isAdmin) {
       toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to update the order cache.' });
       return;
     }
 
+    isCachingRef.current = true;
     setIsCaching(true);
     try {
       const count = await updateOrderCache(firestore);
@@ -62,12 +65,14 @@ export default function AdminOrdersPage() {
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Cache Update Failed', description: error.message });
     } finally {
+      isCachingRef.current = false;
       setIsCaching(false);
     }
-  }, [firestore, toast, isAdmin, isCaching]);
+  }, [firestore, toast, isAdmin]);
   
+  // Handle auto-refresh if cache is expired
   useEffect(() => {
-    if (cachedData && !isCacheLoading) {
+    if (cachedData && !isCacheLoading && !isCachingRef.current) {
       const lastUpdated = cachedData.lastUpdated?.toDate().getTime() || 0;
       const now = Date.now();
       
