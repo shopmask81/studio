@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -104,12 +103,6 @@ export function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('sign_in').text}
           </Button>
-          <div className="mt-4 text-center text-sm">
-            {t('dont_have_account').text}{' '}
-            <Link href="/signup" className="underline text-primary hover:text-accent">
-              {t('sign_up').text}
-            </Link>
-          </div>
         </CardFooter>
       </form>
     </Card>
