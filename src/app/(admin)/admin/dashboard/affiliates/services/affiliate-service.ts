@@ -101,6 +101,7 @@ export async function addAffiliate(
         role: "affiliate",
         affiliateCode: normalizedCode,
         affiliateId: affiliateRef.id, 
+        commissionRate: values.commissionRate, // Sync rate to profile
         createdAt: serverTimestamp(),
         emailVerified: false,
     });
@@ -109,6 +110,7 @@ export async function addAffiliate(
         role: 'affiliate',
         affiliateCode: normalizedCode,
         affiliateId: affiliateRef.id,
+        commissionRate: values.commissionRate, // Sync rate to profile
         updatedAt: serverTimestamp(),
     });
   }
@@ -158,6 +160,8 @@ export async function updateAffiliate(
       const userRef = doc(firestore, 'users', userId);
       const userUpdate: any = { updatedAt: serverTimestamp() };
       if (values.code) userUpdate.affiliateCode = values.code.toUpperCase().trim();
+      if (values.commissionRate !== undefined) userUpdate.commissionRate = values.commissionRate; // Sync rate update
+      
       batch.update(userRef, userUpdate);
 
       // 3. CRITICAL FIX: Synchronize to the affiliate's private stats cache document
@@ -198,6 +202,7 @@ export async function deleteAffiliate(
       role: 'customer' as const,
       affiliateCode: null,
       affiliateId: null,
+      commissionRate: null, // Clear rate
       updatedAt: serverTimestamp(),
   });
 

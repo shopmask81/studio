@@ -20,7 +20,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
  * 2. Individual affiliate caches 'cachedData/affiliate_orders_{userId}'.
  * 3. Individual affiliate stats 'cachedData/affiliate_stats_{userId}'.
  * 4. Main collection sync: Updates 'totalOrders' and 'totalEarnings' in the 'affiliates' collection.
- * 5. Maintenance: Syncs affiliateId and affiliateCode to the users collection for all affiliates.
+ * 5. Maintenance: Syncs affiliateId, affiliateCode, and commissionRate to the users collection.
+ * 6. Data Integrity: Enforces correct commission amount calculation based on current affiliate rates.
  * 
  * @param firestore The Firestore database instance.
  * @returns {Promise<number>} The number of orders cached in the main admin document.
@@ -40,7 +41,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
       createdAt: (doc.data().createdAt as Timestamp)?.toDate ? (doc.data().createdAt as Timestamp).toDate().toISOString() : new Date(doc.data().createdAt as any).toISOString(),
     })) as unknown as Order[];
 
-    // 2. Fetch all affiliates to map affiliateId (doc ID) AND affiliateCode to userId (Auth UID)
+    // 2. Fetch all affiliates for mapping and accurate commission calculation
     const affiliatesRef = collection(firestore, 'affiliates');
     const affiliateSnapshot = await getDocs(affiliatesRef);
     const affiliates = affiliateSnapshot.docs.map(doc => ({
@@ -48,71 +49,89 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
         ...doc.data()
     })) as Affiliate[];
 
-    const affiliateIdToUserId = new Map<string, string>();
-    const affiliateCodeToUserId = new Map<string, string>();
+    const affiliateIdMap = new Map<string, Affiliate>();
+    const affiliateCodeMap = new Map<string, Affiliate>();
     
     // MAINTENANCE & MAPPING
     affiliates.forEach(a => {
-        affiliateIdToUserId.set(a.id, a.userId);
+        affiliateIdMap.set(a.id, a);
         
         const userRef = doc(firestore, 'users', a.userId);
         const userUpdateData: any = {
             affiliateId: a.id,
+            commissionRate: a.commissionRate, // Ensure rate is synced to user profile
             role: 'affiliate',
             updatedAt: serverTimestamp()
         };
 
         if (a.code) {
             const normalizedCode = a.code.toUpperCase().trim();
-            affiliateCodeToUserId.set(normalizedCode, a.userId);
+            affiliateCodeMap.set(normalizedCode, a);
             userUpdateData.affiliateCode = normalizedCode;
         }
         
-        // Sync critical fields back to the user document
         batch.update(userRef, userUpdateData);
     });
 
-    // 3. Set main admin cache
+    // 3. Set main admin cache and enforce correct commission values in Order docs
+    const ordersByAffiliateUserId = new Map<string, Order[]>();
+
+    allOrders.forEach(order => {
+        let matchedAffiliate: Affiliate | undefined = undefined;
+
+        // Strategy A: Primary lookup by ID
+        if (order.affiliateId && order.affiliateId !== 'unknown' && order.affiliateId !== 'undefined') {
+            matchedAffiliate = affiliateIdMap.get(order.affiliateId);
+        }
+        
+        // Strategy B: Fallback lookup by Code
+        if (!matchedAffiliate && order.affiliateCode) {
+            matchedAffiliate = affiliateCodeMap.get(order.affiliateCode.toUpperCase().trim());
+        }
+
+        if (matchedAffiliate) {
+            // DATA INTEGRITY: Re-calculate commission using the OFFICIAL rate from the DB
+            // This fixes issues where the frontend might have sent a default or wrong value.
+            const subtotal = order.subtotal || order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const officialCommission = subtotal * matchedAffiliate.commissionRate;
+            
+            // If the stored commission is different, update the order doc in this batch
+            if (order.commissionAmount !== officialCommission || !order.affiliateId) {
+                const orderDocRef = doc(firestore, 'orders', order.id);
+                batch.update(orderDocRef, {
+                    affiliateId: matchedAffiliate.id,
+                    commissionAmount: officialCommission,
+                    subtotal: subtotal, // Backfill subtotal if missing
+                    updatedAt: serverTimestamp()
+                });
+                // Update local object for the cache being built
+                order.commissionAmount = officialCommission;
+                order.affiliateId = matchedAffiliate.id;
+                order.subtotal = subtotal;
+            }
+
+            if (!ordersByAffiliateUserId.has(matchedAffiliate.userId)) {
+                ordersByAffiliateUserId.set(matchedAffiliate.userId, []);
+            }
+            ordersByAffiliateUserId.get(matchedAffiliate.userId)!.push(order);
+        }
+    });
+
+    // Write main admin cache
     const adminCacheRef = doc(firestore, 'cachedData', 'allOrders');
     batch.set(adminCacheRef, {
       orders: allOrders,
       lastUpdated: serverTimestamp(),
     });
 
-    // 4. Group orders by affiliate userId
-    const ordersByAffiliateUserId = new Map<string, Order[]>();
-    
-    allOrders.forEach(order => {
-        let targetUserId = null;
-
-        // Strategy A: Primary lookup by ID
-        if (order.affiliateId && order.affiliateId !== 'unknown' && order.affiliateId !== 'undefined') {
-            targetUserId = affiliateIdToUserId.get(order.affiliateId);
-        }
-        
-        // Strategy B: Fallback lookup by Code
-        if (!targetUserId && order.affiliateCode) {
-            targetUserId = affiliateCodeToUserId.get(order.affiliateCode.toUpperCase().trim());
-        }
-
-        if (targetUserId) {
-            if (!ordersByAffiliateUserId.has(targetUserId)) {
-                ordersByAffiliateUserId.set(targetUserId, []);
-            }
-            ordersByAffiliateUserId.get(targetUserId)!.push(order);
-        }
-    });
-
-    // 5. Write affiliate-specific caches AND update main collection stats
+    // 4. Write affiliate-specific caches AND update main collection stats
     affiliates.forEach(affiliate => {
         const affiliateOrders = ordersByAffiliateUserId.get(affiliate.userId) || [];
         
-        // CALCULATE STATS DYNAMICALLY FROM THE ACTUAL ORDERS LIST
         const deliveredOrders = affiliateOrders.filter(o => o.status === 'delivered');
         const totalEarnings = affiliateOrders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0);
 
-        // A. Update Main Affiliate Document (Sync back to source)
-        // This ensures stats are visible in the Admin Affiliates table (admin/dashboard/affiliates)
+        // A. Update Main Affiliate Document
         const affiliateDocRef = doc(firestore, 'affiliates', affiliate.id);
         batch.update(affiliateDocRef, {
             totalOrders: affiliateOrders.length,
@@ -133,7 +152,7 @@ export async function updateOrderCache(firestore: Firestore): Promise<number> {
             totalOrders: affiliateOrders.length,
             deliveredOrders: deliveredOrders.length,
             totalEarnings: totalEarnings,
-            commissionRate: affiliate.commissionRate || 0,
+            commissionRate: affiliate.commissionRate,
             status: affiliate.status,
             lastUpdated: serverTimestamp(),
         });

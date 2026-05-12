@@ -149,19 +149,18 @@ export function CheckoutForm() {
                 if (affData.id && affData.code) {
                     affiliateId = affData.id;
                     affiliateCode = affData.code;
-                    // Note: Default commission fallback if rate isn't stored. 
-                    // You can also include rate in trackerData if desired.
-                    const rate = 0.1; 
+                    // Use the custom rate stored during the tracking landing session
+                    const rate = affData.rate || 0.1; 
                     commissionAmount = cartTotal * rate;
                     
-                    console.log(`[Checkout] Linking order to affiliate: ${affiliateCode}`);
+                    console.log(`[Checkout] Linking order to affiliate: ${affiliateCode} at ${rate * 100}%`);
                     
-                    // Increment stats directly using the stored ID. No query needed.
+                    // Increment stats directly using the stored ID.
                     updateDoc(doc(firestore, 'affiliates', affiliateId), {
                         totalOrders: increment(1),
                         totalEarnings: increment(commissionAmount),
                         updatedAt: serverTimestamp()
-                    }).catch(e => console.warn("[Checkout] Stat update failed (optional):", e));
+                    }).catch(e => console.warn("[Checkout] Stat update failed:", e));
                 }
             } catch (e) {
                 console.error("[Checkout] Tracking data corrupted:", e);
@@ -207,6 +206,7 @@ export function CheckoutForm() {
                   
                   return orderItem;
             }),
+            subtotal: cartTotal,
             total: finalTotal,
             paymentMethod: values.paymentMethod,
             status: 'pending' as const,

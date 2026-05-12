@@ -21,6 +21,7 @@ export function AffiliateTool() {
     const [affiliateLink, setAffiliateLink] = useState('');
     const [isResolvingId, setIsResolvingId] = useState(false);
     const [resolvedId, setResolvedId] = useState<string | null>(null);
+    const [resolvedRate, setResolvedRate] = useState<number | null>(null);
     const { toast } = useToast();
     const { t } = useTranslation();
 
@@ -36,7 +37,9 @@ export function AffiliateTool() {
                 const snap = await getDocs(q);
                 
                 if (!snap.empty) {
+                    const data = snap.docs[0].data();
                     setResolvedId(snap.docs[0].id);
+                    setResolvedRate(data.commissionRate);
                 }
             } catch (error) {
                 console.error("Failed to resolve affiliate ID:", error);
@@ -56,6 +59,7 @@ export function AffiliateTool() {
             const url = new URL(productUrl);
             const code = userProfile.affiliateCode || user.uid.slice(0, 8);
             const aid = userProfile.affiliateId || resolvedId;
+            const rate = userProfile.commissionRate || resolvedRate || 0.1; // Default 10% if not found
             
             if (!aid) {
                 toast({
@@ -66,8 +70,9 @@ export function AffiliateTool() {
                 return;
             }
 
-            // Standardized format: ?ref=CODE&aid=DOC_ID
-            const generated = `${url.origin}${url.pathname}?ref=${code}&aid=${aid}`;
+            // Standardized format: ?ref=CODE&aid=DOC_ID&rate=VALUE
+            // Including rate in the URL allows zero-query checkout with the correct percentage.
+            const generated = `${url.origin}${url.pathname}?ref=${code}&aid=${aid}&rate=${rate}`;
             setAffiliateLink(generated);
         } catch (error) {
             toast({
@@ -140,7 +145,7 @@ export function AffiliateTool() {
                             </Button>
                         </div>
                         <p className="text-[10px] text-muted-foreground italic">
-                            This link includes your referral code and secure affiliate ID.
+                            This link includes your referral code, secure ID, and current commission rate.
                         </p>
                     </div>
                 )}

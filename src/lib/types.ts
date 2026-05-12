@@ -90,6 +90,7 @@ export type Order = {
     id: string;
     userId: string | null;
     items: OrderItem[];
+    subtotal?: number; // Added to store amount before shipping
     total: number;
     name: string;
     email: string;
@@ -134,6 +135,7 @@ export type UserProfile = {
     role: 'customer' | 'affiliate' | 'admin';
     affiliateCode?: string;
     affiliateId?: string; // Link to the affiliate document ID
+    commissionRate?: number; // Added to store rate for link generation
     createdAt: Timestamp;
     emailVerified: boolean;
 };
