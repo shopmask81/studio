@@ -282,7 +282,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-8 break-words" dir={descDir} style={descStyle}>{displayDescription}</p>
+            <p className="text-muted-foreground leading-relaxed mb-8 break-words whitespace-pre-wrap" dir={descDir} style={descStyle}>{displayDescription}</p>
             
             <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
