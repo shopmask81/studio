@@ -25,7 +25,7 @@ export function CategoryDrawer({
   onSelectCategory,
 }: CategoryDrawerProps) {
   const { categories, isLoading } = useCategoryCache();
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
 
   const handleSelect = (category: Category | null) => {
     onSelectCategory(category);
@@ -36,8 +36,8 @@ export function CategoryDrawer({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
-          <SheetTitle className="text-xl flex items-center justify-between">
-            Categories
+          <SheetTitle className="text-xl flex items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            {t('categories').text}
             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-7 w-7">
                 <X className="h-5 w-5" />
             </Button>
@@ -59,9 +59,10 @@ export function CategoryDrawer({
                       "justify-start text-base p-3 h-auto",
                       !selectedCategory && "bg-accent text-accent-foreground"
                     )}
+                    dir={language === 'ar' ? 'rtl' : 'ltr'}
                   >
-                    <LayoutGrid className="mr-3 h-5 w-5" />
-                    All Categories
+                    <LayoutGrid className={cn("h-5 w-5", language === 'ar' ? "ml-3" : "mr-3")} />
+                    {t('all_categories').text}
                   </Button>
                   <Separator className="my-2" />
                   {categories?.map((cat) => {
