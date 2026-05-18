@@ -45,6 +45,7 @@ export type Product = {
 export type Category = {
     id: string;
     name: string;
+    name_ar?: string;
     name_lowercase: string;
     slug: string;
     createdAt: Timestamp;

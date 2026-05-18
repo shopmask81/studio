@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { useCategoryCache } from '../category/category-cache-provider';
 import { ScrollArea } from '../ui/scroll-area';
+import { useTranslation } from '../language/language-provider';
 
 interface CategoryDrawerProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function CategoryDrawer({
   onSelectCategory,
 }: CategoryDrawerProps) {
   const { categories, isLoading } = useCategoryCache();
+  const { language } = useTranslation();
 
   const handleSelect = (category: Category | null) => {
     onSelectCategory(category);
@@ -62,19 +64,23 @@ export function CategoryDrawer({
                     All Categories
                   </Button>
                   <Separator className="my-2" />
-                  {categories?.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      variant="ghost"
-                      onClick={() => handleSelect(cat)}
-                      className={cn(
-                        "justify-start text-base p-3 h-auto truncate",
-                        selectedCategory?.id === cat.id && "bg-accent text-accent-foreground"
-                      )}
-                    >
-                      {cat.name}
-                    </Button>
-                  ))}
+                  {categories?.map((cat) => {
+                    const displayName = (language === 'ar' && cat.name_ar) ? cat.name_ar : cat.name;
+                    return (
+                        <Button
+                          key={cat.id}
+                          variant="ghost"
+                          onClick={() => handleSelect(cat)}
+                          className={cn(
+                            "justify-start text-base p-3 h-auto truncate",
+                            selectedCategory?.id === cat.id && "bg-accent text-accent-foreground"
+                          )}
+                          dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        >
+                          {displayName}
+                        </Button>
+                    );
+                  })}
                 </nav>
               )}
             </div>

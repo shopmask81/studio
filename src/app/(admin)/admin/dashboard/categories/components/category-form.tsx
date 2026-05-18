@@ -28,6 +28,7 @@ import type { Category } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Category name must be at least 2 characters long.'),
+  name_ar: z.string().min(2, 'Category name (Arabic) must be at least 2 characters long.'),
 });
 
 type CategoryFormValues = z.infer<typeof formSchema>;
@@ -36,7 +37,7 @@ interface CategoryFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   categoryToEdit: Category | null;
-  onSubmit: (name: string) => void;
+  onSubmit: (name: string, name_ar: string) => void;
   isSubmitting: boolean;
 }
 
@@ -51,17 +52,21 @@ export function CategoryFormDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      name_ar: '',
     },
   });
 
   useEffect(() => {
     if (isOpen) {
-      form.reset({ name: categoryToEdit?.name || '' });
+      form.reset({ 
+        name: categoryToEdit?.name || '',
+        name_ar: categoryToEdit?.name_ar || '',
+      });
     }
   }, [isOpen, categoryToEdit, form]);
 
   const handleFormSubmit = (data: CategoryFormValues) => {
-    onSubmit(data.name);
+    onSubmit(data.name, data.name_ar);
   };
 
   return (
@@ -73,18 +78,18 @@ export function CategoryFormDialog({
           </DialogTitle>
           <DialogDescription>
             {categoryToEdit
-              ? 'Update the name of the category.'
+              ? 'Update the names of the category.'
               : 'Create a new category for your products.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8 py-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category Name</FormLabel>
+                  <FormLabel>Category Name (English)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Venetian Masks" {...field} />
                   </FormControl>
@@ -92,7 +97,20 @@ export function CategoryFormDialog({
                 </FormItem>
               )}
             />
-             <DialogFooter>
+            <FormField
+              control={form.control}
+              name="name_ar"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category Name (Arabic)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="مثال: أقنعة فينيسية" {...field} dir="rtl" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                     Cancel
                 </Button>

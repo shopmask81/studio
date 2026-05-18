@@ -61,7 +61,8 @@ export default function AdminCategoriesPage() {
     return allCategories.filter(
       (cat) =>
         cat.name.toLowerCase().includes(query) ||
-        cat.slug.toLowerCase().includes(query)
+        cat.slug.toLowerCase().includes(query) ||
+        cat.name_ar?.toLowerCase().includes(query)
     );
   }, [allCategories, debouncedSearchQuery]);
 
@@ -85,15 +86,15 @@ export default function AdminCategoriesPage() {
     setIsDeleteDialogOpen(false);
   };
 
-  const handleFormSubmit = async (name: string) => {
+  const handleFormSubmit = async (name: string, name_ar: string) => {
     if (!firestore || !allCategories) return;
     setIsSubmitting(true);
     try {
       if (categoryToEdit) {
-        await updateCategoryService(firestore, categoryToEdit.id, name, allCategories);
+        await updateCategoryService(firestore, categoryToEdit.id, name, name_ar, allCategories);
         toast({ title: 'Category Updated', description: `Category "${name}" has been successfully updated.` });
       } else {
-        await addCategoryService(firestore, name, allCategories);
+        await addCategoryService(firestore, name, name_ar, allCategories);
         toast({ title: 'Category Created', description: `Category "${name}" has been successfully created.` });
       }
       setIsFormOpen(false);

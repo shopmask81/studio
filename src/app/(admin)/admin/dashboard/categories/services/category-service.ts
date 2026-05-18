@@ -29,6 +29,7 @@ function generateSlug(name: string): string {
 export async function addCategory(
   firestore: Firestore,
   name: string,
+  name_ar: string,
   existingCategories: Category[]
 ): Promise<void> {
   const name_lowercase = name.toLowerCase();
@@ -42,6 +43,7 @@ export async function addCategory(
   const collectionRef = collection(firestore, 'categories');
   const dataToCreate = {
     name,
+    name_ar,
     name_lowercase,
     slug,
     createdAt: serverTimestamp(),
@@ -64,6 +66,7 @@ export async function updateCategory(
   firestore: Firestore,
   categoryId: string,
   newName: string,
+  newNameAr: string,
   existingCategories: Category[]
 ): Promise<void> {
   const new_name_lowercase = newName.toLowerCase();
@@ -81,6 +84,7 @@ export async function updateCategory(
   const newSlug = generateSlug(newName);
   const dataToUpdate = {
     name: newName,
+    name_ar: newNameAr,
     name_lowercase: new_name_lowercase,
     slug: newSlug,
     updatedAt: serverTimestamp(),
