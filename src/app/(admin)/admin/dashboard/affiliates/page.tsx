@@ -51,12 +51,19 @@ export default function AdminAffiliatesPage() {
   const handleFormSubmit = async (values: any) => {
     if (!firestore) return;
     setIsSubmitting(true);
+
+    // Convert percentage (e.g., 10) back to decimal (0.1) for database storage
+    const submissionValues = {
+        ...values,
+        commissionRate: values.commissionRate / 100
+    };
+
     try {
       if (affiliateToEdit) {
-        await updateAffiliate(firestore, affiliateToEdit.id, values);
+        await updateAffiliate(firestore, affiliateToEdit.id, submissionValues);
         toast({ title: 'Affiliate Updated', description: `Affiliate ${values.name} has been updated.` });
       } else {
-        await addAffiliate(firestore, values);
+        await addAffiliate(firestore, submissionValues);
         toast({ title: 'Affiliate Created', description: `New affiliate ${values.name} has been added.` });
       }
       setIsFormOpen(false);

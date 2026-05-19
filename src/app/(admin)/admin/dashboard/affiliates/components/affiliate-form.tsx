@@ -32,7 +32,7 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.').optional().or(z.literal('')),
   code: z.string().min(3, 'Code must be at least 3 characters.').toUpperCase().trim(),
-  commissionRate: z.coerce.number().min(0, 'Rate must be at least 0').max(1, 'Rate cannot exceed 1 (100%)'),
+  commissionRate: z.coerce.number().min(0, 'Rate must be at least 0').max(100, 'Rate cannot exceed 100%'),
 });
 
 type AffiliateFormValues = z.infer<typeof formSchema>;
@@ -59,7 +59,7 @@ export function AffiliateForm({
       email: '',
       password: '',
       code: '',
-      commissionRate: 0.1, // Default 10%
+      commissionRate: 10, // Default 10%
     },
   });
 
@@ -71,7 +71,8 @@ export function AffiliateForm({
           email: affiliateToEdit.email,
           password: '',
           code: affiliateToEdit.code,
-          commissionRate: affiliateToEdit.commissionRate,
+          // Convert stored decimal (0.1) to percentage (10) for UI
+          commissionRate: Math.round(affiliateToEdit.commissionRate * 100),
         });
       } else {
         form.reset({
@@ -79,7 +80,7 @@ export function AffiliateForm({
           email: '',
           password: '',
           code: '',
-          commissionRate: 0.1,
+          commissionRate: 10,
         });
       }
     }
@@ -167,9 +168,12 @@ export function AffiliateForm({
                     name="commissionRate"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Commission (0-1)</FormLabel>
+                        <FormLabel>Commission (%)</FormLabel>
                         <FormControl>
-                            <Input type="number" step="0.01" placeholder="0.10" {...field} />
+                            <div className="relative">
+                                <Input type="number" placeholder="10" {...field} />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
