@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Theater } from "lucide-react";
@@ -41,13 +42,22 @@ export function Footer() {
     }
   };
 
-  const navLinks = useMemo(() => [
-    { href: '/about', label: t('about').text },
-    { href: '/contact', label: t('contact').text },
-    { href: '/affiliate', label: t('affiliate').text },
-    { href: '/terms', label: t('terms_of_use').text },
-    { href: '/privacy', label: t('privacy_policy').text },
-  ], [t]);
+  const navLinks = useMemo(() => {
+    const links = [
+      { href: '/about', label: t('about').text },
+      { href: '/contact', label: t('contact').text },
+      { href: '/affiliate', label: t('affiliate').text, isAffiliate: true },
+      { href: '/terms', label: t('terms_of_use').text },
+      { href: '/privacy', label: t('privacy_policy').text },
+    ];
+
+    // Filter out the affiliate link if the setting is enabled
+    if ((siteSettings as any).hideAffiliateLink) {
+        return links.filter(link => !link.isAffiliate);
+    }
+    
+    return links;
+  }, [t]);
 
   return (
     <>

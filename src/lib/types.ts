@@ -182,4 +182,5 @@ export type SiteSettings = {
   imgbbApiKey: string;
   enableWhatsAppButton: boolean;
   whatsAppUrl: string;
+  hideAffiliateLink: boolean;
 };

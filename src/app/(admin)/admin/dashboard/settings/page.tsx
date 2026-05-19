@@ -39,6 +39,7 @@ const generalFormSchema = z.object({
   imgbbApiKey: z.string().min(1, 'ImgBB API key is required.'),
   enableWhatsAppButton: z.boolean().default(false),
   whatsAppUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+  hideAffiliateLink: z.boolean().default(false),
 }).superRefine((data, ctx) => {
     if (data.enableWhatsAppButton && !data.whatsAppUrl) {
         ctx.addIssue({
@@ -145,12 +146,13 @@ export default function AdminSettingsPage() {
     resolver: zodResolver(generalFormSchema),
     defaultValues: {
       ...initialSettings,
-      defaultThemeMode: initialSettings.defaultThemeMode || 'light',
-      defaultCurrency: initialSettings.defaultCurrency || 'AED',
-      payments: initialSettings.payments || { creditCard: false, paypal: false, cod: true },
-      imgbbApiKey: initialSettings.imgbbApiKey || '',
-      enableWhatsAppButton: initialSettings.enableWhatsAppButton ?? false,
-      whatsAppUrl: initialSettings.whatsAppUrl || '',
+      defaultThemeMode: (initialSettings as any).defaultThemeMode || 'light',
+      defaultCurrency: (initialSettings as any).defaultCurrency || 'AED',
+      payments: (initialSettings as any).payments || { creditCard: false, paypal: false, cod: true },
+      imgbbApiKey: (initialSettings as any).imgbbApiKey || '',
+      enableWhatsAppButton: (initialSettings as any).enableWhatsAppButton ?? false,
+      whatsAppUrl: (initialSettings as any).whatsAppUrl || '',
+      hideAffiliateLink: (initialSettings as any).hideAffiliateLink ?? false,
     },
   });
   
@@ -266,7 +268,7 @@ export default function AdminSettingsPage() {
           }
       };
 
-      await saveSettings({ general: finalSettings, content: finalContent });
+      await saveSettings({ general: finalSettings as any, content: finalContent });
       toast({ title: 'Settings Saved', description: 'Your site settings have been updated successfully. The page will now reload to apply changes.' });
 
       setTimeout(() => {
@@ -373,6 +375,27 @@ export default function AdminSettingsPage() {
                                             onUpload={() => handleUpload(favicon, setFavicon, apiKey)}
                                             isUploading={favicon.isUploading}
                                             apiKeyPresent={!!apiKey}
+                                        />
+                                    </div>
+                                </div>
+                                <Separator className="my-8" />
+                                <div>
+                                    <h3 className="text-lg font-medium mb-4">Display Options</h3>
+                                    <div className="space-y-6">
+                                         <FormField
+                                            control={generalForm.control}
+                                            name="hideAffiliateLink"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                    <FormLabel className="text-base">Hide Affiliate Link in Footer</FormLabel>
+                                                    <FormDescription>When enabled, the "Affiliate" link will not be visible to public visitors.</FormDescription>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
                                         />
                                     </div>
                                 </div>

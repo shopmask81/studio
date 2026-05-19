@@ -14,5 +14,6 @@
   },
   "imgbbApiKey": "518d3cdcaedf3c5ade143a41de38c554",
   "enableWhatsAppButton": false,
-  "whatsAppUrl": ""
+  "whatsAppUrl": "",
+  "hideAffiliateLink": false
 }
