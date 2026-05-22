@@ -13,12 +13,24 @@ import { Address } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from '@/components/language/language-provider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const emirates = [
+    { value: 'abu_dhabi', label: 'abu_dhabi' },
+    { value: 'dubai', label: 'dubai' },
+    { value: 'sharjah', label: 'sharjah' },
+    { value: 'ajman', label: 'ajman' },
+    { value: 'umm_al_quwain', label: 'umm_al_quwain' },
+    { value: 'ras_al_khaimah', label: 'ras_al_khaimah' },
+    { value: 'fujairah', label: 'fujairah' },
+];
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   phone: z.string().min(1, 'Phone number is required.'),
   street: z.string().min(3, 'Street address is required.'),
   city: z.string().min(2, 'City is required.'),
+  emirate: z.string().min(1, 'Please select an emirate.'),
   zipCode: z.string().min(4, 'Postal/ZIP code is required.'),
   country: z.string().min(2, 'Country is required.'),
   isDefault: z.boolean().default(false),
@@ -42,8 +54,9 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
       phone: '',
       street: '',
       city: '',
+      emirate: '',
       zipCode: '',
-      country: '',
+      country: 'United Arab Emirates',
       isDefault: false,
     },
   });
@@ -54,8 +67,9 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
         phone: '',
         street: '',
         city: '',
+        emirate: '',
         zipCode: '',
-        country: '',
+        country: 'United Arab Emirates',
         isDefault: false,
       });
   }, [addressToEdit, form]);
@@ -91,7 +105,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                         <FormItem>
                         <FormLabel {...t('phone_number')}>{t('phone_number').text}</FormLabel>
                         <FormControl>
-                            <Input placeholder="+1 234 567 890" {...field} />
+                            <Input placeholder="+971 50 000 0000" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -111,20 +125,40 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                     )}
                 />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel {...t('city')}>{t('city').text}</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Venice" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="emirate" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel {...t('emirate')}>{t('emirate').text}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('emirate').text} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {emirates.map(e => (
+                                    <SelectItem key={e.value} value={e.value}>{t(e.label as any).text}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel {...t('city')}>{t('city').text}</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Area name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="zipCode"
@@ -132,7 +166,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                   <FormItem>
                     <FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel>
                     <FormControl>
-                      <Input placeholder="90210" {...field} />
+                      <Input placeholder="00000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,7 +179,7 @@ export function AddressForm({ addressToEdit, isSubmitting, onSubmit, onCancel }:
                   <FormItem>
                     <FormLabel {...t('country')}>{t('country').text}</FormLabel>
                     <FormControl>
-                      <Input placeholder="USA" {...field} />
+                      <Input placeholder="UAE" {...field} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

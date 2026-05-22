@@ -99,6 +99,7 @@ export type Order = {
     phone: string;
     street: string;
     city: string;
+    emirate: string;
     zip: string;
     country: string;
     affiliateId?: string | null;
@@ -123,6 +124,7 @@ export type Address = {
   phone: string;
   street: string;
   city: string;
+  emirate: string;
   country: string;
   zipCode: string;
   isDefault: boolean;

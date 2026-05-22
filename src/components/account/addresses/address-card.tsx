@@ -41,7 +41,7 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault, isProcess
       </CardHeader>
       <CardContent className="text-muted-foreground space-y-2">
         <p>{address.street}</p>
-        <p>{address.city}, {address.zipCode}</p>
+        <p>{address.city}, {address.emirate ? t(address.emirate as any).text : ''}</p>
         <p>{address.country}</p>
         {address.phone && 
             <p className="flex items-center gap-2 pt-2">

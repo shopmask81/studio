@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +11,7 @@ import { useFirestore } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useCurrency } from '@/components/currency/currency-provider';
+import { useTranslation } from '@/components/language/language-provider';
 
 interface OrderPDFGeneratorProps {
   orders: Order[];
@@ -59,6 +59,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
   const firestore = useFirestore();
   const [productImages, setProductImages] = useState<ProductImageMap>({});
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
   
   const preloadAllImages = useCallback(async (ordersToExport: Order[]): Promise<ProductImageMap> => {
       if (!firestore) return {};
@@ -128,7 +129,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
 
         // Increased height for each item to accommodate variant info
         const itemRowHeight = 62; 
-        const headerHeight = 130;
+        const headerHeight = 145; // Increased to fit emirate
         const itemsHeight = (order.items || []).length * itemRowHeight;
         const footerPadding = 16;
         const cardHeight = headerHeight + itemsHeight + footerPadding;
@@ -227,7 +228,7 @@ export function OrderPDFGenerator({ orders, variant = 'all', isLoading: isParent
             currently being processed for PDF generation. */}
         <div style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', backgroundColor: '#FFFFFF' }}>
           {orders.map((order, index) => (
-            <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} formatPrice={formatPrice} />
+            <PdfCardTemplate key={`pdf-card-${order.id}`} order={order} orderNumber={index + 1} productImages={productImages} formatPrice={formatPrice} t={t} />
           ))}
         </div>
       </>
@@ -243,7 +244,7 @@ const shorten = (text: string, words = 5) => {
     return splitText.slice(0, words).join(' ') + (splitText.length > words ? '...' : '');
 }
 
-function PdfCardTemplate({ order, orderNumber, productImages, formatPrice }: { order: Order, orderNumber: number, productImages: ProductImageMap, formatPrice: (price: number) => string }) {
+function PdfCardTemplate({ order, orderNumber, productImages, formatPrice, t }: { order: Order, orderNumber: number, productImages: ProductImageMap, formatPrice: (price: number) => string, t: any }) {
     const statusStyle = statusStyles[order.status] || { color: '#4F5B62', backgroundColor: '#E2E8EA' };
     
     // The 'order' object passed here has `createdAt` as a JS Date object from the useMemo in AdminOrdersPage.
@@ -278,7 +279,7 @@ function PdfCardTemplate({ order, orderNumber, productImages, formatPrice }: { o
                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '4px 16px', fontSize: '11px', fontWeight: 'bold' }}>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Email:</span> {order.email}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Phone:</span> {order.phone}</p>
-                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}, {order.country}, {order.zip}</p>
+                    <p style={{ margin: 0, gridColumn: 'span 2' }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Address:</span> {order.street}, {order.city}{order.emirate ? `, ${t(order.emirate as any).text}` : ''}, {order.country}, {order.zip}</p>
                     <p style={{ margin: 0 }}><span style={{fontWeight: 'bold', color: '#4F5B62'}}>Date:</span> {format(orderDate, 'yyyy-MM-dd HH:mm')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{fontWeight: 'bold', color: '#4F5B62'}}>Status:</span>
@@ -320,10 +321,3 @@ function PdfCardTemplate({ order, orderNumber, productImages, formatPrice }: { o
         </div>
     );
 }
-
-    
-
-
-    
-
-

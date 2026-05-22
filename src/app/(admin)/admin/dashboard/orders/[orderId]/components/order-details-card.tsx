@@ -6,12 +6,14 @@ import { Separator } from "@/components/ui/separator";
 import type { Order } from "@/lib/types";
 import { format } from "date-fns";
 import { Mail, Phone, Home, Calendar } from "lucide-react";
+import { useTranslation } from "@/components/language/language-provider";
 
 interface OrderDetailsCardProps {
     order: Order;
 }
 
 export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
+    const { t } = useTranslation();
     return (
         <Card>
             <CardHeader>
@@ -44,7 +46,8 @@ export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
                     <Home className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                     <div className="text-muted-foreground">
                         <p>{order.street}</p>
-                        <p>{order.city}, {order.zip}</p>
+                        <p>{order.city}{order.emirate ? `, ${t(order.emirate as any).text}` : ''}</p>
+                        <p>{order.zip}</p>
                         <p>{order.country}</p>
                     </div>
                 </div>

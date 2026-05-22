@@ -25,12 +25,23 @@ import { useAuth } from '../auth/auth-provider';
 import siteSettings from '@/../appData/siteSettings.json';
 import { ClientOnly } from '../layout/client-only';
 
+const emirates = [
+    { value: 'abu_dhabi', label: 'abu_dhabi' },
+    { value: 'dubai', label: 'dubai' },
+    { value: 'sharjah', label: 'sharjah' },
+    { value: 'ajman', label: 'ajman' },
+    { value: 'umm_al_quwain', label: 'umm_al_quwain' },
+    { value: 'ras_al_khaimah', label: 'ras_al_khaimah' },
+    { value: 'fujairah', label: 'fujairah' },
+];
+
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
   phone: z.string().min(1, 'Phone number is required.'),
   street: z.string().min(3, 'Street address is required.'),
-  city: z.string().min(2, 'City is required.'),
+  city: z.string().min(2, 'City/Area is required.'),
+  emirate: z.string().min(1, 'Please select an emirate.'),
   postalCode: z.string().min(4, 'Postal code is required.'),
   country: z.string().min(2, 'Country is required.'),
   paymentMethod: z.enum(['card', 'paypal', 'cod'], {
@@ -79,8 +90,9 @@ export function CheckoutForm() {
             phone: '',
             street: '',
             city: '',
+            emirate: '',
             postalCode: '',
-            country: '',
+            country: 'United Arab Emirates',
             paymentMethod: 'cod',
             cardNumber: '',
             expiryDate: '',
@@ -107,8 +119,9 @@ export function CheckoutForm() {
                     phone: defaultAddress.phone,
                     street: defaultAddress.street,
                     city: defaultAddress.city,
+                    emirate: defaultAddress.emirate || '',
                     postalCode: defaultAddress.zipCode,
-                    country: defaultAddress.country,
+                    country: defaultAddress.country || 'United Arab Emirates',
                 });
                 setSelectedAddressId(defaultAddress.id);
             }
@@ -122,6 +135,7 @@ export function CheckoutForm() {
             form.setValue('phone', selected.phone);
             form.setValue('street', selected.street);
             form.setValue('city', selected.city);
+            form.setValue('emirate', selected.emirate || '');
             form.setValue('postalCode', selected.zipCode);
             form.setValue('country', selected.country);
             setSelectedAddressId(addressId);
@@ -175,6 +189,7 @@ export function CheckoutForm() {
             phone: values.phone,
             street: values.street,
             city: values.city,
+            emirate: values.emirate,
             zip: values.postalCode,
             country: values.country,
             items: cartItems.map(item => {
@@ -267,7 +282,7 @@ export function CheckoutForm() {
                                             <FormItem><FormLabel {...t('email_address')}>{t('email_address').text}</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="phone" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('phone_number')}>{t('phone_number').text}</FormLabel><FormControl><Input placeholder="+1 (555) 555-5555" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel {...t('phone_number')}>{t('phone_number').text}</FormLabel><FormControl><Input placeholder="+971 50 000 0000" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     </div>
                                 </CardContent>
@@ -306,15 +321,35 @@ export function CheckoutForm() {
                                     <FormField control={form.control} name="street" render={({ field }) => (
                                         <FormItem><FormLabel {...t('street_address')}>{t('street_address').text}</FormLabel><FormControl><Input placeholder="123 Mask Lane" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
-                                    <div className="grid sm:grid-cols-3 gap-4">
-                                        <FormField control={form.control} name="city" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('city')}>{t('city').text}</FormLabel><FormControl><Input placeholder="Venice" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <div className="grid sm:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="emirate" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel {...t('emirate')}>{t('emirate').text}</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('emirate').text} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {emirates.map(e => (
+                                                            <SelectItem key={e.value} value={e.value}>{t(e.label as any).text}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
                                         )} />
+                                        <FormField control={form.control} name="city" render={({ field }) => (
+                                            <FormItem><FormLabel {...t('city')}>{t('city').text}</FormLabel><FormControl><Input placeholder="Area name" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="postalCode" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="90210" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel {...t('postal_code')}>{t('postal_code').text}</FormLabel><FormControl><Input placeholder="00000" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="country" render={({ field }) => (
-                                            <FormItem><FormLabel {...t('country')}>{t('country').text}</FormLabel><FormControl><Input placeholder="USA" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel {...t('country')}>{t('country').text}</FormLabel><FormControl><Input placeholder="USA" {...field} disabled /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     </div>
                                 </CardContent>
